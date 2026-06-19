@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T.E.A.R.S. – Charaktererstellung</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#12182b;color:#dce3f0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── TOP BAR ── */
+.topbar{background:#0b0f1e;padding:6px 14px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #e94560;flex-shrink:0}
+.topbar h1{font-size:16px;letter-spacing:2px;color:#e94560;font-weight:900}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn-sm{padding:5px 12px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-red{background:#e94560;color:#fff}
+.btn-blue{background:#1a6496;color:#fff}
+.btn-green{background:#27ae60;color:#fff}
+.btn-gray{background:#2a3a5e;color:#aaa;border:1px solid #3a4a6e}
+
+/* ── POINTS BAR ── */
+.points-bar{background:#0d1424;padding:6px 12px;display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid #1e2d4e}
+.pb{display:flex;align-items:center;gap:5px;background:#151f35;padding:3px 10px;border-radius:20px;font-size:12px}
+.pb .lbl{color:#6b7fa8}
+.pb .val{font-weight:700;color:#4fc3f7}
+.pb.warn .val{color:#ffb300}
+.pb.over .val{color:#f44336}
+.pb.ok .val{color:#66bb6a}
+
+/* ── CHECKLIST ── */
+.checklist{background:#0d1424;padding:5px 12px;display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid #1e2d4e}
+.ci{display:flex;align-items:center;gap:4px;font-size:11px}
+.ci .dot{width:8px;height:8px;border-radius:50%;background:#f44336;flex-shrink:0}
+.ci.done .dot{background:#66bb6a}
+.ci span{color:#6b7fa8}
+.ci.done span{color:#81c784}
+
+/* ── MAIN LAYOUT ── */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT: CHARACTER SHEET ── */
+.sheet-panel{width:48%;overflow-y:auto;background:#fff;color:#111;padding:16px;border-right:3px solid #1e2d4e;flex-shrink:0}
+
+.cs-title{font-family:'Courier New',monospace;font-size:22px;font-weight:900;letter-spacing:3px;border:3px solid #111;padding:8px 14px;background:#eee;margin-bottom:12px}
+.cs-section{margin-bottom:14px}
+.cs-sh{font-family:'Courier New',monospace;font-size:14px;font-weight:900;letter-spacing:2px;border:2px solid #111;padding:4px 10px;background:#eee;margin-bottom:6px}
+
+.cs-info{border:1px solid #bbb}
+.cs-ir{display:flex;border-bottom:1px solid #bbb}
+.cs-ir:last-child{border-bottom:none}
+.cs-il{font-size:11px;padding:5px 8px;min-width:90px;background:#f5f5f5;border-right:1px solid #bbb;font-weight:600;color:#444}
+.cs-iv{font-size:13px;padding:5px 8px;flex:1;font-weight:500}
+
+.cs-attr{display:grid;grid-template-columns:1fr 1fr;border:1px solid #bbb}
+.cs-ac{padding:7px 10px;border-right:1px solid #bbb;border-bottom:1px solid #bbb;display:flex;justify-content:space-between;align-items:center}
+.cs-ac:nth-child(2n){border-right:none}
+.cs-ac:nth-last-child(-n+2){border-bottom:none}
+.cs-an{display:flex;flex-direction:column}
+.cs-an .n{font-size:12px;font-weight:600}
+.cs-an .a{font-size:10px;color:#888}
+.cs-av{font-size:20px;font-weight:900;min-width:28px;text-align:right}
+
+.cs-talents{border:1px solid #bbb}
+.cs-tr{display:flex;border-bottom:1px solid #bbb;align-items:center}
+.cs-tr:last-child{border-bottom:none}
+.cs-tn{flex:1;font-size:12px;padding:4px 8px}
+.cs-ta{font-size:10px;color:#888;padding:4px 6px;min-width:85px}
+.cs-tv{font-size:15px;font-weight:700;padding:4px 8px;min-width:40px;text-align:right;border-left:1px solid #bbb;color:#111}
+.cs-tv.has-val{color:#1a6496}
+
+.cs-waffen{width:100%;border-collapse:collapse;font-size:12px}
+.cs-waffen th{background:#eee;padding:5px 6px;border:1px solid #bbb;font-weight:700;text-align:left}
+.cs-waffen td{padding:5px 6px;border:1px solid #bbb;min-height:20px}
+
+.cs-spez{border:1px solid #bbb;padding:8px;font-size:12px}
+.cs-spez-pos{color:#1a6496;font-weight:600}
+.cs-spez-neg{color:#c0392b;font-weight:600}
+.cs-spez-item{margin-bottom:3px}
+
+/* ── RIGHT: EDITOR ── */
+.editor-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+.tabs{display:flex;flex-wrap:wrap;background:#090d1a;padding:6px 6px 0;gap:3px;flex-shrink:0}
+.tab{padding:5px 11px;border:none;background:#1a243d;color:#6b7fa8;cursor:pointer;border-radius:5px 5px 0 0;font-size:12px;font-weight:600;transition:all .15s}
+.tab.active{background:#e94560;color:#fff}
+.tab:hover:not(.active){background:#243050;color:#ccc}
+
+.tab-content{flex:1;overflow-y:auto;padding:14px}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── FORM ELEMENTS ── */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;color:#90caf9;margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 10px;background:#151f35;border:1px solid #1e2d4e;border-radius:5px;color:#dce3f0;font-size:13px}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#4fc3f7}
+.fg select option{background:#151f35}
+.fg textarea{resize:vertical;min-height:80px}
+.radio-row{display:flex;gap:16px}
+.radio-row label{display:flex;align-items:center;gap:5px;font-size:13px;color:#dce3f0;text-transform:none;letter-spacing:0;cursor:pointer;font-weight:400}
+.radio-row input[type=radio]{width:auto}
+
+.sec-title{font-size:14px;font-weight:700;color:#e94560;border-bottom:1px solid #2a3a5e;padding-bottom:5px;margin:14px 0 10px}
+
+/* ── ATTRIBUTE CONTROLS ── */
+.attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.attr-card{background:#151f35;border:1px solid #1e2d4e;border-radius:7px;padding:10px}
+.attr-card .attr-lbl{font-size:11px;color:#90caf9;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.attr-row{display:flex;align-items:center;gap:7px}
+.spin-btn{width:26px;height:26px;border:none;border-radius:50%;background:#0b0f1e;color:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.spin-btn:hover{background:#e94560}
+.spin-btn:disabled{opacity:.3;cursor:not-allowed}
+.attr-val{font-size:24px;font-weight:900;color:#fff;min-width:34px;text-align:center}
+.attr-cost{font-size:11px;color:#6b7fa8;margin-top:3px}
+
+/* ── TALENT CONTROLS ── */
+.talent-row{display:flex;align-items:center;gap:8px;background:#151f35;border:1px solid #1e2d4e;border-radius:6px;padding:7px 10px;margin-bottom:5px}
+.talent-row .tn{flex:1;font-size:13px}
+.talent-row .ta{font-size:10px;color:#6b7fa8;min-width:80px}
+.t-ctrl{display:flex;align-items:center;gap:5px}
+.t-ctrl button{width:22px;height:22px;border:none;border-radius:50%;background:#0b0f1e;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.t-ctrl button:hover{background:#e94560}
+.t-val{font-size:18px;font-weight:700;color:#4fc3f7;min-width:28px;text-align:center}
+.t-bonus{font-size:10px;color:#66bb6a;min-width:28px;text-align:right}
+.t-cost{font-size:10px;color:#ffb300}
+.beruf-star{color:#ffd54f;font-size:12px;cursor:pointer;title:"Als Berufstalent"}
+.hobby1-star{color:#4fc3f7;font-size:12px;cursor:pointer}
+.hobby2-star{color:#81c784;font-size:12px;cursor:pointer}
+
+/* ── SPEZIFIKA ── */
+.spez-box{background:#151f35;border-left:3px solid #6b7fa8;border-radius:0 6px 6px 0;padding:10px 12px;margin-bottom:8px}
+.spez-box.pos{border-color:#66bb6a}
+.spez-box.neg{border-color:#e57373}
+.spez-box .spez-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.spez-box.pos .spez-lbl{color:#66bb6a}
+.spez-box.neg .spez-lbl{color:#e57373}
+
+/* ── WAFFEN EDITOR ── */
+.waffe-hdr{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr 28px;gap:5px;font-size:11px;color:#6b7fa8;padding:0 0 4px;text-transform:uppercase;font-weight:700}
+.waffe-input-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr 28px;gap:5px;margin-bottom:5px;align-items:center}
+.waffe-input-row input{padding:5px 7px;background:#151f35;border:1px solid #1e2d4e;border-radius:4px;color:#dce3f0;font-size:12px;width:100%}
+.waffe-del{background:#c0392b;border:none;color:#fff;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.add-waffe-btn{background:#27ae60;border:none;color:#fff;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;margin-top:4px}
+
+/* ── BONUS SELECTOR ── */
+.bonus-hint{font-size:11px;color:#ffb300;margin-top:3px}
+.select-talent{width:100%;padding:6px 8px;background:#151f35;border:1px solid #4fc3f7;border-radius:5px;color:#4fc3f7;font-size:12px;margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <h1>T.E.A.R.S. ✦ Charaktererstellung</h1>
+  <div class="topbar-right">
+    <button class="btn-sm btn-gray" onclick="loadChar()">↑ Laden</button>
+    <button class="btn-sm btn-blue" onclick="saveChar()">↓ Speichern</button>
+    <button class="btn-sm btn-green" onclick="window.print()">🖨 Drucken</button>
+    <button class="btn-sm btn-red" onclick="resetChar()">↺ Neu</button>
+  </div>
+</div>
+
+<!-- POINTS BAR -->
+<div class="points-bar" id="points-bar"></div>
+
+<!-- CHECKLIST -->
+<div class="checklist" id="checklist"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: CHARACTER SHEET PREVIEW -->
+  <div class="sheet-panel" id="sheet"></div>
+
+  <!-- RIGHT: EDITOR -->
+  <div class="editor-panel">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('charakter')">Charakter</button>
+      <button class="tab" onclick="showTab('attribute')">Attribute</button>
+      <button class="tab" onclick="showTab('wissen')">Wissen</button>
+      <button class="tab" onclick="showTab('soziales')">Soziales</button>
+      <button class="tab" onclick="showTab('sportliches')">Sportliches</button>
+      <button class="tab" onclick="showTab('aktionen')">Aktionen</button>
+      <button class="tab" onclick="showTab('handwerk')">Handwerk</button>
+      <button class="tab" onclick="showTab('kampf')">Kampf</button>
+      <button class="tab" onclick="showTab('waffen')">Waffen</button>
+      <button class="tab" onclick="showTab('notizen')">Notizen</button>
+    </div>
+    <div class="tab-content">
+      <div id="tab-charakter" class="tab-pane active"></div>
+      <div id="tab-attribute" class="tab-pane"></div>
+      <div id="tab-wissen" class="tab-pane"></div>
+      <div id="tab-soziales" class="tab-pane"></div>
+      <div id="tab-sportliches" class="tab-pane"></div>
+      <div id="tab-aktionen" class="tab-pane"></div>
+      <div id="tab-handwerk" class="tab-pane"></div>
+      <div id="tab-kampf" class="tab-pane"></div>
+      <div id="tab-waffen" class="tab-pane"></div>
+      <div id="tab-notizen" class="tab-pane"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA DEFINITIONS
+// ═══════════════════════════════════════════════════════
+
+const TALENT_CATS = {
+  wissen: {
+    label: 'Wissen',
+    talents: [
+      {name:'Chemie',attrs:'IN/IN/MB'},
+      {name:'Physik',attrs:'IN/IN/MB'},
+      {name:'Biologie',attrs:'IN/IN/MB'},
+      {name:'Medizin',attrs:'IN/IN/MB'},
+      {name:'Mathematik',attrs:'IN/IN/MB'},
+      {name:'Meteorologie',attrs:'IN/MB/IN'},
+      {name:'Botanik',attrs:'IN/IN/MB'},
+      {name:'Literatur',attrs:'IN/IN/IN'},
+      {name:'Überlebenstechniken',attrs:'IN/MB/MB'},
+      {name:'Urbanes Wissen',attrs:'IN/MB/MB'},
+      {name:'Ländliches Wissen',attrs:'IN/MB/MB'},
+    ]
+  },
+  soziales: {
+    label: 'Soziales',
+    talents: [
+      {name:'Beruhigen',attrs:'CH/CH/IN'},
+      {name:'Manipulieren',attrs:'CH/IN/IN'},
+      {name:'Bedrohen',attrs:'CH/MB/MB'},
+      {name:'Überreden',attrs:'IN/CH/CH'},
+      {name:'Betöhren',attrs:'GE/IN/MB'},
+      {name:'Feilschen',attrs:'CH/CH/CH'},
+      {name:'Lügen',attrs:'CH/IN/IN'},
+      {name:'Menschenkenntnis',attrs:'IN/IN/MB'},
+      {name:'Begeistern / Führen',attrs:'CH/CH/MB'},
+    ]
+  },
+  sportliches: {
+    label: 'Sportliches',
+    talents: [
+      {name:'Laufen',attrs:'AU/KK/AU'},
+      {name:'Klettern',attrs:'KK/AU/KK'},
+      {name:'Schwimmen',attrs:'KK/AU/AU'},
+      {name:'Springen',attrs:'KK/GE/AU'},
+      {name:'Werfen',attrs:'KK/KK/GE'},
+      {name:'Balancieren',attrs:'GE/GE/AU'},
+    ]
+  },
+  aktionen: {
+    label: 'Aktionen',
+    talents: [
+      {name:'Erste Hilfe',attrs:'IN/GE/GE'},
+      {name:'Fahren',attrs:'GE/GE/MB'},
+      {name:'Reiten',attrs:'GE/GE/AU'},
+      {name:'Spurenlesen',attrs:'IN/MB/MB'},
+      {name:'Fliegen',attrs:'MB/GE/GE'},
+      {name:'Tiere Zähmen',attrs:'CH/IN/MB'},
+      {name:'Schlösser Knacken',attrs:'GE/GE/IN'},
+      {name:'Schleichen',attrs:'GE/GE/AU'},
+    ]
+  },
+  handwerk: {
+    label: 'Handwerk',
+    talents: [
+      {name:'Bogenbau',attrs:'GE/GE/IN'},
+      {name:'Schmieden',attrs:'GE/KK/GE'},
+      {name:'Tischlern',attrs:'GE/GE/KK'},
+      {name:'Maurern',attrs:'KK/KK/GE'},
+      {name:'Zeichnen',attrs:'GE/GE/MB'},
+      {name:'Mechanik',attrs:'GE/IN/IN'},
+      {name:'Technik',attrs:'MB/IN/IN'},
+    ]
+  },
+  kampf: {
+    label: 'Kampf',
+    talents: [
+      {name:'Nahkampfwaffe Spitz',attrs:''},
+      {name:'Nahkampfwaffe Scharf',attrs:''},
+      {name:'Nahkampfwaffe Stumpf',attrs:''},
+      {name:'Wurfwaffen',attrs:''},
+      {name:'Faustfeuerwaffen',attrs:''},
+      {name:'Langwaffen',attrs:''},
+      {name:'Spezialwaffen',attrs:''},
+      {name:'Bogenschießen',attrs:''},
+      {name:'Faustkampf / Kampfkünste',attrs:''},
+    ]
+  }
+};
+
+const ALL_TALENTS = [];
+for (const [cat, data] of Object.entries(TALENT_CATS)) {
+  for (const t of data.talents) ALL_TALENTS.push({cat, name: t.name});
+}
+
+const ATTR_TOTAL_POINTS = 14;
+const ATTR_MIN = 8;
+const ATTR_MAX = 19;
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+
+function defaultState() {
+  const talente = {};
+  for (const [cat, data] of Object.entries(TALENT_CATS)) {
+    talente[cat] = {};
+    for (const t of data.talents) talente[cat][t.name] = 0;
+  }
+  return {
+    grunddaten: {
+      name: '', geschlecht: 'männlich', beruf: '', alter: '', groesse: '',
+      hobby1: '', hobby2: '',
+      berufTalent: '', berufBonusCat: 'wissen', berufBonusPts: 0,
+      hobby1Talent: '', hobby2Talent: '',
+      spezPos1: '', spezNeg1Beruf: '', spezNeg2Hobby1: '', spezNeg3Frei: '',
+    },
+    attribute: { KK: 8, AU: 8, GE: 8, IN: 8, CH: 8, MB: 8 },
+    kampfwerte: { ATN: 0, PA: 0, ATD: 0, INI: 0 },
+    talente,
+    waffen: [],
+    notizen: ''
+  };
+}
+
+let S = defaultState();
+
+// ═══════════════════════════════════════════════════════
+// RULES / CALCULATIONS
+// ═══════════════════════════════════════════════════════
+
+function attrStepCost(fromVal) {
+  // cost to raise from fromVal to fromVal+1
+  const target = fromVal + 1;
+  if (target <= 14) return 1;
+  if (target <= 17) return 2;
+  return 3;
+}
+
+function totalAttrCost(val) {
+  let cost = 0;
+  for (let v = ATTR_MIN; v < val; v++) cost += attrStepCost(v);
+  return cost;
+}
+
+function attrPointsSpent() {
+  return Object.values(S.attribute).reduce((s, v) => s + totalAttrCost(v), 0);
+}
+
+function attrPointsLeft() {
+  return ATTR_TOTAL_POINTS - attrPointsSpent();
+}
+
+// Derived stats
+function calcLE() { return (S.attribute.KK + S.attribute.AU) * 3; }
+function calcGG() { return (S.attribute.AU + S.attribute.IN + S.attribute.MB) * 3; }
+
+// Talent available points per category
+function talentAvail(cat) {
+  let pts = 10; // base
+  const g = S.grunddaten;
+  // beruf bonus
+  if (g.berufBonusCat === cat) pts += Number(g.berufBonusPts || 0);
+  // beruf talent bonus
+  if (g.berufTalent && TALENT_CATS[cat] && TALENT_CATS[cat].talents.find(t => t.name === g.berufTalent)) pts += 5;
+  // hobby1
+  if (g.hobby1Talent && TALENT_CATS[cat] && TALENT_CATS[cat].talents.find(t => t.name === g.hobby1Talent)) pts += 5;
+  // hobby2
+  if (g.hobby2Talent && TALENT_CATS[cat] && TALENT_CATS[cat].talents.find(t => t.name === g.hobby2Talent)) pts += 3;
+  return pts;
+}
+
+function talentSpent(cat) {
+  const isKampf = cat === 'kampf';
+  return Object.values(S.talente[cat]).reduce((s, v) => s + (isKampf ? v * 2 : v), 0);
+}
+
+function talentLeft(cat) { return talentAvail(cat) - talentSpent(cat); }
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+
+function showTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.getAttribute('onclick').includes("'" + id + "'")) t.classList.add('active');
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════
+
+function render() {
+  renderPointsBar();
+  renderChecklist();
+  renderSheet();
+  renderTabCharakter();
+  renderTabAttribute();
+  for (const cat of Object.keys(TALENT_CATS)) renderTabTalent(cat);
+  renderTabWaffen();
+  renderTabNotizen();
+}
+
+// ── Points bar ──
+function renderPointsBar() {
+  const spent = attrPointsSpent();
+  const left = attrPointsLeft();
+  let html = `<div class="pb ${left < 0 ? 'over' : left === 0 ? 'ok' : ''}"><span class="lbl">Attribut-Punkte</span><span class="val">${spent}/${ATTR_TOTAL_POINTS}</span></div>`;
+  for (const cat of Object.keys(TALENT_CATS)) {
+    const s = talentSpent(cat);
+    const a = talentAvail(cat);
+    const l = a - s;
+    html += `<div class="pb ${l < 0 ? 'over' : l === 0 ? 'ok' : ''}"><span class="lbl">${TALENT_CATS[cat].label}</span><span class="val">${s}/${a}</span></div>`;
+  }
+  document.getElementById('points-bar').innerHTML = html;
+}
+
+// ── Checklist ──
+function renderChecklist() {
+  const g = S.grunddaten;
+  const attrDone = attrPointsSpent() === ATTR_TOTAL_POINTS;
+  const items = [
+    { done: !!g.name, label: 'Name' },
+    { done: !!g.beruf, label: 'Beruf' },
+    { done: attrDone, label: 'Attribute (14 Pkt)' },
+    { done: !!g.berufTalent, label: 'Beruf-Talent (+5)' },
+    { done: !!g.hobby1, label: 'Hobby 1' },
+    { done: !!g.hobby1Talent, label: 'Hobby1-Talent (+5)' },
+    { done: !!g.hobby2, label: 'Hobby 2' },
+    { done: !!g.hobby2Talent, label: 'Hobby2-Talent (+3)' },
+    { done: !!g.spezPos1, label: '+Spezifikum' },
+    { done: !!g.spezNeg1Beruf, label: '–Spez. Beruf' },
+    { done: !!g.spezNeg2Hobby1, label: '–Spez. Hobby1' },
+    { done: !!g.spezNeg3Frei, label: '–Spezifikum' },
+  ];
+  document.getElementById('checklist').innerHTML = items.map(i =>
+    `<div class="ci ${i.done ? 'done' : ''}"><div class="dot"></div><span>${i.label}</span></div>`
+  ).join('');
+}
+
+// ── Character Sheet Preview ──
+function renderSheet() {
+  const g = S.grunddaten;
+  const a = S.attribute;
+  const kw = S.kampfwerte;
+  const LE = calcLE();
+  const GG = calcGG();
+
+  let html = `<div class="cs-title">CHARAKTERBOGEN</div>`;
+
+  // Grunddaten
+  html += `<div class="cs-section">
+    <div class="cs-info">
+      <div class="cs-ir"><div class="cs-il">Name</div><div class="cs-iv">${esc(g.name) || '—'}</div></div>
+      <div class="cs-ir"><div class="cs-il">Geschlecht</div><div class="cs-iv">${g.geschlecht}</div></div>
+      <div class="cs-ir"><div class="cs-il">Beruf</div><div class="cs-iv">${esc(g.beruf) || '—'}</div></div>
+      <div class="cs-ir"><div class="cs-il">Alter / Größe</div><div class="cs-iv">${esc(g.alter) || '—'} / ${esc(g.groesse) || '—'} m</div></div>
+    </div>
+  </div>`;
+
+  // Attribute + Kampfwerte
+  html += `<div class="cs-section"><div class="cs-sh">ATTRIBUTE</div>
+    <div class="cs-attr">
+      ${csAttrCell('Körperkraft','KK', a.KK)}
+      ${csAttrCell('Attacke Nahkampf','ATN', kw.ATN)}
+      ${csAttrCell('Ausdauer','AU', a.AU)}
+      ${csAttrCell('Parade','PA', kw.PA)}
+      ${csAttrCell('Geschicklichkeit','GE', a.GE)}
+      ${csAttrCell('Attacke Distanz','ATD', kw.ATD)}
+      ${csAttrCell('Intelligenz','IN', a.IN)}
+      ${csAttrCell('Initiative','INI', kw.INI)}
+      ${csAttrCell('Charme','CH', a.CH)}
+      ${csAttrCell('Geistige Gesundheit','GG', GG)}
+      ${csAttrCell('Ment. Belastbarkeit','MB', a.MB)}
+      ${csAttrCell('Lebensenergie','LE', LE)}
+    </div>
+  </div>`;
+
+  // Talent categories
+  for (const [cat, data] of Object.entries(TALENT_CATS)) {
+    html += `<div class="cs-section"><div class="cs-sh">${data.label.toUpperCase()}</div>
+      <div class="cs-talents">
+        ${data.talents.map(t => {
+          const v = S.talente[cat][t.name];
+          return `<div class="cs-tr">
+            <div class="cs-tn">${t.name}</div>
+            ${t.attrs ? `<div class="cs-ta">(${t.attrs})</div>` : '<div class="cs-ta"></div>'}
+            <div class="cs-tv ${v > 0 ? 'has-val' : ''}">${v > 0 ? v : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Waffen
+  html += `<div class="cs-section"><div class="cs-sh">WAFFEN</div>
+    <table class="cs-waffen">
+      <tr><th>Waffe</th><th>Art</th><th>Attacke</th><th>Parade</th><th>Schaden</th></tr>
+      ${S.waffen.length ? S.waffen.map(w => `<tr>
+        <td>${esc(w.name)}</td><td>${esc(w.art)}</td><td>${esc(w.attacke)}</td><td>${esc(w.parade)}</td><td>${esc(w.schaden)}</td>
+      </tr>`).join('') : '<tr><td colspan="5" style="height:60px"></td></tr>'}
+    </table>
+  </div>`;
+
+  // Spezifika
+  html += `<div class="cs-section"><div class="cs-sh">SPEZIFIKA</div>
+    <div class="cs-spez">
+      ${g.spezPos1 ? `<div class="cs-spez-item"><span class="cs-spez-pos">+ </span>${esc(g.spezPos1)}</div>` : ''}
+      ${g.spezNeg1Beruf ? `<div class="cs-spez-item"><span class="cs-spez-neg">– </span>${esc(g.spezNeg1Beruf)} <em style="color:#888;font-size:10px">(Beruf)</em></div>` : ''}
+      ${g.spezNeg2Hobby1 ? `<div class="cs-spez-item"><span class="cs-spez-neg">– </span>${esc(g.spezNeg2Hobby1)} <em style="color:#888;font-size:10px">(Hobby 1)</em></div>` : ''}
+      ${g.spezNeg3Frei ? `<div class="cs-spez-item"><span class="cs-spez-neg">– </span>${esc(g.spezNeg3Frei)}</div>` : ''}
+      ${!g.spezPos1 && !g.spezNeg1Beruf && !g.spezNeg2Hobby1 && !g.spezNeg3Frei ? '<em style="color:#999">Noch keine Spezifika eingetragen</em>' : ''}
+    </div>
+  </div>`;
+
+  // Hobbys
+  html += `<div class="cs-section"><div class="cs-sh">HOBBYS</div>
+    <div class="cs-info">
+      <div class="cs-ir"><div class="cs-il">Hobby 1</div><div class="cs-iv">${esc(g.hobby1) || '—'}</div></div>
+      <div class="cs-ir"><div class="cs-il">Hobby 2</div><div class="cs-iv">${esc(g.hobby2) || '—'}</div></div>
+    </div>
+  </div>`;
+
+  // Notizen
+  html += `<div class="cs-section"><div class="cs-sh">NOTIZEN</div>
+    <div class="cs-spez" style="white-space:pre-wrap;min-height:60px">${esc(S.notizen) || ''}</div>
+  </div>`;
+
+  document.getElementById('sheet').innerHTML = html;
+}
+
+function csAttrCell(name, abbr, val) {
+  return `<div class="cs-ac">
+    <div class="cs-an"><span class="n">${name}</span><span class="a">(${abbr})</span></div>
+    <div class="cs-av">${val || '—'}</div>
+  </div>`;
+}
+
+// ── TAB: Charakter ──
+function renderTabCharakter() {
+  const g = S.grunddaten;
+  const allTalentOptions = () => {
+    let opts = '<option value="">– kein –</option>';
+    for (const [cat, data] of Object.entries(TALENT_CATS)) {
+      opts += `<optgroup label="${data.label}">`;
+      for (const t of data.talents) {
+        opts += `<option value="${esc(t.name)}">${t.name}</option>`;
+      }
+      opts += '</optgroup>';
+    }
+    return opts;
+  };
+
+  const catOptions = Object.entries(TALENT_CATS).map(([k,v]) =>
+    `<option value="${k}" ${g.berufBonusCat === k ? 'selected' : ''}>${v.label}</option>`
+  ).join('');
+
+  document.getElementById('tab-charakter').innerHTML = `
+    <div class="sec-title">Grunddaten</div>
+    <div class="fg"><label>Name</label><input type="text" value="${esc(g.name)}" oninput="S.grunddaten.name=this.value;render()"></div>
+    <div class="fg"><label>Geschlecht</label>
+      <div class="radio-row">
+        <label><input type="radio" name="geschl" value="männlich" ${g.geschlecht==='männlich'?'checked':''} onchange="S.grunddaten.geschlecht=this.value;render()"> männlich</label>
+        <label><input type="radio" name="geschl" value="weiblich" ${g.geschlecht==='weiblich'?'checked':''} onchange="S.grunddaten.geschlecht=this.value;render()"> weiblich</label>
+        <label><input type="radio" name="geschl" value="divers" ${g.geschlecht==='divers'?'checked':''} onchange="S.grunddaten.geschlecht=this.value;render()"> divers</label>
+      </div>
+    </div>
+    <div class="fg"><label>Beruf</label><input type="text" value="${esc(g.beruf)}" oninput="S.grunddaten.beruf=this.value;render()"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label>Alter</label><input type="number" min="1" value="${g.alter}" oninput="S.grunddaten.alter=this.value;render()"></div>
+      <div class="fg"><label>Größe (m)</label><input type="text" value="${esc(g.groesse)}" placeholder="1.75" oninput="S.grunddaten.groesse=this.value;render()"></div>
+    </div>
+
+    <div class="sec-title">Beruf – Talent &amp; Bonus</div>
+    <div class="fg">
+      <label>🏅 Beruf-Talent (+5 Punkte auf dieses Talent)</label>
+      <select onchange="S.grunddaten.berufTalent=this.value;render()">${allTalentOptions().replace(`value="${esc(g.berufTalent)}"`, `value="${esc(g.berufTalent)}" selected`)}</select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label>Beruf-Bonus Kategorie</label>
+        <select onchange="S.grunddaten.berufBonusCat=this.value;render()">${catOptions}</select>
+      </div>
+      <div class="fg">
+        <label>Beruf-Bonus Punkte</label>
+        <input type="number" min="0" value="${g.berufBonusPts}" oninput="S.grunddaten.berufBonusPts=Number(this.value);render()">
+      </div>
+    </div>
+
+    <div class="sec-title">Hobbys</div>
+    <div class="fg"><label>Hobby 1</label><input type="text" value="${esc(g.hobby1)}" oninput="S.grunddaten.hobby1=this.value;render()"></div>
+    <div class="fg">
+      <label>🔵 Hobby1-Talent (+5 Punkte)</label>
+      <select onchange="S.grunddaten.hobby1Talent=this.value;render()">${allTalentOptions().replace(`value="${esc(g.hobby1Talent)}"`, `value="${esc(g.hobby1Talent)}" selected`)}</select>
+    </div>
+    <div class="fg"><label>Hobby 2</label><input type="text" value="${esc(g.hobby2)}" oninput="S.grunddaten.hobby2=this.value;render()"></div>
+    <div class="fg">
+      <label>🟢 Hobby2-Talent (+3 Punkte)</label>
+      <select onchange="S.grunddaten.hobby2Talent=this.value;render()">${allTalentOptions().replace(`value="${esc(g.hobby2Talent)}"`, `value="${esc(g.hobby2Talent)}" selected`)}</select>
+    </div>
+
+    <div class="sec-title">Spezifika</div>
+    <div class="spez-box pos">
+      <div class="spez-lbl">+ Positives Spezifikum (1 freies)</div>
+      <input type="text" style="width:100%;padding:6px;background:#0d1424;border:1px solid #66bb6a;border-radius:4px;color:#dce3f0" value="${esc(g.spezPos1)}" placeholder="z.B. Eisennerven, Naturtalent…" oninput="S.grunddaten.spezPos1=this.value;render()">
+    </div>
+    <div class="spez-box neg">
+      <div class="spez-lbl">– Negatives Spezifikum: Beruf (mit Kategorie-Bonus)</div>
+      <input type="text" style="width:100%;padding:6px;background:#0d1424;border:1px solid #e57373;border-radius:4px;color:#dce3f0" value="${esc(g.spezNeg1Beruf)}" placeholder="z.B. Arroganz, Berufsrisiko…" oninput="S.grunddaten.spezNeg1Beruf=this.value;render()">
+    </div>
+    <div class="spez-box neg">
+      <div class="spez-lbl">– Negatives Spezifikum: Hobby 1 (kein Bonus)</div>
+      <input type="text" style="width:100%;padding:6px;background:#0d1424;border:1px solid #e57373;border-radius:4px;color:#dce3f0" value="${esc(g.spezNeg2Hobby1)}" placeholder="z.B. Risikofreudig, Ablenkung…" oninput="S.grunddaten.spezNeg2Hobby1=this.value;render()">
+    </div>
+    <div class="spez-box neg">
+      <div class="spez-lbl">– Negatives Spezifikum: frei</div>
+      <input type="text" style="width:100%;padding:6px;background:#0d1424;border:1px solid #e57373;border-radius:4px;color:#dce3f0" value="${esc(g.spezNeg3Frei)}" placeholder="z.B. Angst, Pech…" oninput="S.grunddaten.spezNeg3Frei=this.value;render()">
+    </div>
+  `;
+}
+
+// ── TAB: Attribute ──
+function renderTabAttribute() {
+  const a = S.attribute;
+  const left = attrPointsLeft();
+  const LE = calcLE();
+  const GG = calcGG();
+  const kw = S.kampfwerte;
+
+  let html = `<div style="background:#151f35;border:1px solid #e94560;border-radius:7px;padding:10px;margin-bottom:14px;font-size:13px">
+    <strong>Regeln:</strong> Jedes Attribut startet bei 8. Du hast <strong style="color:#4fc3f7">14 Punkte</strong> zu verteilen.<br>
+    Werte 15–17 kosten je 2 Pkte &nbsp;|&nbsp; Werte 18–19 kosten je 3 Pkte &nbsp;|&nbsp; Max: 19
+    <div style="margin-top:6px;font-size:14px">Verbleibende Punkte: <strong style="color:${left < 0 ? '#f44336' : left === 0 ? '#66bb6a' : '#4fc3f7'}">${left}</strong></div>
+  </div>`;
+
+  html += `<div class="sec-title">Grundattribute</div><div class="attr-grid">`;
+  const attrs = ['KK','AU','GE','IN','CH','MB'];
+  const attrNames = {KK:'Körperkraft',AU:'Ausdauer',GE:'Geschicklichkeit',IN:'Intelligenz',CH:'Charme',MB:'Mentale Belastbarkeit'};
+  for (const attr of attrs) {
+    const val = a[attr];
+    const cost = totalAttrCost(val);
+    const nextCost = val < ATTR_MAX ? attrStepCost(val) : '—';
+    const canUp = val < ATTR_MAX && left >= attrStepCost(val);
+    const canDown = val > ATTR_MIN;
+    html += `<div class="attr-card">
+      <div class="attr-lbl">${attrNames[attr]} (${attr})</div>
+      <div class="attr-row">
+        <button class="spin-btn" ${canDown ? '' : 'disabled'} onclick="changeAttr('${attr}',-1)">−</button>
+        <div class="attr-val">${val}</div>
+        <button class="spin-btn" ${canUp ? '' : 'disabled'} onclick="changeAttr('${attr}',1)">+</button>
+      </div>
+      <div class="attr-cost">Kosten: ${cost} Pkt | nächster Schritt: ${nextCost} Pkt</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="sec-title">Abgeleitete Werte</div>
+    <div style="background:#151f35;border:1px solid #1e2d4e;border-radius:7px;padding:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="font-size:13px">Lebensenergie (LE) = (KK + AU) × 3<br><strong style="color:#4fc3f7;font-size:18px">${LE}</strong></div>
+        <div style="font-size:13px">Geistige Gesundheit (GG) = (AU + IN + MB) × 3<br><strong style="color:#4fc3f7;font-size:18px">${GG}</strong></div>
+      </div>
+    </div>`;
+
+  html += `<div class="sec-title">Kampfwerte (manuell einstellbar)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${['ATN','PA','ATD','INI'].map(k => `
+        <div class="fg"><label>${k === 'ATN' ? 'Attacke Nahkampf (ATN)' : k === 'PA' ? 'Parade (PA)' : k === 'ATD' ? 'Attacke Distanz (ATD)' : 'Initiative (INI)'}</label>
+        <input type="number" min="0" value="${kw[k]}" oninput="S.kampfwerte['${k}']=Number(this.value);render()"></div>
+      `).join('')}
+    </div>`;
+
+  document.getElementById('tab-attribute').innerHTML = html;
+}
+
+// ── TAB: Talent category ──
+function renderTabTalent(cat) {
+  const data = TALENT_CATS[cat];
+  const g = S.grunddaten;
+  const left = talentLeft(cat);
+  const avail = talentAvail(cat);
+  const spent = talentSpent(cat);
+  const isKampf = cat === 'kampf';
+
+  let html = `<div style="background:#151f35;border:1px solid #e94560;border-radius:7px;padding:10px;margin-bottom:14px;font-size:13px">
+    Verfügbare Punkte: <strong style="color:#4fc3f7">${avail}</strong> &nbsp;|&nbsp;
+    Ausgegeben: <strong style="color:${left < 0 ? '#f44336' : '#dce3f0'}">${spent}</strong> &nbsp;|&nbsp;
+    Verbleibend: <strong style="color:${left < 0 ? '#f44336' : left === 0 ? '#66bb6a' : '#4fc3f7'}">${left}</strong>
+    ${isKampf ? '<br><span style="color:#ffb300">⚠ Kampftalente kosten je 2 Talentpunkte pro Punkt</span>' : ''}
+  </div>`;
+
+  html += `<div class="sec-title">${data.label}</div>`;
+
+  for (const t of data.talents) {
+    const val = S.talente[cat][t.name];
+    const isBeruf = g.berufTalent === t.name;
+    const isH1 = g.hobby1Talent === t.name;
+    const isH2 = g.hobby2Talent === t.name;
+    const costPerPt = isKampf ? 2 : 1;
+    const canUp = left >= costPerPt;
+    const canDown = val > 0;
+
+    let bonusLabel = '';
+    if (isBeruf) bonusLabel += ' <span style="color:#ffd54f">★ Beruf +5</span>';
+    if (isH1) bonusLabel += ' <span style="color:#4fc3f7">● Hobby1 +5</span>';
+    if (isH2) bonusLabel += ' <span style="color:#81c784">● Hobby2 +3</span>';
+
+    html += `<div class="talent-row">
+      <div class="tn">${t.name}${bonusLabel}</div>
+      ${t.attrs ? `<div class="ta">(${t.attrs})</div>` : '<div class="ta"></div>'}
+      <div class="t-ctrl">
+        <button ${canDown ? '' : 'disabled'} onclick="changeTalent('${cat}','${t.name.replace(/'/g,"\\'")}', -1)">−</button>
+        <div class="t-val">${val}</div>
+        <button ${canUp ? '' : 'disabled'} onclick="changeTalent('${cat}','${t.name.replace(/'/g,"\\'")}', 1)">+</button>
+      </div>
+      ${isKampf ? `<div class="t-cost" title="Kosten: ${val*2} Punkte">=${val*2}Pkt</div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('tab-' + cat).innerHTML = html;
+}
+
+// ── TAB: Waffen ──
+function renderTabWaffen() {
+  let html = `<div class="sec-title">Waffen</div>
+    <div class="waffe-hdr"><span>Waffe</span><span>Art</span><span>Attacke</span><span>Parade</span><span>Schaden</span><span></span></div>`;
+  S.waffen.forEach((w, i) => {
+    html += `<div class="waffe-input-row">
+      <input type="text" value="${esc(w.name)}" placeholder="Name" oninput="S.waffen[${i}].name=this.value;renderSheet()">
+      <input type="text" value="${esc(w.art)}" placeholder="Art" oninput="S.waffen[${i}].art=this.value;renderSheet()">
+      <input type="text" value="${esc(w.attacke)}" placeholder="ATK" oninput="S.waffen[${i}].attacke=this.value;renderSheet()">
+      <input type="text" value="${esc(w.parade)}" placeholder="PA" oninput="S.waffen[${i}].parade=this.value;renderSheet()">
+      <input type="text" value="${esc(w.schaden)}" placeholder="Schaden" oninput="S.waffen[${i}].schaden=this.value;renderSheet()">
+      <button class="waffe-del" onclick="S.waffen.splice(${i},1);renderTabWaffen();renderSheet()">✕</button>
+    </div>`;
+  });
+  html += `<button class="add-waffe-btn" onclick="S.waffen.push({name:'',art:'',attacke:'',parade:'',schaden:''});renderTabWaffen();renderSheet()">+ Waffe hinzufügen</button>`;
+  document.getElementById('tab-waffen').innerHTML = html;
+}
+
+// ── TAB: Notizen ──
+function renderTabNotizen() {
+  document.getElementById('tab-notizen').innerHTML = `
+    <div class="sec-title">Notizen</div>
+    <div class="fg"><textarea rows="20" style="min-height:400px" oninput="S.notizen=this.value;renderSheet()">${esc(S.notizen)}</textarea></div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════
+
+function changeAttr(attr, delta) {
+  const cur = S.attribute[attr];
+  const next = cur + delta;
+  if (next < ATTR_MIN || next > ATTR_MAX) return;
+  if (delta > 0 && attrPointsLeft() < attrStepCost(cur)) return;
+  S.attribute[attr] = next;
+  render();
+}
+
+function changeTalent(cat, name, delta) {
+  const cur = S.talente[cat][name];
+  const isKampf = cat === 'kampf';
+  const costPerPt = isKampf ? 2 : 1;
+  if (delta > 0 && talentLeft(cat) < costPerPt) return;
+  if (delta < 0 && cur <= 0) return;
+  S.talente[cat][name] = cur + delta;
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════
+
+function saveChar() {
+  try {
+    localStorage.setItem('tears_char', JSON.stringify(S));
+    showToast('Charakter gespeichert!', '#27ae60');
+  } catch(e) {
+    showToast('Fehler beim Speichern: ' + e.message, '#f44336');
+  }
+}
+
+function loadChar() {
+  try {
+    const raw = localStorage.getItem('tears_char');
+    if (!raw) { showToast('Kein gespeicherter Charakter gefunden.', '#ffb300'); return; }
+    const loaded = JSON.parse(raw);
+    // Merge to ensure all keys exist
+    S = deepMerge(defaultState(), loaded);
+    render();
+    showToast('Charakter geladen!', '#27ae60');
+  } catch(e) {
+    showToast('Fehler beim Laden: ' + e.message, '#f44336');
+  }
+}
+
+function resetChar() {
+  if (!confirm('Wirklich zurücksetzen? Alle Eingaben gehen verloren.')) return;
+  S = defaultState();
+  render();
+  showToast('Charakter zurückgesetzt.', '#ffb300');
+}
+
+function deepMerge(target, source) {
+  const out = Object.assign({}, target);
+  for (const k of Object.keys(source)) {
+    if (source[k] && typeof source[k] === 'object' && !Array.isArray(source[k])) {
+      out[k] = deepMerge(target[k] || {}, source[k]);
+    } else {
+      out[k] = source[k];
+    }
+  }
+  return out;
+}
+
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;background:${color};color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.4)`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+// Auto-load on start
+const saved = localStorage.getItem('tears_char');
+if (saved) {
+  try { S = deepMerge(defaultState(), JSON.parse(saved)); } catch(e) {}
+}
+
+render();
+
+// Auto-save every 30s
+setInterval(saveChar, 30000);
+</script>
+</body>
+</html>
