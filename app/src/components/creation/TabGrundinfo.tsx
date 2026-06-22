@@ -341,12 +341,15 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }:
       <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
       {stamp && (
         <span
-          className="absolute bottom-1.5 right-[-6px] text-[8px] font-bold uppercase tracking-wider px-3 py-0.5 rounded"
+          className="absolute text-[7px] font-bold uppercase tracking-widest px-6 py-0.5 pointer-events-none"
           style={{
-            backgroundColor: `${color}40`,
+            backgroundColor: `${color}50`,
             color,
-            transform: 'rotate(12deg)',
-            transformOrigin: 'bottom right',
+            bottom: 10,
+            right: -18,
+            transform: 'rotate(-45deg)',
+            transformOrigin: 'center',
+            whiteSpace: 'nowrap',
           }}
         >
           {stamp}
