@@ -5,7 +5,7 @@ import { attrPointsLeft, attrJobMin, stepCost } from '../../rules/attributeCost'
 import { calcDerived } from '../../rules/derivedValues';
 import type { AttributeKey } from '../../types/character';
 import { SpiderChart } from '../ui/SpiderChart';
-import type { SpiderAxis } from '../ui/SpiderChart';
+import type { SpiderAxis, HatchZone } from '../ui/SpiderChart';
 import { PointsBar } from '../ui/PointsBar';
 
 // ── 12 distinct colors ────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const ATTR_POSITIONS: Record<AttributeKey, {
   MB: { left: '16%', top: '28%', align: 'right',  tip: 'right' },
 };
 
-const PRIMARY_GRID = [5, 10, 14, 17];
+const PRIMARY_GRID = [8, 14, 17];
 
 // ── Combat attr layout ────────────────────────────────────────────────────────
 type TipDir = 'up' | 'down' | 'left' | 'right';
@@ -54,10 +54,10 @@ type CombatMeta = {
 };
 
 const COMBAT_META: CombatMeta[] = [
-  { key: 'ATN', color: C.ATN, left: '50%', top: '8%',  tip: 'down'  },
-  { key: 'PA',  color: C.PA,  left: '92%', top: '50%', tip: 'left'  },
-  { key: 'ATD', color: C.ATD, left: '50%', top: '92%', tip: 'up'    },
-  { key: 'INI', color: C.INI, left: '8%',  top: '50%', tip: 'right' },
+  { key: 'ATN', color: C.ATN, left: '50%', top: '12%', tip: 'down'  },
+  { key: 'PA',  color: C.PA,  left: '88%', top: '50%', tip: 'left'  },
+  { key: 'ATD', color: C.ATD, left: '50%', top: '88%', tip: 'up'    },
+  { key: 'INI', color: C.INI, left: '12%', top: '50%', tip: 'right' },
 ];
 
 // ── Colored tooltip helpers ───────────────────────────────────────────────────
@@ -150,7 +150,8 @@ function AttrControl({
       <div className={`flex items-center gap-1 ${pos.align === 'right' ? 'flex-row-reverse' : ''}`}>
         <button
           onClick={onDecrease} disabled={!canDec}
-          className="w-6 h-6 rounded border border-hairline text-muted text-sm leading-none hover:text-primary disabled:opacity-25 transition-colors active:scale-95 flex items-center justify-center"
+          className="w-6 h-6 rounded border text-sm leading-none transition-colors active:scale-95 flex items-center justify-center disabled:opacity-25"
+          style={{ borderColor: color + '88', color }}
         >−</button>
         <button
           onClick={onIncrease} disabled={!canInc}
@@ -246,10 +247,20 @@ export function Tab3Attributes({ charId }: { charId: string }) {
         {/* Primary radar */}
         <div
           className="relative overflow-visible shrink-0"
-          style={{ flex: '0 1 185px', minWidth: 140, aspectRatio: '3/4' }}
+          style={{ flex: '0 1 220px', minWidth: 160, aspectRatio: '3/4' }}
         >
           <div className="absolute" style={{ left: '18%', top: '24%', width: '64%', aspectRatio: '1' }}>
-            <SpiderChart axes={primaryAxes} size={115} gridValues={PRIMARY_GRID} showGridLabels chartId="primary" />
+            <SpiderChart
+              axes={primaryAxes}
+              size={140}
+              gridValues={PRIMARY_GRID}
+              showGridLabels
+              chartId="primary"
+              hatchZones={[
+                { from: 14, to: 17, color: '#E8A020', density: 'light' },
+                { from: 17, to: 19, color: '#C83030', density: 'dense' },
+              ] as HatchZone[]}
+            />
           </div>
 
           {RADAR_ORDER.map(key => {
@@ -274,12 +285,12 @@ export function Tab3Attributes({ charId }: { charId: string }) {
 
         {/* Right column: combat radar + LE/GG rows */}
         <div className="flex-1 flex flex-col gap-2">
-          <div className="relative overflow-visible shrink-0" style={{ height: 175 }}>
+          <div className="relative overflow-visible shrink-0" style={{ height: 145 }}>
             <div
               className="absolute"
               style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
             >
-              <SpiderChart axes={combatAxes} size={100} gridValues={[5, 10, 15]} showGridLabels={false} chartId="combat" />
+              <SpiderChart axes={combatAxes} size={85} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" />
             </div>
 
             {COMBAT_META.map(m => (

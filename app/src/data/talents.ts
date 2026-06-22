@@ -32,7 +32,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'koerperlich',
     label: 'Körperliche Talente',
-    color: '#D1453B',
+    color: '#E07040',
     tailwindColor: 'cat-physical',
     talents: [
       t('Ringen / Faustkampf',  'koerperlich', ''),
@@ -50,7 +50,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'motorisch',
     label: 'Motorische Talente',
-    color: '#3E7FCE',
+    color: '#28B4C0',
     tailwindColor: 'cat-motoric',
     talents: [
       t('Mechanik / Basteln',  'motorisch', 'KK/GE/GE'),
@@ -68,7 +68,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'geistig',
     label: 'Geistige Talente',
-    color: '#8C5FC4',
+    color: '#7C56D0',
     tailwindColor: 'cat-mental',
     talents: [
       t('Lesen / Schreiben',   'geistig', 'IN/IN/MB'),
@@ -86,7 +86,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'sozial',
     label: 'Soziale Talente',
-    color: '#D6B23E',
+    color: '#3CB870',
     tailwindColor: 'cat-social',
     talents: [
       t('Überreden',              'sozial', 'IN/CH/CH'),
@@ -104,7 +104,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'kampf',
     label: 'Kampf & Waffen',
-    color: '#7A2420',
+    color: '#C83030',
     tailwindColor: 'cat-combat',
     talents: [
       t('Wurfwaffen',              'kampf', ''),

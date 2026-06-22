@@ -6,19 +6,36 @@ export interface SpiderAxis {
   color: string;
 }
 
+export interface HatchZone {
+  from: number;
+  to: number;
+  color: string;
+  density: 'light' | 'dense';
+}
+
 interface SpiderChartProps {
   axes: SpiderAxis[];
   size?: number;
   gridValues?: number[];
   showGridLabels?: boolean;
   showAxisLabels?: boolean;
-  /** Namespace for gradient IDs — must be unique per page if multiple charts coexist */
   chartId?: string;
+  hatchZones?: HatchZone[];
+  labelGap?: number;
 }
 
 function point(cx: number, cy: number, r: number, i: number, n: number): [number, number] {
   const angle = ((i / n) * 360 - 90) * (Math.PI / 180);
   return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+}
+
+function ringPath(cx: number, cy: number, maxR: number, fracOuter: number, fracInner: number, n: number): string {
+  const outer = Array.from({ length: n }, (_, i) => point(cx, cy, maxR * fracOuter, i, n));
+  const inner = Array.from({ length: n }, (_, i) => point(cx, cy, maxR * fracInner, i, n));
+  // Outer ring clockwise, inner ring counter-clockwise → evenodd fills the band
+  const outerPath = outer.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ') + ' Z';
+  const innerPath = inner.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ') + ' Z';
+  return `${outerPath} ${innerPath}`;
 }
 
 export function SpiderChart({
@@ -28,6 +45,8 @@ export function SpiderChart({
   showGridLabels = false,
   showAxisLabels = false,
   chartId = 'sc',
+  hatchZones = [],
+  labelGap = 10,
 }: SpiderChartProps) {
   const n = axes.length;
   const cx = size / 2;
@@ -44,8 +63,6 @@ export function SpiderChart({
 
   const outerPoly = outerPts.map(p => p.join(',')).join(' ');
   const valuePoly = valuePts.map(p => p.join(',')).join(' ');
-
-  const LABEL_GAP = 10;
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible">
@@ -67,6 +84,25 @@ export function SpiderChart({
             </linearGradient>
           );
         })}
+
+        {hatchZones.map((zone, zi) => (
+          <pattern
+            key={zi}
+            id={`${chartId}-hatch-${zi}`}
+            patternUnits="userSpaceOnUse"
+            width={zone.density === 'dense' ? 4 : 7}
+            height={zone.density === 'dense' ? 4 : 7}
+            patternTransform="rotate(45)"
+          >
+            <line
+              x1="0" y1="0" x2="0"
+              y2={zone.density === 'dense' ? 4 : 7}
+              stroke={zone.color}
+              strokeWidth={zone.density === 'dense' ? 1.2 : 0.9}
+              strokeOpacity={zone.density === 'dense' ? 0.45 : 0.30}
+            />
+          </pattern>
+        ))}
       </defs>
 
       {/* Grid rings */}
@@ -80,6 +116,22 @@ export function SpiderChart({
             stroke="#2D303A"
             strokeWidth={frac === 1 ? 1.2 : 0.7}
             strokeDasharray={frac < 1 ? '2,3' : undefined}
+          />
+        );
+      })}
+
+      {/* Hatch zones (drawn before axis lines so they don't cover them) */}
+      {hatchZones.map((zone, zi) => {
+        const fracOuter = Math.min(1, zone.to / refMax);
+        const fracInner = Math.max(0, zone.from / refMax);
+        const d = ringPath(cx, cy, maxR, fracOuter, fracInner, n);
+        return (
+          <path
+            key={zi}
+            d={d}
+            fill={`url(#${chartId}-hatch-${zi})`}
+            fillRule="evenodd"
+            opacity={1}
           />
         );
       })}
@@ -132,7 +184,7 @@ export function SpiderChart({
 
       {/* Axis labels at tips */}
       {showAxisLabels && axes.map((ax, i) => {
-        const [lx, ly] = point(cx, cy, maxR + LABEL_GAP, i, n);
+        const [lx, ly] = point(cx, cy, maxR + labelGap, i, n);
         const dx = lx - cx;
         const dy_ = ly - cy;
         const anchor = dx < -3 ? 'end' : dx > 3 ? 'start' : 'middle';

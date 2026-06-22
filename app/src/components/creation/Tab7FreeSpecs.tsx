@@ -7,11 +7,11 @@ import type { Specification, TalentCategory } from '../../types/character';
 const CAT_ORDER: TalentCategory[] = ['koerperlich', 'motorisch', 'geistig', 'sozial', 'kampf'];
 
 const CAT_META: Record<TalentCategory, { label: string; color: string }> = {
-  koerperlich: { label: 'Körperliche Spezifika',    color: '#D1453B' },
-  motorisch:   { label: 'Motorische Spezifika',     color: '#3E7FCE' },
-  geistig:     { label: 'Geistige Spezifika',        color: '#8C5FC4' },
-  sozial:      { label: 'Soziale Spezifika',         color: '#D6B23E' },
-  kampf:       { label: 'Kampf- / Waffen Spezifika', color: '#7A2420' },
+  koerperlich: { label: 'Körperliche Spezifika',    color: '#E07040' },
+  motorisch:   { label: 'Motorische Spezifika',     color: '#28B4C0' },
+  geistig:     { label: 'Geistige Spezifika',        color: '#7C56D0' },
+  sozial:      { label: 'Soziale Spezifika',         color: '#3CB870' },
+  kampf:       { label: 'Kampf- / Waffen Spezifika', color: '#C83030' },
 };
 
 // ── Custom spec form ──────────────────────────────────────────────────────────
