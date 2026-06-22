@@ -9,6 +9,7 @@ import {
 } from '../../rules/talentBudget';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
 import { VARIABLE_PTS } from '../../data/professions';
+import { ATTR_MAP } from '../../data/attributes';
 import type { AttributeKey, TalentCategory } from '../../types/character';
 
 // ── Smooth TP health bar ─────────────────────────────────────────────────────
@@ -27,10 +28,6 @@ function TpBar({ left, total, color }: { left: number; total: number; color: str
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
-const ATTR_COLOR: Record<AttributeKey, string> = {
-  KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
-  CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
-};
 
 // ── Small info popup ──────────────────────────────────────────────────────────
 function InfoPop({ children }: { children: ReactNode }) {
@@ -172,11 +169,11 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
       className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      <CatIcon src={catIcon} size={32} />
+      <CatIcon src={catIcon} size={40} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] font-medium text-primary leading-tight truncate flex-1 min-w-0">
+          <span className="text-[12px] font-semibold leading-tight truncate flex-1 min-w-0" style={{ color: catColor }}>
             {talentName}
           </span>
           {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
@@ -184,10 +181,10 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
         <div className="flex items-center gap-1 mt-0.5">
           {isCombat
             ? <span className="text-[8px] font-mono text-faint">×2</span>
-            : attrs?.map((a, i) => (
-                <span key={i} className="text-[8px] font-mono font-bold leading-none"
-                  style={{ color: ATTR_COLOR[a as AttributeKey] }}>{a}</span>
-              ))
+            : attrs?.map((a, i) => {
+                const meta = ATTR_MAP[a as AttributeKey];
+                return <CatIcon key={i} src={meta?.icon ?? ''} size={16} />;
+              })
           }
         </div>
       </div>

@@ -648,18 +648,23 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       )}
 
       {/* ── Freie Spezifika ── */}
-      <SpecDisplayTile
-        spec={char.specFreeNegative}
-        placeholder="neg. Spezifikum wählen"
-
-        onClick={() => setFreeNegOverlay(true)}
-      />
-      <SpecDisplayTile
-        spec={char.specFreePositive}
-        placeholder="pos. Spezifikum wählen"
-
-        onClick={() => setFreePosOverlay(true)}
-      />
+      <div className="rounded-lg border border-hairline overflow-hidden">
+        <div className="px-3 py-1.5 bg-raised/60 border-b border-hairline">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Freie Spezifika</span>
+        </div>
+        <div className="p-3 space-y-2">
+          <SpecDisplayTile
+            spec={char.specFreeNegative}
+            placeholder="neg. Spezifikum wählen"
+            onClick={() => setFreeNegOverlay(true)}
+          />
+          <SpecDisplayTile
+            spec={char.specFreePositive}
+            placeholder="pos. Spezifikum wählen"
+            onClick={() => setFreePosOverlay(true)}
+          />
+        </div>
+      </div>
 
       {/* ── Overlays ── */}
       {genderOverlay && (
