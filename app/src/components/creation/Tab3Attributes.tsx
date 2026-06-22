@@ -251,7 +251,7 @@ export function Tab3Attributes({ charId }: { charId: string }) {
       {/* Attribute points bar with hover forecast */}
       <div className="flex items-center gap-2">
         <div className="flex-1">
-          <PointsBar total={ATTR_FREE} used={ATTR_FREE - pointsLeft} color="#7A8A9A" />
+          <PointsBar total={ATTR_FREE} used={pointsLeft} color="#7A8A9A" />
         </div>
         {hoverDelta !== 0 && (
           <span className={`text-xs font-mono font-bold shrink-0 transition-colors ${

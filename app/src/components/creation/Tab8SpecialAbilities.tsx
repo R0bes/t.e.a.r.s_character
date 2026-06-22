@@ -1,6 +1,6 @@
 import { useStore } from '../../store/useStore';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
-import { varPtsLeft, varPtsSpent } from '../../rules/talentBudget';
+import { varPtsLeft } from '../../rules/talentBudget';
 import { VARIABLE_PTS } from '../../data/professions';
 import { PointsBar } from '../ui/PointsBar';
 
@@ -11,7 +11,6 @@ export function Tab8SpecialAbilities({ charId }: { charId: string }) {
   if (!char) return null;
 
   const left = varPtsLeft(char);
-  const spent = varPtsSpent(char);
 
   function toggle(id: string) {
     const ability = SPECIAL_ABILITIES.find(a => a.id === id)!;
@@ -40,7 +39,7 @@ export function Tab8SpecialAbilities({ charId }: { charId: string }) {
             {left} / {VARIABLE_PTS}
           </span>
         </div>
-        <PointsBar total={VARIABLE_PTS} used={spent} color="#E8E1CF" />
+        <PointsBar total={VARIABLE_PTS} used={left} color="#E8E1CF" />
       </div>
 
       {/* Abilities */}

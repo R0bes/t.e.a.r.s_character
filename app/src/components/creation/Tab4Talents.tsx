@@ -2,9 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import {
-  talentAvailable, talentSpent, talentLeft, talentCanIncrease,
+  talentAvailable, talentLeft, talentCanIncrease,
   talentFixedBonus, talentSpecBonusBreakdown, BASE_TALENT_PTS,
-  varPtsLeft, varPtsSpent,
+  varPtsLeft,
 } from '../../rules/talentBudget';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
 import { VARIABLE_PTS } from '../../data/professions';
@@ -210,7 +210,6 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
 
   const catMeta = TALENT_CATEGORIES.find(c => c.key === catKey)!;
   const available = talentAvailable(char, catKey);
-  const spent     = talentSpent(char, catKey);
   const left      = talentLeft(char, catKey);
   const { job: jobBonus } = talentSpecBonusBreakdown(char, catKey);
 
@@ -243,7 +242,7 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
       <span className="text-xl leading-none shrink-0">{catMeta.icon}</span>
       <div className="flex-1 min-w-0" />
       <div className="w-16 shrink-0">
-        <PointsBar total={available} used={spent} color={catMeta.color} />
+        <PointsBar total={available} used={left} color={catMeta.color} blockSize={5} />
       </div>
       <span className={`font-mono text-sm font-bold shrink-0 ${
         left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
@@ -267,7 +266,6 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
   if (!char) return null;
 
   const left  = varPtsLeft(char);
-  const spent = varPtsSpent(char);
 
   function toggle(id: string) {
     const ability = SPECIAL_ABILITIES.find(a => a.id === id)!;
@@ -288,7 +286,7 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
           Besondere Fähigkeiten
         </span>
         <div className="w-16 shrink-0">
-          <PointsBar total={VARIABLE_PTS} used={spent} color="#E8E1CF" />
+          <PointsBar total={VARIABLE_PTS} used={left} color="#E8E1CF" />
         </div>
         <span className={`font-mono text-sm font-bold shrink-0 ${left < 0 ? 'text-danger' : 'text-paper'}`}>
           {left}/{VARIABLE_PTS}

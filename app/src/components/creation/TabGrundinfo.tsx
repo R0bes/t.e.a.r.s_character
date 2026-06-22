@@ -300,10 +300,12 @@ function TalentOverlay({
 }
 
 // ── Spec display tile ─────────────────────────────────────────────────────────
-function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
+function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }: {
   spec: Specification | null;
   placeholder: string;
   modifierIgnored?: boolean;
+  /** Source label shown as a rotated stamp in the bottom-right corner */
+  stamp?: string;
   onClick: () => void;
 }) {
   if (!spec) {
@@ -318,10 +320,11 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
   }
   const catMeta = TALENT_CAT_MAP[spec.category];
   const color   = catMeta.color;
+  const modSign = spec.modifier >= 0 ? '+' : '';
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90"
+      className="relative w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90 overflow-hidden"
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
       <div className="flex items-center justify-between mb-1">
@@ -332,10 +335,23 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
           </span>
         </div>
         <span className={`text-[10px] font-mono font-bold ml-2 shrink-0 ${modifierIgnored ? 'text-faint line-through' : 'text-danger'}`}>
-          +{spec.modifier}
+          {modSign}{spec.modifier}
         </span>
       </div>
-      <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
+      <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
+      {stamp && (
+        <span
+          className="absolute bottom-1.5 right-[-6px] text-[8px] font-bold uppercase tracking-wider px-3 py-0.5 rounded"
+          style={{
+            backgroundColor: `${color}40`,
+            color,
+            transform: 'rotate(12deg)',
+            transformOrigin: 'bottom right',
+          }}
+        >
+          {stamp}
+        </span>
+      )}
     </button>
   );
 }
@@ -553,6 +569,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           <SpecDisplayTile
             spec={char.specProfession}
             placeholder="neg. Spezifikum wählen"
+            stamp="Beruf"
             onClick={() => setSpecOverlay(true)}
           />
         </div>
@@ -595,6 +612,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   spec={char.specHobby1}
                   placeholder="neg. Spezifikum wählen"
                   modifierIgnored
+                  stamp="1. Hobby"
                   onClick={() => setH1SpecOverlay(true)}
                 />
               )}
@@ -641,11 +659,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       <SpecDisplayTile
         spec={char.specFreeNegative}
         placeholder="neg. Spezifikum wählen"
+        stamp="frei −"
         onClick={() => setFreeNegOverlay(true)}
       />
       <SpecDisplayTile
         spec={char.specFreePositive}
         placeholder="pos. Spezifikum wählen"
+        stamp="frei +"
         onClick={() => setFreePosOverlay(true)}
       />
 
