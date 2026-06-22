@@ -107,13 +107,14 @@ function levelIcon(effective: number): { icon: string; cls: string } | null {
 }
 
 // ── Talent tile (2-per-row) ───────────────────────────────────────────────────
-function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: {
+function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
   charId: string;
   talentName: string;
   attrs: readonly AttributeKey[] | null;
   costMul: 1 | 2;
   isCustom: boolean;
   catColor: string;
+  catIcon: string;
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
@@ -151,6 +152,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
 
       {/* Attr chips */}
       <div className="flex items-center gap-1 flex-wrap min-h-[11px]">
+        <span className="text-[9px] leading-none mr-0.5">{catIcon}</span>
         {isCombat
           ? <span className="text-[8px] font-mono text-faint">×2</span>
           : attrs?.map((a, i) => (
@@ -250,12 +252,12 @@ function CategorySection({ charId, catKey, isOpen, onOpen }: {
               {catMeta.talents.map(t => (
                 <TalentTile key={t.name} charId={charId} talentName={t.name}
                   attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
-                  catColor={catMeta.color} />
+                  catColor={catMeta.color} catIcon={catMeta.icon} />
               ))}
               {customInCat.map(ct => (
                 <TalentTile key={ct.name} charId={charId} talentName={ct.name}
                   attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
-                  catColor={catMeta.color} />
+                  catColor={catMeta.color} catIcon={catMeta.icon} />
               ))}
               {!showCustomForm && (
                 <AddTalentTile onClick={() => setShowCustomForm(true)} />

@@ -1,28 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { SPECIFICATIONS, getSpecsByCategory } from '../../data/specifications';
+import { SPECIFICATIONS } from '../../data/specifications';
+import { TALENT_CATEGORIES, TALENT_CAT_MAP } from '../../data/talents';
 import type { Specification, TalentCategory } from '../../types/character';
 
-// Same category order and colors as Tab4Talents
-const CAT_ORDER: TalentCategory[] = ['koerperlich', 'motorisch', 'geistig', 'sozial', 'kampf'];
-
-const CAT_META: Record<TalentCategory, { label: string; color: string }> = {
-  koerperlich: { label: 'Körperliche Spezifika',    color: '#E07040' },
-  motorisch:   { label: 'Motorische Spezifika',     color: '#28B4C0' },
-  geistig:     { label: 'Geistige Spezifika',        color: '#7C56D0' },
-  sozial:      { label: 'Soziale Spezifika',         color: '#3CB870' },
-  kampf:       { label: 'Kampf- / Waffen Spezifika', color: '#C83030' },
-};
-
 // ── Custom spec form ──────────────────────────────────────────────────────────
-function CustomSpecForm({ category, charId, onClose }: {
-  category: TalentCategory; charId: string; onClose: () => void;
-}) {
+function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => void }) {
   const patch = useStore(s => s.patchCharacter);
   const char  = useStore(s => s.characters.find(c => c.id === charId));
-  const [name, setName]         = useState('');
-  const [modifier, setModifier] = useState(5);
-  const [description, setDesc]  = useState('');
+  const [name, setName]       = useState('');
+  const [modifier, setMod]    = useState(5);
+  const [description, setDesc]= useState('');
+  const [category, setCat]    = useState<TalentCategory>('koerperlich');
 
   const exists = !!(
     char?.customSpecifications.find(s => s.name === name.trim()) ||
@@ -34,25 +23,43 @@ function CustomSpecForm({ category, charId, onClose }: {
     const spec: Specification = { name: name.trim(), modifier, description, category };
     patch(charId, c => {
       c.customSpecifications.push(spec);
-      if (modifier < 0 && !c.specFreePositive) c.specFreePositive = spec;
+      if (modifier < 0 && !c.specFreePositive)  c.specFreePositive  = spec;
       else if (modifier > 0 && !c.specFreeNegative) c.specFreeNegative = spec;
     });
     onClose();
   }
 
   return (
-    <div className="mt-1.5 bg-raised/40 rounded-lg p-3 space-y-2 border border-hairline/60">
+    <div className="bg-raised/40 rounded-lg p-3 space-y-2 border border-hairline/60">
       <p className="text-[10px] text-warn font-medium">Neues Spezifikum (SL-Absprache)</p>
       <input
         type="text" value={name} onChange={e => setName(e.target.value)}
         placeholder="Name des Spezifikums"
         className="w-full bg-bg border border-hairline rounded px-2 py-1.5 text-primary text-sm placeholder:text-faint focus:outline-none"
       />
+      {/* Category selector */}
+      <div className="flex gap-1 flex-wrap">
+        {TALENT_CATEGORIES.map(cat => (
+          <button
+            key={cat.key}
+            onClick={() => setCat(cat.key)}
+            className="flex items-center gap-1 px-2 py-1 rounded border text-[10px] transition-colors"
+            style={{
+              borderColor:      category === cat.key ? cat.color + 'AA' : '#2D303A',
+              backgroundColor:  category === cat.key ? cat.color + '20' : 'transparent',
+              color:            category === cat.key ? cat.color : '#8C8F99',
+            }}
+          >
+            <span className="text-[10px]">{cat.icon}</span>
+            <span>{cat.label.replace(' Talente', '').replace(' & Waffen', '')}</span>
+          </button>
+        ))}
+      </div>
       <div className="flex gap-2 items-center">
         <label className="text-[10px] text-faint shrink-0">Modifier:</label>
         <input
           type="number" value={modifier}
-          onChange={e => setModifier(Number(e.target.value))}
+          onChange={e => setMod(Number(e.target.value))}
           className="flex-1 bg-bg border border-hairline rounded px-2 py-1 text-primary text-sm font-mono focus:outline-none"
         />
         <span className={`text-[10px] shrink-0 ${modifier > 0 ? 'text-danger' : 'text-success'}`}>
@@ -78,19 +85,17 @@ function CustomSpecForm({ category, charId, onClose }: {
   );
 }
 
-// ── Spec tile (1-per-row, full width) ────────────────────────────────────────
-function SpecTile({ spec, isSelected, reservedAs, onToggle, catColor }: {
+// ── Single spec tile ──────────────────────────────────────────────────────────
+function SpecTile({ spec, isSelected, reservedAs, onToggle }: {
   spec: Specification;
   isSelected: boolean;
   reservedAs: 'beruf' | 'hobby' | null;
   onToggle: () => void;
-  catColor: string;
 }) {
+  const catMeta  = TALENT_CAT_MAP[spec.category];
+  const color    = catMeta.color;
   const isMalus  = spec.modifier > 0;
   const modColor = isMalus ? '#E83050' : '#4FA968';
-
-  const tileBg     = isSelected ? `${catColor}20` : `${catColor}0C`;
-  const tileBorder = isSelected ? `${catColor}60` : reservedAs ? '#2D303A44' : `${catColor}28`;
 
   return (
     <button
@@ -99,18 +104,24 @@ function SpecTile({ spec, isSelected, reservedAs, onToggle, catColor }: {
       className={`text-left w-full p-2.5 rounded-lg border transition-all ${
         reservedAs ? 'opacity-45 cursor-default' : 'hover:opacity-90'
       }`}
-      style={{ backgroundColor: tileBg, borderColor: tileBorder }}
+      style={{
+        backgroundColor: isSelected ? `${color}20` : `${color}0C`,
+        borderColor:     isSelected ? `${color}60` : reservedAs ? '#2D303A44' : `${color}28`,
+      }}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] font-semibold leading-tight" style={{ color: catColor }}>
-          {spec.name}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] leading-none shrink-0">{catMeta.icon}</span>
+          <span className="text-[11px] font-semibold leading-tight truncate" style={{ color }}>
+            {spec.name}
+          </span>
+        </div>
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
           <span className="text-[10px] font-mono font-bold" style={{ color: modColor }}>
             {isMalus ? '+' : ''}{spec.modifier}
           </span>
           {isSelected && <span className="text-[9px] text-paper font-bold">✓</span>}
-          {reservedAs && <span className="text-[8px] font-mono text-faint capitalize">{reservedAs}</span>}
+          {reservedAs  && <span className="text-[8px] font-mono text-faint capitalize">{reservedAs}</span>}
         </div>
       </div>
       <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
@@ -118,34 +129,21 @@ function SpecTile({ spec, isSelected, reservedAs, onToggle, catColor }: {
   );
 }
 
-// ── Add-spec tile (full width) ────────────────────────────────────────────────
-function AddSpecTile({ onClick, catColor }: { onClick: () => void; catColor: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed text-faint hover:text-muted transition-colors"
-      style={{ borderColor: `${catColor}40` }}
-    >
-      <span className="text-sm leading-none">+</span>
-      <span className="text-xs">Neues Spezifikum</span>
-    </button>
-  );
-}
-
-// ── Category section (accordion, matches Talent view) ─────────────────────────
-function SpecCategory({ catKey, charId, isOpen, onOpen }: {
-  catKey: TalentCategory; charId: string; isOpen: boolean; onOpen: () => void;
-}) {
+// ── Main ──────────────────────────────────────────────────────────────────────
+export function Tab7FreeSpecs({ charId }: { charId: string }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
   const [showForm, setShowForm] = useState(false);
 
   if (!char) return null;
 
-  const meta         = CAT_META[catKey];
-  const builtinSpecs = getSpecsByCategory(catKey) as Specification[];
-  const customSpecs  = char.customSpecifications.filter(s => s.category === catKey);
-  const allSpecs     = [...builtinSpecs, ...customSpecs];
+  // All specs: predefined (in category order) + custom
+  const allSpecs: Specification[] = [
+    ...TALENT_CATEGORIES.flatMap(cat =>
+      SPECIFICATIONS.filter(s => s.category === cat.key)
+    ),
+    ...char.customSpecifications,
+  ];
 
   function isSelected(name: string) {
     return char!.specFreePositive?.name === name || char!.specFreeNegative?.name === name;
@@ -153,7 +151,7 @@ function SpecCategory({ catKey, charId, isOpen, onOpen }: {
 
   function reservedAs(name: string): 'beruf' | 'hobby' | null {
     if (char!.specProfession?.name === name) return 'beruf';
-    if (char!.specHobby1?.name === name) return 'hobby';
+    if (char!.specHobby1?.name === name)     return 'hobby';
     return null;
   }
 
@@ -169,66 +167,31 @@ function SpecCategory({ catKey, charId, isOpen, onOpen }: {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden border border-hairline">
-      {/* Header — same pattern as Talent accordion */}
-      <button
-        onClick={onOpen}
-        className="w-full px-3 py-2.5 flex items-center gap-2 transition-colors hover:bg-white/5"
-        style={{ backgroundColor: `${meta.color}18` }}
-      >
-        <div className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-        <span className="flex-1 text-xs font-bold tracking-wider uppercase text-left" style={{ color: meta.color }}>
-          {meta.label}
-        </span>
-        <span className="text-faint text-xs shrink-0">{isOpen ? '▲' : '▼'}</span>
-      </button>
-
-      {/* Body — only when open */}
-      {isOpen && (
-        <div className="p-2 border-t border-hairline" style={{ backgroundColor: `${meta.color}06` }}>
-          <div className="grid grid-cols-3 gap-1.5">
-            {allSpecs.map(spec => (
-              <SpecTile
-                key={spec.name}
-                spec={spec}
-                isSelected={isSelected(spec.name)}
-                reservedAs={reservedAs(spec.name)}
-                onToggle={() => toggleSpec(spec)}
-                catColor={meta.color}
-              />
-            ))}
-            {!showForm && (
-              <AddSpecTile onClick={() => setShowForm(true)} catColor={meta.color} />
-            )}
-          </div>
-
-          {showForm && (
-            <CustomSpecForm category={catKey} charId={charId} onClose={() => setShowForm(false)} />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
-export function Tab7FreeSpecs({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [openCat, setOpenCat] = useState<TalentCategory>(CAT_ORDER[0]);
-
-  if (!char) return null;
-
-  return (
-    <div className="flex flex-col gap-3 p-4">
-      {CAT_ORDER.map(cat => (
-        <SpecCategory
-          key={cat}
-          catKey={cat}
-          charId={charId}
-          isOpen={openCat === cat}
-          onOpen={() => setOpenCat(cat)}
+    <div className="flex flex-col gap-1.5 p-4">
+      {allSpecs.map(spec => (
+        <SpecTile
+          key={spec.name}
+          spec={spec}
+          isSelected={isSelected(spec.name)}
+          reservedAs={reservedAs(spec.name)}
+          onToggle={() => toggleSpec(spec)}
         />
       ))}
+
+      {/* Single add tile at the end */}
+      {!showForm ? (
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors mt-1"
+        >
+          <span className="text-sm leading-none">+</span>
+          <span className="text-xs">Neues Spezifikum</span>
+        </button>
+      ) : (
+        <div className="mt-1">
+          <CustomSpecForm charId={charId} onClose={() => setShowForm(false)} />
+        </div>
+      )}
     </div>
   );
 }
