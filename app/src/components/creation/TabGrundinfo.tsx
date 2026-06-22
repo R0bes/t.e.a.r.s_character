@@ -315,7 +315,7 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
   }
   const catMeta  = TALENT_CAT_MAP[spec.category];
   const color    = catMeta.color;
-  const isMalus  = spec.modifier > 0;
+  const isMalus  = spec.modifier < 0;
   const modColor = isMalus ? '#E83050' : '#4FA968';
   return (
     <button
@@ -328,7 +328,7 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
         className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modifierIgnored ? 'line-through opacity-40' : ''}`}
         style={{ color: modifierIgnored ? '#8C8F99' : modColor }}
       >
-        {isMalus ? '+' : ''}{spec.modifier}
+        {spec.modifier > 0 ? '+' : ''}{spec.modifier}
         {modifierIgnored && (
           <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
         )}

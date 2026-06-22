@@ -92,7 +92,7 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
 }) {
   const catMeta  = TALENT_CAT_MAP[spec.category];
   const color    = catMeta.color;
-  const isMalus  = spec.modifier > 0;
+  const isMalus  = spec.modifier < 0;
   const modColor = isMalus ? '#E83050' : '#4FA968';
 
   const ribbonLabel = selectedAs
@@ -118,7 +118,7 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
         className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modIgnored ? 'line-through opacity-40' : ''}`}
         style={{ color: modColor }}
       >
-        {isMalus ? '+' : ''}{spec.modifier}
+        {spec.modifier > 0 ? '+' : ''}{spec.modifier}
         {modIgnored && (
           <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
         )}
@@ -184,7 +184,7 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
   }
 
   function toggleSpec(spec: Specification) {
-    const isMalus = spec.modifier > 0;
+    const isMalus = spec.modifier < 0;
     const alreadySelected = !!selectedAs(spec.name);
     patch(charId, c => {
       if (isMalus) {

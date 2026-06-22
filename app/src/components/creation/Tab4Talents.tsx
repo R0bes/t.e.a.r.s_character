@@ -169,23 +169,21 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
       className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      <CatIcon src={catIcon} size={40} />
+      <CatIcon src={catIcon} size={28} />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          <span className="text-[12px] font-semibold leading-tight truncate flex-1 min-w-0" style={{ color: catColor }}>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[14px] font-semibold leading-tight truncate" style={{ color: catColor }}>
             {talentName}
           </span>
-          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
-        </div>
-        <div className="flex items-center gap-1 mt-0.5">
           {isCombat
-            ? <span className="text-[8px] font-mono text-faint">×2</span>
+            ? <span className="text-[8px] font-mono text-faint shrink-0">×2</span>
             : attrs?.map((a, i) => {
                 const meta = ATTR_MAP[a as AttributeKey];
-                return <CatIcon key={i} src={meta?.icon ?? ''} size={16} />;
+                return <CatIcon key={i} src={meta?.icon ?? ''} size={32} />;
               })
           }
+          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
         </div>
       </div>
 
