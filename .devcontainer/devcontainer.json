@@ -10,6 +10,7 @@
     }
   },
   "postCreateCommand": "cd app && npm install",
+  "postStartCommand": ".devcontainer/start-dev-server.sh",
   "customizations": {
     "vscode": {
       "extensions": [
