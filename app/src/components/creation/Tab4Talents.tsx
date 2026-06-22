@@ -177,7 +177,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
       className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      <CatIcon src={catIcon} size={16} />
+      <CatIcon src={catIcon} size={32} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">

@@ -126,7 +126,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                   style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <CatIcon src={prof.icon} size={20} />
+                    <CatIcon src={prof.icon} size={60} />
                     <span className="text-xs font-medium leading-tight text-primary">{prof.label}</span>
                   </div>
                   <div className="flex flex-wrap gap-x-2 gap-y-0.5">
@@ -212,7 +212,7 @@ function SpecOverlay({
                   >
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5">
-                        <CatIcon src={cat.icon} size={16} />
+                        <CatIcon src={cat.icon} size={32} />
                         <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
                           {spec.name}
                         </span>
@@ -275,7 +275,7 @@ function TalentOverlay({
                   }}
                 >
                   <div className="flex items-center gap-1.5">
-                    <CatIcon src={cat.icon} size={16} />
+                    <CatIcon src={cat.icon} size={32} />
                     <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
                       {t.name}
                     </span>
@@ -320,7 +320,7 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }:
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <CatIcon src={catMeta.icon} size={16} />
+          <CatIcon src={catMeta.icon} size={32} />
           <span className="text-[11px] font-semibold leading-tight" style={{ color }}>
             {spec.name}
           </span>
@@ -377,7 +377,7 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
       <div className="flex items-center gap-1.5">
-        {catMeta && <CatIcon src={catMeta.icon} size={16} />}
+        {catMeta && <CatIcon src={catMeta.icon} size={32} />}
         <span className="text-[11px] font-semibold" style={{ color }}>{talentName}</span>
         <span className="text-[9px] font-mono text-paper/60 ml-auto shrink-0">+{bonus}</span>
       </div>
@@ -518,7 +518,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               style={{ backgroundColor: (profColor ?? '#888') + '18', borderColor: (profColor ?? '#888') + '80' }}
             >
               <div className="flex items-center gap-2 mb-2">
-                <CatIcon src={selectedProf.icon} size={20} />
+                <CatIcon src={selectedProf.icon} size={60} />
                 <span className="text-sm font-medium text-primary">{selectedProf.label}</span>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5">

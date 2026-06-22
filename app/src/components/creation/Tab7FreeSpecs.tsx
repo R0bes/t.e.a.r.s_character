@@ -118,7 +118,7 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <CatIcon src={catMeta.icon} size={16} />
+          <CatIcon src={catMeta.icon} size={32} />
           <span className="text-[11px] font-semibold leading-tight truncate" style={{ color }}>
             {spec.name}
           </span>
