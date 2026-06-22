@@ -310,7 +310,7 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
     return (
       <button
         onClick={onClick}
-        className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
+        className="w-full text-center px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
       >
         {placeholder}
       </button>
@@ -351,7 +351,7 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
     return (
       <button
         onClick={onClick}
-        className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
+        className="w-full text-center px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
       >
         {placeholder}
       </button>
@@ -668,6 +668,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <SpecOverlay
           value={char.specProfession}
           customSpecs={char.customSpecifications}
+          excludeNames={[char.specHobby1?.name, char.specFreeNegative?.name].filter(Boolean) as string[]}
           onSelect={spec => saveSpec(patch, charId, 'specProfession', spec)}
           onClose={() => setSpecOverlay(false)}
         />
@@ -705,6 +706,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           value={char.specHobby1}
           customSpecs={char.customSpecifications}
           filterCategory={hobby1Category}
+          excludeNames={[char.specProfession?.name, char.specFreeNegative?.name].filter(Boolean) as string[]}
           onSelect={spec => saveSpec(patch, charId, 'specHobby1', spec)}
           onClose={() => setH1SpecOverlay(false)}
         />
