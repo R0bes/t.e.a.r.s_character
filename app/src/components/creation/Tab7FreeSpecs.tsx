@@ -116,23 +116,22 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
         borderColor:     isActive ? `${color}60` : `${color}28`,
       }}
     >
-      <div className="flex items-start gap-2.5">
+      {/* modifier pinned top-right */}
+      <span
+        className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modIgnored ? 'line-through opacity-40' : ''}`}
+        style={{ color: modColor }}
+      >
+        {isMalus ? '+' : ''}{spec.modifier}
+        {modIgnored && (
+          <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+        )}
+      </span>
+      <div className="flex items-start gap-2.5 pr-10">
         <CatIcon src={catMeta.icon} size={32} className="shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0 pr-8">
-          <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-[13px] font-semibold leading-tight truncate" style={{ color }}>
-              {spec.name}
-            </span>
-            <span
-              className={`text-[12px] font-mono font-bold shrink-0 relative ${modIgnored ? 'line-through opacity-40' : ''}`}
-              style={{ color: modColor }}
-            >
-              {isMalus ? '+' : ''}{spec.modifier}
-              {modIgnored && (
-                <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
-              )}
-            </span>
-          </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold leading-tight truncate block mb-0.5" style={{ color }}>
+            {spec.name}
+          </span>
           <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
         </div>
       </div>

@@ -315,35 +315,46 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }:
       </button>
     );
   }
-  const catMeta = TALENT_CAT_MAP[spec.category];
-  const color   = catMeta.color;
-  const modSign = spec.modifier >= 0 ? '+' : '';
+  const catMeta  = TALENT_CAT_MAP[spec.category];
+  const color    = catMeta.color;
+  const isMalus  = spec.modifier > 0;
+  const modColor = isMalus ? '#E83050' : '#4FA968';
   return (
     <button
       onClick={onClick}
       className="relative w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90 overflow-hidden"
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <CatIcon src={catMeta.icon} size={32} />
-          <span className="text-[11px] font-semibold leading-tight" style={{ color }}>
+      {/* modifier pinned top-right */}
+      <span
+        className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modifierIgnored ? 'line-through opacity-40' : ''}`}
+        style={{ color: modifierIgnored ? '#8C8F99' : modColor }}
+      >
+        {isMalus ? '+' : ''}{spec.modifier}
+        {modifierIgnored && (
+          <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+        )}
+      </span>
+      <div className="flex items-start gap-2.5 pr-10">
+        <CatIcon src={catMeta.icon} size={32} className="shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold leading-tight block mb-0.5" style={{ color }}>
             {spec.name}
           </span>
+          <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
         </div>
-        <span className={`text-[10px] font-mono font-bold ml-2 shrink-0 ${modifierIgnored ? 'text-faint line-through' : 'text-danger'}`}>
-          {modSign}{spec.modifier}
-        </span>
       </div>
-      <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
       {stamp && (
         <span
-          className="absolute text-[7px] font-bold uppercase tracking-widest px-6 py-0.5 pointer-events-none"
+          className="absolute pointer-events-none"
           style={{
+            bottom: 8, right: -22,
+            width: 72, textAlign: 'center',
+            fontSize: 7, fontWeight: 700,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '2px 0',
             backgroundColor: `${color}50`,
             color,
-            bottom: 10,
-            right: -18,
             transform: 'rotate(-45deg)',
             transformOrigin: 'center',
             whiteSpace: 'nowrap',
@@ -379,13 +390,13 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90"
+      className="relative w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90 overflow-hidden"
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
-      <div className="flex items-center gap-1.5">
+      <span className="absolute top-2 right-2.5 text-[12px] font-mono font-bold" style={{ color }}>+{bonus}</span>
+      <div className="flex items-center gap-1.5 pr-10">
         {catMeta && <CatIcon src={catMeta.icon} size={32} />}
-        <span className="text-[11px] font-semibold" style={{ color }}>{talentName}</span>
-        <span className="text-[9px] font-mono text-paper/60 ml-auto shrink-0">+{bonus}</span>
+        <span className="text-[13px] font-semibold" style={{ color }}>{talentName}</span>
       </div>
     </button>
   );
