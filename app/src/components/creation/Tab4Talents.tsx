@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
+import { CatIcon } from '../ui/CatIcon';
 import {
   talentAvailable, talentLeft, talentCanIncrease,
   talentFixedBonus, talentSpecBonusBreakdown, BASE_TALENT_PTS,
@@ -176,7 +177,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
       className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      <span className="text-[10px] leading-none shrink-0">{catIcon}</span>
+      <CatIcon src={catIcon} size={16} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
@@ -273,7 +274,7 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
       className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 first:mt-0"
       style={{ backgroundColor: `${catMeta.color}18`, borderColor: `${catMeta.color}40` }}
     >
-      <span className="text-xl leading-none shrink-0">{catMeta.icon}</span>
+      <CatIcon src={catMeta.icon} size={28} />
       <div className="flex-1 min-w-0" />
       <div className="w-20 shrink-0">
         <TpBar left={left} total={available} color={catMeta.color} />
@@ -388,7 +389,8 @@ export function Tab4Talents({ charId }: { charId: string }) {
                 onClick={() => setOpenCustomForm(cat.key)}
                 className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
               >
-                <span className="text-xs">{cat.icon} Talent anlegen</span>
+                <CatIcon src={cat.icon} size={14} />
+                <span className="text-xs">Talent anlegen</span>
               </button>
             )}
           </div>

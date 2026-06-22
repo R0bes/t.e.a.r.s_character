@@ -17,11 +17,11 @@ export interface TalentCategoryMeta {
 }
 
 export const CAT_ICONS: Record<TalentCategory, string> = {
-  koerperlich: '💪',
-  motorisch:   '⚙️',
-  geistig:     '🧠',
-  sozial:      '🗣️',
-  kampf:       '⚔️',
+  koerperlich: '/icons/attr/koerperlich.png',
+  motorisch:   '/icons/attr/motorisch.png',
+  geistig:     '/icons/attr/geistig.png',
+  sozial:      '/icons/attr/sozial.png',
+  kampf:       '/icons/attr/kampf.png',
 };
 
 function t(
@@ -43,7 +43,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
     label: 'Körperliche Talente',
     color: '#E07040',
     tailwindColor: 'cat-physical',
-    icon: '💪',
+    icon: '/icons/attr/koerperlich.png',
     talents: [
       t('Ringen / Faustkampf',  'koerperlich', ''),
       t('Nahkampfwaffen stumpf', 'koerperlich', ''),
@@ -62,7 +62,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
     label: 'Motorische Talente',
     color: '#28B4C0',
     tailwindColor: 'cat-motoric',
-    icon: '⚙️',
+    icon: '/icons/attr/motorisch.png',
     talents: [
       t('Mechanik / Basteln',  'motorisch', 'KK/GE/GE'),
       t('Feuer machen',        'motorisch', 'GE/GE/IN'),
@@ -81,7 +81,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
     label: 'Geistige Talente',
     color: '#7C56D0',
     tailwindColor: 'cat-mental',
-    icon: '🧠',
+    icon: '/icons/attr/geistig.png',
     talents: [
       t('Lesen / Schreiben',   'geistig', 'IN/IN/MB'),
       t('Mathematik',          'geistig', 'IN/IN/MB'),
@@ -100,7 +100,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
     label: 'Soziale Talente',
     color: '#3CB870',
     tailwindColor: 'cat-social',
-    icon: '🗣️',
+    icon: '/icons/attr/sozial.png',
     talents: [
       t('Überreden',              'sozial', 'IN/CH/CH'),
       t('Menschenkenntnis',       'sozial', 'IN/CH/CH'),
@@ -119,7 +119,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
     label: 'Kampf & Waffen',
     color: '#C83030',
     tailwindColor: 'cat-combat',
-    icon: '⚔️',
+    icon: '/icons/attr/kampf.png',
     talents: [
       t('Wurfwaffen',              'kampf', ''),
       t('Klingenwaffen',           'kampf', ''),

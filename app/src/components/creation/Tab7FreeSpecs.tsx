@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore';
 import { SPECIFICATIONS } from '../../data/specifications';
 import { TALENT_CATEGORIES, TALENT_CAT_MAP } from '../../data/talents';
 import type { Specification, TalentCategory } from '../../types/character';
+import { CatIcon } from '../ui/CatIcon';
 
 // ── Custom spec form ──────────────────────────────────────────────────────────
 function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => void }) {
@@ -50,7 +51,7 @@ function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => vo
               color:            category === cat.key ? cat.color : '#8C8F99',
             }}
           >
-            <span className="text-[10px]">{cat.icon}</span>
+            <CatIcon src={cat.icon} size={14} />
             <span>{cat.label.replace(' Talente', '').replace(' & Waffen', '')}</span>
           </button>
         ))}
@@ -117,7 +118,7 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[11px] leading-none shrink-0">{catMeta.icon}</span>
+          <CatIcon src={catMeta.icon} size={16} />
           <span className="text-[11px] font-semibold leading-tight truncate" style={{ color }}>
             {spec.name}
           </span>
