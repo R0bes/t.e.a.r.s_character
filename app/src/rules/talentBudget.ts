@@ -30,7 +30,7 @@ export function talentSpecBonus(character: Character, cat: TalentCategory): numb
   const specs = [character.specProfession, character.specFreePositive, character.specFreeNegative];
   for (const spec of specs) {
     if (spec && spec.category === cat) {
-      bonus -= spec.modifier; // modifier>0 = malus → reduce pts; modifier<0 = bonus → add pts
+      bonus += spec.modifier; // modifier>0 = neg. spec (malus) → +TP compensation; modifier<0 = pos. spec → costs TP
     }
   }
   return bonus;
@@ -87,3 +87,11 @@ export function talentCanDecrease(character: Character, talentName: string): boo
 
 // Re-export for components that need it
 export { getCategoryOf };
+
+export function talentSpecBonusBreakdown(character: Character, cat: TalentCategory): {
+  job: number; spec: number; total: number;
+} {
+  const job  = talentJobPts(character, cat);
+  const spec = talentSpecBonus(character, cat);
+  return { job, spec, total: BASE_TALENT_PTS + job + spec };
+}

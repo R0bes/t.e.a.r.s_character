@@ -3,13 +3,13 @@ import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import {
   talentAvailable, talentSpent, talentLeft, talentCanIncrease,
-  talentFixedBonus, talentJobPts, BASE_TALENT_PTS,
+  talentFixedBonus, talentSpecBonusBreakdown,
   varPtsLeft, varPtsSpent,
 } from '../../rules/talentBudget';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
-import { VARIABLE_PTS } from '../../data/professions';
 import type { AttributeKey, TalentCategory } from '../../types/character';
 import { PointsBar } from '../ui/PointsBar';
+import { VARIABLE_PTS } from '../../data/professions';
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
@@ -106,7 +106,7 @@ function levelIcon(effective: number): { icon: string; cls: string } | null {
   return                       { icon: '★', cls: 'text-success'  };
 }
 
-// ── Talent tile (2-per-row) ───────────────────────────────────────────────────
+// ── Talent row (single per row) ───────────────────────────────────────────────
 function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
   charId: string;
   talentName: string;
@@ -138,45 +138,47 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
 
   return (
     <div
-      className="flex flex-col gap-1.5 p-2 rounded-lg border transition-colors"
+      className="flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      {/* Name + icon row */}
-      <div className="flex items-start gap-1">
-        <span className="text-[9px] leading-none shrink-0 mt-0.5">{catIcon}</span>
-        <span className="text-[11px] font-medium text-primary leading-tight line-clamp-2 flex-1 min-w-0">
-          {talentName}
-        </span>
-        {lvIcon && <span className={`text-[9px] shrink-0 leading-none ${lvIcon.cls}`}>{lvIcon.icon}</span>}
-        {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
+      {/* Icon */}
+      <span className="text-[10px] leading-none shrink-0">{catIcon}</span>
+
+      {/* Name + attr chips */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] font-medium text-primary leading-tight truncate flex-1 min-w-0">
+            {talentName}
+          </span>
+          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
+          {lvIcon && <span className={`text-[9px] shrink-0 leading-none ${lvIcon.cls}`}>{lvIcon.icon}</span>}
+          {isProfTal && <span className="text-[7px] font-mono text-paper/50 shrink-0">Beruf</span>}
+          {isHobby1  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H1</span>}
+          {isHobby2  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H2</span>}
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
+          {isCombat
+            ? <span className="text-[8px] font-mono text-faint">×2</span>
+            : attrs?.map((a, i) => (
+                <span key={i} className="text-[8px] font-mono font-bold leading-none"
+                  style={{ color: ATTR_COLOR[a as AttributeKey] }}>{a}</span>
+              ))
+          }
+        </div>
       </div>
 
-      {/* Attr chips */}
-      <div className="flex items-center gap-1 flex-wrap min-h-[11px]">
-        {isCombat
-          ? <span className="text-[8px] font-mono text-faint">×2</span>
-          : attrs?.map((a, i) => (
-              <span key={i} className="text-[8px] font-mono font-bold leading-none"
-                style={{ color: ATTR_COLOR[a as AttributeKey] }}>{a}</span>
-            ))
-        }
-        {isProfTal && <span className="text-[7px] font-mono text-paper/60 ml-auto">Beruf</span>}
-        {isHobby1  && <span className="text-[7px] font-mono text-paper/60 ml-auto">H1</span>}
-        {isHobby2  && <span className="text-[7px] font-mono text-paper/60 ml-auto">H2</span>}
-      </div>
-
-      {/* Stepper — shows effective total directly */}
-      <div className="flex items-center justify-between mt-auto">
+      {/* Stepper */}
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
           disabled={!canDec}
-          className="w-5 h-5 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
         >−</button>
-        <span className="text-sm font-mono font-bold text-primary">{effective}</span>
+        <span className="text-sm font-mono font-bold text-primary w-6 text-center">{effective}</span>
         <button
           onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
           disabled={!canInc}
-          className="w-5 h-5 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
         >+</button>
       </div>
     </div>
@@ -188,10 +190,10 @@ function AddTalentTile({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors min-h-[60px]"
+      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
     >
-      <span className="text-base leading-none">+</span>
-      <span className="text-[8px] text-center leading-tight">Eigenes{'\n'}Talent</span>
+      <span className="text-sm leading-none">+</span>
+      <span className="text-xs">Eigenes Talent</span>
     </button>
   );
 }
@@ -209,12 +211,14 @@ function CategorySection({ charId, catKey, isOpen, onOpen }: {
   const available   = talentAvailable(char, catKey);
   const spent       = talentSpent(char, catKey);
   const left        = talentLeft(char, catKey);
-  const jobBonus    = talentJobPts(char, catKey);
+  const { job: jobBonus, spec: specBonus } = talentSpecBonusBreakdown(char, catKey);
   const customInCat = char.customTalents.filter(t => t.category === catKey);
 
-  const budgetLabel = jobBonus > 0
-    ? `${BASE_TALENT_PTS}+${jobBonus}=${available}`
-    : `${available}`;
+  // Build breakdown string: "10 + 30 (Beruf) + 5 (Spez) = 45"
+  const parts: string[] = ['10'];
+  if (jobBonus !== 0)  parts.push(`${jobBonus > 0 ? '+' : ''}${jobBonus} (Beruf)`);
+  if (specBonus !== 0) parts.push(`${specBonus > 0 ? '+' : ''}${specBonus} (Spez)`);
+  const budgetLabel = parts.length > 1 ? `${parts.join(' ')} = ${available}` : `${available}`;
 
   return (
     <div className="rounded-lg overflow-hidden border border-hairline">
@@ -228,9 +232,7 @@ function CategorySection({ charId, catKey, isOpen, onOpen }: {
           <span className="text-xs font-bold tracking-wider uppercase" style={{ color: catMeta.color }}>
             {catMeta.label}
           </span>
-          {jobBonus > 0 && (
-            <span className="ml-1.5 text-[9px] text-faint">{budgetLabel}</span>
-          )}
+          <span className="ml-1.5 text-[9px] text-faint">{budgetLabel}</span>
         </div>
         <span className={`font-mono text-sm font-bold ${
           left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
@@ -246,7 +248,7 @@ function CategorySection({ charId, catKey, isOpen, onOpen }: {
             <PointsBar total={available} used={spent} color={catMeta.color} />
           </div>
           <div className="p-2 bg-bg/60">
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex flex-col gap-1.5">
               {catMeta.talents.map(t => (
                 <TalentTile key={t.name} charId={charId} talentName={t.name}
                   attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}

@@ -45,9 +45,9 @@ const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
 };
 
 const GENDER_OPTIONS = [
-  { key: 'weiblich', symbol: '♀', label: 'Weiblich' },
-  { key: 'männlich', symbol: '♂', label: 'Männlich' },
-  { key: 'divers',   symbol: '⚥', label: 'Divers'   },
+  { key: 'weiblich', symbol: '♀' },
+  { key: 'männlich', symbol: '♂' },
+  { key: 'divers',   symbol: '⚥' },
 ];
 
 function saveSpec(
@@ -89,18 +89,71 @@ function GenderOverlay({ value, onSelect, onClose }: {
               <button
                 key={g.key}
                 onClick={() => { onSelect(g.key); onClose(); }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg border transition-all hover:opacity-90"
+                className="w-full flex items-center justify-center gap-4 px-4 py-5 rounded-lg border transition-all hover:opacity-90"
                 style={{
                   backgroundColor: selected ? '#B8B8C020' : '#B8B8C00A',
                   borderColor:     selected ? '#B8B8C070' : '#2D303A',
                 }}
               >
-                <span className="text-3xl leading-none">{g.symbol}</span>
-                <span className="text-sm font-medium text-primary">{g.label}</span>
+                <span className="text-4xl leading-none">{g.symbol}</span>
                 {selected && <span className="text-[10px] text-paper font-bold ml-auto">✓</span>}
               </button>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Profession Category Overlay ───────────────────────────────────────────────
+function ProfCatOverlay({ value, onSelect, onClose }: {
+  value: ProfessionKey | null;
+  onSelect: (key: ProfessionKey) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
+          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Berufskategorie wählen</span>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
+            ✕
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          <div className="grid grid-cols-2 gap-2">
+            {PROFESSIONS.map(prof => {
+              const selected = value === prof.key;
+              const color    = CAT_COLOR[PROF_PRIMARY_CAT[prof.key]];
+              return (
+                <button
+                  key={prof.key}
+                  onClick={() => { onSelect(prof.key); onClose(); }}
+                  className="text-left p-3 rounded-lg border transition-colors"
+                  style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-base leading-none">{PROF_ICONS[prof.key]}</span>
+                    <span className="text-xs font-medium leading-tight text-primary">{prof.label}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    {Object.entries(prof.talentPts).map(([cat, pts]) => {
+                      const c = cat as TalentCategory;
+                      return <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts} {CAT_SHORT[c]}</span>;
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {Object.entries(prof.attrMin).map(([attr, val]) => {
+                      const meta = ATTRIBUTES.find(a => a.key === attr);
+                      return <span key={attr} className="text-[9px] font-mono px-1 rounded" style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>{attr} {val}</span>;
+                    })}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -321,9 +374,8 @@ function HobbyPlaceholder({ label, onClick }: { label: string; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
+      className="w-full flex items-center justify-center p-3 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
     >
-      <span className="text-sm leading-none">+</span>
       <span className="text-xs">{label}</span>
     </button>
   );
@@ -338,7 +390,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   const safeChar = char;
 
   const [genderOverlay,      setGenderOverlay]      = useState(false);
-  const [profOpen,           setProfOpen]            = useState(!char.profession);
+  const [profCatOverlay,     setProfCatOverlay]      = useState(false);
   const [specOverlay,        setSpecOverlay]         = useState(false);
   const [talentOverlay,      setTalentOverlay]       = useState(false);
   const [h1Open,             setH1Open]              = useState(false);
@@ -390,14 +442,17 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
       {/* ── Geschlecht + Alter / Größe / Gewicht — 4 columns ── */}
       <div className="grid grid-cols-4 gap-2">
-        {/* Gender */}
+        {/* Gender — placeholder style when not selected */}
         <button
           onClick={() => setGenderOverlay(true)}
-          className="bg-raised border border-hairline rounded-lg p-2 flex flex-col items-center gap-1 hover:border-muted transition-colors"
+          className={`rounded-lg p-2 flex flex-col items-center justify-center gap-1 transition-colors ${
+            selectedGender
+              ? 'bg-raised border border-hairline hover:border-muted'
+              : 'border border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
+          }`}
         >
-          <span className="text-base leading-none">{selectedGender ? selectedGender.symbol : '⚧'}</span>
-          <span className={`text-sm font-mono ${selectedGender ? 'text-primary' : 'text-faint'}`}>
-            {selectedGender ? selectedGender.key.slice(0, 3) : '—'}
+          <span className={`text-2xl leading-none ${selectedGender ? '' : 'text-faint'}`}>
+            {selectedGender ? selectedGender.symbol : '?'}
           </span>
           <span className="text-[9px] text-faint">Geschlecht</span>
         </button>
@@ -427,57 +482,35 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <div className="px-3 py-1.5 bg-raised/60 border-b border-hairline">
           <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Beruf</span>
         </div>
-        <div className="p-3 space-y-3">
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={char.info.professionName}
-              onChange={e => patchInfo('professionName', e.target.value)}
-              placeholder="Berufsbezeichnung"
-              className="flex-1 bg-raised border border-hairline rounded-lg px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
-            />
-            <button
-              onClick={() => setProfOpen(v => !v)}
-              className="w-11 h-11 shrink-0 rounded-lg border text-xl flex items-center justify-center transition-colors"
-              style={profColor ? { borderColor: profColor + '80', backgroundColor: profColor + '18' } : { borderStyle: 'dashed' }}
-              title={selectedProf ? selectedProf.label : 'Berufskategorie wählen'}
-            >
-              {selectedProf ? PROF_ICONS[selectedProf.key] : '?'}
-            </button>
-          </div>
+        <div className="p-3 space-y-2">
+          {/* Berufsbezeichnung */}
+          <input
+            type="text"
+            value={char.info.professionName}
+            onChange={e => patchInfo('professionName', e.target.value)}
+            placeholder="Berufsbezeichnung"
+            className="w-full bg-raised border border-hairline rounded-lg px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
+          />
 
-          {profOpen && (
-            <div className="grid grid-cols-2 gap-2">
-              {PROFESSIONS.map(prof => {
-                const selected = char.profession === prof.key;
-                const color    = CAT_COLOR[PROF_PRIMARY_CAT[prof.key]];
-                return (
-                  <button
-                    key={prof.key}
-                    onClick={() => { selectProfession(prof.key); setProfOpen(false); }}
-                    className="relative text-left p-3 rounded-lg border transition-colors"
-                    style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-base leading-none">{PROF_ICONS[prof.key]}</span>
-                      <span className="text-xs font-medium leading-tight text-primary">{prof.label}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                      {Object.entries(prof.talentPts).map(([cat, pts]) => {
-                        const c = cat as TalentCategory;
-                        return <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts} {CAT_SHORT[c]}</span>;
-                      })}
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {Object.entries(prof.attrMin).map(([attr, val]) => {
-                        const meta = ATTRIBUTES.find(a => a.key === attr);
-                        return <span key={attr} className="text-[9px] font-mono px-1 rounded" style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>{attr} {val}</span>;
-                      })}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Berufskategorie — placeholder card if not set */}
+          {selectedProf ? (
+            <button
+              onClick={() => setProfCatOverlay(true)}
+              className="w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90"
+              style={{ backgroundColor: profColor + '18', borderColor: profColor + '80' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base leading-none">{PROF_ICONS[selectedProf.key]}</span>
+                <span className="text-sm font-medium text-primary">{selectedProf.label}</span>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={() => setProfCatOverlay(true)}
+              className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
+            >
+              — Berufskategorie wählen —
+            </button>
           )}
 
           <div className="border-t border-hairline" />
@@ -485,12 +518,12 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           <TalentDisplayTile
             talentName={char.professionTalent}
             bonus={5}
-            placeholder="— Berufsnahes Talent wählen (+5) —"
+            placeholder="Talent wählen (+5 TP)"
             onClick={() => setTalentOverlay(true)}
           />
           <SpecDisplayTile
             spec={char.specProfession}
-            placeholder="— Negatives Spezifikum wählen —"
+            placeholder="neg. Spezifikum wählen"
             onClick={() => setSpecOverlay(true)}
           />
         </div>
@@ -498,7 +531,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
       {/* ── Hobbies ── */}
       {!showHobby1 ? (
-        <HobbyPlaceholder label="1. Hobby hinzufügen" onClick={() => setH1Open(true)} />
+        <HobbyPlaceholder label="1. Hobby hinzufügen (+5 TP)" onClick={() => setH1Open(true)} />
       ) : (
         <>
           {/* Hobby 1 card */}
@@ -506,7 +539,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
               <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 1</span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-paper/40">+5 Punkte</span>
+                <span className="text-[10px] font-mono text-paper/40">+5 TP</span>
                 <button
                   onClick={() => { patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; }); setH1Open(false); }}
                   className="text-faint hover:text-muted text-sm leading-none"
@@ -525,13 +558,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               <TalentDisplayTile
                 talentName={char.hobby1Talent}
                 bonus={5}
-                placeholder="— Talent auswählen —"
+                placeholder="Talent wählen (+5 TP)"
                 onClick={() => setH1TalentOverlay(true)}
               />
               {char.hobby1Talent && (
                 <SpecDisplayTile
                   spec={char.specHobby1}
-                  placeholder="— Negatives Spezifikum wählen —"
+                  placeholder="neg. Spezifikum wählen"
                   modifierIgnored
                   onClick={() => setH1SpecOverlay(true)}
                 />
@@ -541,13 +574,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
           {/* Hobby 2 placeholder or card */}
           {!showHobby2 ? (
-            <HobbyPlaceholder label="2. Hobby hinzufügen" onClick={() => setH2Open(true)} />
+            <HobbyPlaceholder label="2. Hobby hinzufügen (+3 TP)" onClick={() => setH2Open(true)} />
           ) : (
             <div className="rounded-lg border border-hairline overflow-hidden">
               <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 2</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-paper/40">+3 Punkte</span>
+                  <span className="text-[10px] font-mono text-paper/40">+3 TP</span>
                   <button
                     onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
                     className="text-faint hover:text-muted text-sm leading-none"
@@ -566,7 +599,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                 <TalentDisplayTile
                   talentName={char.hobby2Talent}
                   bonus={3}
-                  placeholder="— Talent auswählen —"
+                  placeholder="Talent wählen (+3 TP)"
                   onClick={() => setH2TalentOverlay(true)}
                 />
               </div>
@@ -581,6 +614,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           value={char.info.gender}
           onSelect={key => patchInfo('gender', key)}
           onClose={() => setGenderOverlay(false)}
+        />
+      )}
+      {profCatOverlay && (
+        <ProfCatOverlay
+          value={char.profession}
+          onSelect={key => selectProfession(key)}
+          onClose={() => setProfCatOverlay(false)}
         />
       )}
       {specOverlay && (
@@ -605,7 +645,17 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           title="Hobby 1 — Talent wählen"
           value={char.hobby1Talent}
           customTalents={char.customTalents}
-          onSelect={name => patch(charId, c => { c.hobby1Talent = name; if (!name) c.specHobby1 = null; })}
+          onSelect={name => patch(charId, c => {
+            c.hobby1Talent = name;
+            if (!name) {
+              c.specHobby1 = null;
+            } else {
+              const newCat = TALENT_CATEGORY_OF[name] ?? c.customTalents.find(t => t.name === name)?.category;
+              if (c.specHobby1 && c.specHobby1.category !== newCat) {
+                c.specHobby1 = null;
+              }
+            }
+          })}
           onClose={() => setH1TalentOverlay(false)}
         />
       )}

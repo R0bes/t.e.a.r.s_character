@@ -110,14 +110,17 @@ function InfoBtn({ content, dir = 'up' }: { content: ReactNode; dir?: TipDir }) 
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
   attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name,
+  onHoverChange,
 }: {
   attrKey: AttributeKey; value: number; minValue: number; pointsLeft: number;
   onDecrease: () => void; onIncrease: () => void; color: string; name: string;
+  onHoverChange: (delta: number) => void;
 }) {
-  const pos    = ATTR_POSITIONS[attrKey];
-  const cost   = stepCost(value);
-  const canInc = value < ATTR_MAX && pointsLeft >= cost;
-  const canDec = value > minValue;
+  const pos     = ATTR_POSITIONS[attrKey];
+  const cost    = stepCost(value);
+  const prevCost = value > minValue ? stepCost(value - 1) : 0;
+  const canInc  = value < ATTR_MAX && pointsLeft >= cost;
+  const canDec  = value > minValue;
 
   const alignCls = pos.align === 'center' ? 'items-center'
     : pos.align === 'left' ? 'items-start'
@@ -147,14 +150,19 @@ function AttrControl({
         {value}
       </span>
 
-      <div className={`flex items-center gap-1 ${pos.align === 'right' ? 'flex-row-reverse' : ''}`}>
+      {/* Always − left, + right */}
+      <div className="flex items-center gap-1">
         <button
           onClick={onDecrease} disabled={!canDec}
+          onMouseEnter={() => canDec && onHoverChange(prevCost)}
+          onMouseLeave={() => onHoverChange(0)}
           className="w-6 h-6 rounded border text-sm leading-none transition-colors active:scale-95 flex items-center justify-center disabled:opacity-25"
           style={{ borderColor: color + '88', color }}
         >−</button>
         <button
           onClick={onIncrease} disabled={!canInc}
+          onMouseEnter={() => canInc && onHoverChange(-cost)}
+          onMouseLeave={() => onHoverChange(0)}
           className={`w-6 h-6 rounded border text-sm leading-none transition-colors flex items-center justify-center ${plusCls}`}
         >+</button>
       </div>
@@ -214,11 +222,13 @@ function ResourceRow({
 export function Tab3Attributes({ charId }: { charId: string }) {
   const char           = useStore(s => s.characters.find(c => c.id === charId));
   const patchCharacter = useStore(s => s.patchCharacter);
+  const [hoverDelta, setHoverDelta] = useState(0);
 
   if (!char) return null;
 
   const pointsLeft = attrPointsLeft(char);
   const derived    = calcDerived(char);
+  const forecasted = pointsLeft + hoverDelta;
 
   function setAttr(key: AttributeKey, val: number) {
     patchCharacter(charId, c => { c.attributes[key] = val; });
@@ -238,8 +248,19 @@ export function Tab3Attributes({ charId }: { charId: string }) {
   return (
     <div className="flex flex-col gap-4 p-4">
 
-      {/* Attribute points as PointsBar */}
-      <PointsBar total={ATTR_FREE} used={ATTR_FREE - pointsLeft} color="#7A8A9A" />
+      {/* Attribute points bar with hover forecast */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <PointsBar total={ATTR_FREE} used={ATTR_FREE - pointsLeft} color="#7A8A9A" />
+        </div>
+        {hoverDelta !== 0 && (
+          <span className={`text-xs font-mono font-bold shrink-0 transition-colors ${
+            hoverDelta > 0 ? 'text-success' : 'text-danger'
+          }`}>
+            → {forecasted}
+          </span>
+        )}
+      </div>
 
       {/* ── Side-by-side radars ── */}
       <div className="flex gap-3 overflow-visible w-full">
@@ -278,6 +299,7 @@ export function Tab3Attributes({ charId }: { charId: string }) {
                 onIncrease={() => setAttr(key, Math.min(ATTR_MAX, val + 1))}
                 color={C[key]}
                 name={meta.name}
+                onHoverChange={setHoverDelta}
               />
             );
           })}
