@@ -109,11 +109,11 @@ function InfoBtn({ content, dir = 'up' }: { content: ReactNode; dir?: TipDir }) 
 
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
-  attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name,
+  attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name, icon,
   onHoverChange,
 }: {
   attrKey: AttributeKey; value: number; minValue: number; pointsLeft: number;
-  onDecrease: () => void; onIncrease: () => void; color: string; name: string;
+  onDecrease: () => void; onIncrease: () => void; color: string; name: string; icon: string;
   onHoverChange: (delta: number) => void;
 }) {
   const pos     = ATTR_POSITIONS[attrKey];
@@ -136,19 +136,30 @@ function AttrControl({
 
   return (
     <div
-      className={`absolute flex flex-col gap-0.5 ${alignCls}`}
+      className={`absolute flex flex-col gap-1 ${alignCls}`}
       style={{ left: pos.left, top: pos.top, transform: 'translate(-50%, -50%)' }}
     >
+      {/* Medallion icon */}
+      <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0"
+        style={{ boxShadow: `0 0 0 2px ${color}88` }}
+      >
+        <img src={icon} alt={name} className="w-full h-full object-cover" />
+        {/* Value overlay */}
+        <div className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.45)' }}
+        >
+          <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+            {value}
+          </span>
+        </div>
+      </div>
+
       <div className={`flex items-center gap-1 ${pos.align === 'right' ? 'flex-row-reverse' : ''}`}>
-        <span className="text-[10px] font-mono font-bold leading-none" style={{ color }}>
+        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>
           {attrKey}
         </span>
         <InfoBtn content={<span style={{ color }}>{name}</span>} dir={pos.tip} />
       </div>
-
-      <span className="text-3xl font-mono font-bold leading-none" style={{ color }}>
-        {value}
-      </span>
 
       {/* Always − left, + right */}
       <div className="flex items-center gap-1">
@@ -299,6 +310,7 @@ export function Tab3Attributes({ charId }: { charId: string }) {
                 onIncrease={() => setAttr(key, Math.min(ATTR_MAX, val + 1))}
                 color={C[key]}
                 name={meta.name}
+                icon={meta.icon}
                 onHoverChange={setHoverDelta}
               />
             );
