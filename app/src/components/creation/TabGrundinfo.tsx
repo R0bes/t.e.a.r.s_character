@@ -3,24 +3,24 @@ import { useStore } from '../../store/useStore';
 import { PROFESSIONS } from '../../data/professions';
 import { ATTRIBUTES } from '../../data/attributes';
 import { TALENT_CATEGORIES, TALENT_CATEGORY_OF } from '../../data/talents';
-import { SPECIFICATIONS } from '../../data/specifications';
+import { SPECIFICATIONS, isNegativeSpec } from '../../data/specifications';
 import type { Character, ProfessionKey, Specification, TalentCategory } from '../../types/character';
 import { SpecPicker } from '../ui/SpecPicker';
 
-// Category abbreviations shown on profession cards (matching mockup)
+const CAT_COLOR: Record<TalentCategory, string> = {
+  koerperlich: '#E07040',
+  motorisch:   '#28B4C0',
+  geistig:     '#7C56D0',
+  sozial:      '#3CB870',
+  kampf:       '#C83030',
+};
+
 const CAT_SHORT: Record<TalentCategory, string> = {
   koerperlich: 'KÖR',
   motorisch:   'MOT',
   geistig:     'GEI',
   sozial:      'SOZ',
   kampf:       'KBK',
-};
-const CAT_COLOR: Record<TalentCategory, string> = {
-  koerperlich: '#D1453B',
-  motorisch:   '#3E7FCE',
-  geistig:     '#8C5FC4',
-  sozial:      '#D6B23E',
-  kampf:       '#7A2420',
 };
 
 const PROF_ICONS: Record<ProfessionKey, string> = {
@@ -32,6 +32,18 @@ const PROF_ICONS: Record<ProfessionKey, string> = {
   militaerisch: '⚔️',
   medizinisch:  '🏥',
   arbeitslos:   '🎓',
+};
+
+// Primary category per profession (for icon button color)
+const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
+  koerperlich:  'koerperlich',
+  handwerklich: 'motorisch',
+  kundenkontakt:'sozial',
+  kreativ:      'geistig',
+  denkend:      'geistig',
+  militaerisch: 'kampf',
+  medizinisch:  'motorisch',
+  arbeitslos:   'sozial',
 };
 
 const GENDER_OPTIONS = [
@@ -56,6 +68,103 @@ function saveSpec(
   });
 }
 
+// ── Spec Overlay ──────────────────────────────────────────────────────────────
+function SpecOverlay({
+  value,
+  customSpecs,
+  onSelect,
+  onClose,
+}: {
+  value: Specification | null;
+  customSpecs: Specification[];
+  onSelect: (spec: Specification | null) => void;
+  onClose: () => void;
+}) {
+  const negativeSpecs = SPECIFICATIONS.filter(isNegativeSpec);
+  const negativeCustom = customSpecs.filter(isNegativeSpec);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex flex-col h-full max-w-lg mx-auto w-full"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
+          <span className="text-xs font-bold uppercase tracking-widest text-danger/80">
+            Negatives Spezifikum wählen
+          </span>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Scrollable list */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          {/* Clear selection */}
+          {value && (
+            <button
+              onClick={() => { onSelect(null); onClose(); }}
+              className="w-full text-left px-3 py-2 rounded-lg border border-dashed border-hairline text-faint text-xs hover:border-muted hover:text-muted transition-colors"
+            >
+              — kein Spezifikum —
+            </button>
+          )}
+
+          {/* Specs grouped by category */}
+          {TALENT_CATEGORIES.map(cat => {
+            const inCat = negativeSpecs.filter(s => s.category === cat.key);
+            const customInCat = negativeCustom.filter(s => s.category === cat.key);
+            const all = [...inCat, ...customInCat];
+            if (!all.length) return null;
+            const color = CAT_COLOR[cat.key];
+            return (
+              <div key={cat.key}>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 px-1" style={{ color }}>
+                  {cat.label}
+                </p>
+                <div className="space-y-1.5">
+                  {all.map(spec => {
+                    const selected = value?.name === spec.name;
+                    return (
+                      <button
+                        key={spec.name}
+                        onClick={() => { onSelect(spec); onClose(); }}
+                        className="w-full text-left px-3 py-2.5 rounded-lg border transition-all hover:opacity-90"
+                        style={{
+                          backgroundColor: selected ? `${color}20` : `${color}0A`,
+                          borderColor: selected ? `${color}70` : `${color}28`,
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[11px] font-semibold leading-tight" style={{ color }}>
+                            {spec.name}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-danger ml-2 shrink-0">
+                            +{spec.modifier}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export function TabGrundinfo({ charId }: { charId: string }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
@@ -63,8 +172,9 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   if (!char) return null;
   const safeChar = char;
 
-  const [genderOpen, setGenderOpen] = useState(!char.info.gender);
-  const [profOpen,   setProfOpen]   = useState(!char.profession);
+  const [genderOpen,  setGenderOpen]  = useState(!char.info.gender);
+  const [profOpen,    setProfOpen]    = useState(!char.profession);
+  const [specOverlay, setSpecOverlay] = useState(false);
 
   function patchInfo(key: keyof typeof safeChar.info, value: string) {
     patch(charId, c => { (c.info as Record<string, string>)[key] = value; });
@@ -88,6 +198,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
   const selectedGender = GENDER_OPTIONS.find(g => g.key === char.info.gender);
   const selectedProf   = PROFESSIONS.find(p => p.key === char.profession);
+  const profColor      = selectedProf ? CAT_COLOR[PROF_PRIMARY_CAT[selectedProf.key]] : undefined;
 
   return (
     <div className="flex flex-col gap-5 p-4">
@@ -101,7 +212,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         className="w-full bg-raised border border-hairline rounded-lg px-4 py-3 text-primary text-base font-medium placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
       />
 
-      {/* ── Geschlecht: collapsible ── */}
+      {/* ── Geschlecht ── */}
       {!genderOpen ? (
         <button
           onClick={() => setGenderOpen(true)}
@@ -134,8 +245,8 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       {/* ── Alter / Größe / Gewicht ── */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { key: 'age',    icon: '⏱', placeholder: 'Alter',    suffix: 'Jahre' },
-          { key: 'height', icon: '📏', placeholder: 'Größe',    suffix: 'cm'    },
+          { key: 'age',    icon: '⏱', placeholder: 'Alter',   suffix: 'Jahre' },
+          { key: 'height', icon: '📏', placeholder: 'Größe',   suffix: 'cm'    },
           { key: 'weight', icon: '⚖',  placeholder: 'Gewicht', suffix: 'kg'    },
         ].map(f => (
           <div key={f.key} className="bg-raised border border-hairline rounded-lg p-2 flex flex-col items-center gap-1">
@@ -152,90 +263,115 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         ))}
       </div>
 
-      {/* ── Berufsbezeichnung ── */}
-      <input
-        type="text"
-        value={char.info.professionName}
-        onChange={e => patchInfo('professionName', e.target.value)}
-        placeholder="Berufsbezeichnung (z.B. Kassiererin)"
-        className="w-full bg-raised border border-hairline rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
-      />
-
-      {/* ── Berufskategorie: collapsible ── */}
-      <div className="space-y-2">
-        {!profOpen ? (
-          <button
-            onClick={() => setProfOpen(true)}
-            className={`w-full py-2.5 rounded-lg border text-sm transition-colors text-left px-4 ${
-              selectedProf
-                ? 'border-paper/60 bg-paper/5 text-paper'
-                : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
-            }`}
-          >
-            {selectedProf
-              ? `${PROF_ICONS[selectedProf.key]} ${selectedProf.label}`
-              : '— Berufskategorie wählen —'}
-          </button>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {PROFESSIONS.map(prof => {
-              const selected = char.profession === prof.key;
-              return (
-                <button
-                  key={prof.key}
-                  onClick={() => { selectProfession(prof.key); setProfOpen(false); }}
-                  className={`relative text-left p-3 rounded-lg border transition-colors ${
-                    selected
-                      ? 'border-paper bg-raised text-primary'
-                      : 'border-hairline bg-surface text-muted hover:border-muted hover:text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-base leading-none">{PROF_ICONS[prof.key]}</span>
-                    <span className="text-xs font-medium leading-tight">{prof.label}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                    {Object.entries(prof.talentPts).map(([cat, pts]) => {
-                      const c = cat as TalentCategory;
-                      return (
-                        <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>
-                          +{pts} {CAT_SHORT[c]}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {Object.entries(prof.attrMin).map(([attr, val]) => {
-                      const meta = ATTRIBUTES.find(a => a.key === attr);
-                      return (
-                        <span key={attr} className="text-[9px] font-mono px-1 rounded"
-                          style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>
-                          {attr} {val}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Pflicht-Spezifikum ── */}
-      {char.profession && (
-        <div className="space-y-2 border-t border-hairline pt-4">
-          <p className="text-[10px] text-faint uppercase tracking-widest">Pflicht-Spezifikum</p>
-          <p className="text-xs text-muted">Negatives Spezifikum passend zum Beruf.</p>
-          <SpecPicker
-            label="Negatives Spezifikum"
-            polarity="negative"
-            value={char.specProfession}
-            onChange={spec => saveSpec(patch, charId, 'specProfession', spec)}
-            customSpecs={char.customSpecifications}
-          />
+      {/* ── Beruf (grouped card) ── */}
+      <div className="rounded-lg border border-hairline overflow-hidden">
+        {/* Section header */}
+        <div className="px-3 py-1.5 bg-raised/60 border-b border-hairline">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Beruf</span>
         </div>
-      )}
+
+        <div className="p-3 space-y-3">
+          {/* Row: Berufsbezeichnung + Kategorie-Icon-Button */}
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={char.info.professionName}
+              onChange={e => patchInfo('professionName', e.target.value)}
+              placeholder="Berufsbezeichnung (z.B. Kassiererin)"
+              className="flex-1 bg-raised border border-hairline rounded-lg px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
+            />
+            {/* Kategorie-Icon-Button */}
+            <button
+              onClick={() => setProfOpen(v => !v)}
+              className="w-11 h-11 shrink-0 rounded-lg border text-xl flex items-center justify-center transition-colors"
+              style={profColor ? {
+                borderColor: profColor + '80',
+                backgroundColor: profColor + '18',
+              } : { borderStyle: 'dashed' }}
+              title={selectedProf ? selectedProf.label : 'Berufskategorie wählen'}
+            >
+              {selectedProf ? PROF_ICONS[selectedProf.key] : '?'}
+            </button>
+          </div>
+
+          {/* Profession picker grid — open/close */}
+          {profOpen && (
+            <div className="grid grid-cols-2 gap-2">
+              {PROFESSIONS.map(prof => {
+                const selected = char.profession === prof.key;
+                const color    = CAT_COLOR[PROF_PRIMARY_CAT[prof.key]];
+                return (
+                  <button
+                    key={prof.key}
+                    onClick={() => { selectProfession(prof.key); setProfOpen(false); }}
+                    className="relative text-left p-3 rounded-lg border transition-colors"
+                    style={{
+                      borderColor: selected ? color + 'CC' : '#2D303A',
+                      backgroundColor: selected ? color + '18' : '#1B1D23',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base leading-none">{PROF_ICONS[prof.key]}</span>
+                      <span className="text-xs font-medium leading-tight text-primary">{prof.label}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                      {Object.entries(prof.talentPts).map(([cat, pts]) => {
+                        const c = cat as TalentCategory;
+                        return (
+                          <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>
+                            +{pts} {CAT_SHORT[c]}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {Object.entries(prof.attrMin).map(([attr, val]) => {
+                        const meta = ATTRIBUTES.find(a => a.key === attr);
+                        return (
+                          <span key={attr} className="text-[9px] font-mono px-1 rounded"
+                            style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>
+                            {attr} {val}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="border-t border-hairline" />
+
+          {/* Pflicht-Spezifikum button */}
+          <button
+            onClick={() => setSpecOverlay(true)}
+            className="w-full text-left px-3 py-2.5 rounded-lg border transition-colors"
+            style={char.specProfession ? {
+              borderColor: '#E83050' + '55',
+              backgroundColor: '#E83050' + '0C',
+            } : {
+              borderStyle: 'dashed',
+              borderColor: '#2D303A',
+            }}
+          >
+            {char.specProfession ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-danger/90">{char.specProfession.name}</span>
+                <span className="text-[11px] font-mono font-bold text-danger ml-2 shrink-0">
+                  +{char.specProfession.modifier}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm text-faint">— Negatives Spezifikum wählen —</span>
+            )}
+            {char.specProfession?.description && (
+              <p className="text-[9px] text-faint mt-0.5 leading-snug">{char.specProfession.description}</p>
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* ── Hobbies ── */}
       <div className="space-y-4 border-t border-hairline pt-4">
@@ -334,6 +470,16 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           </select>
         </div>
       </div>
+
+      {/* ── Spec Overlay ── */}
+      {specOverlay && (
+        <SpecOverlay
+          value={char.specProfession}
+          customSpecs={char.customSpecifications}
+          onSelect={spec => saveSpec(patch, charId, 'specProfession', spec)}
+          onClose={() => setSpecOverlay(false)}
+        />
+      )}
     </div>
   );
 }
