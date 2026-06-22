@@ -45,9 +45,9 @@ const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
 };
 
 const GENDER_OPTIONS = [
-  { key: 'weiblich', symbol: '♀' },
-  { key: 'männlich', symbol: '♂' },
-  { key: 'divers',   symbol: '⚥' },
+  { key: 'weiblich', symbol: '♀', label: 'Weiblich' },
+  { key: 'männlich', symbol: '♂', label: 'Männlich' },
+  { key: 'divers',   symbol: '⚥', label: 'Divers'   },
 ];
 
 function saveSpec(
@@ -64,6 +64,47 @@ function saveSpec(
       }
     }
   });
+}
+
+// ── Gender Overlay ────────────────────────────────────────────────────────────
+function GenderOverlay({ value, onSelect, onClose }: {
+  value: string;
+  onSelect: (key: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
+          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Geschlecht wählen</span>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
+            ✕
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+          {GENDER_OPTIONS.map(g => {
+            const selected = value === g.key;
+            return (
+              <button
+                key={g.key}
+                onClick={() => { onSelect(g.key); onClose(); }}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg border transition-all hover:opacity-90"
+                style={{
+                  backgroundColor: selected ? '#B8B8C020' : '#B8B8C00A',
+                  borderColor:     selected ? '#B8B8C070' : '#2D303A',
+                }}
+              >
+                <span className="text-3xl leading-none">{g.symbol}</span>
+                <span className="text-sm font-medium text-primary">{g.label}</span>
+                {selected && <span className="text-[10px] text-paper font-bold ml-auto">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Spec Overlay ──────────────────────────────────────────────────────────────
@@ -275,6 +316,19 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
   );
 }
 
+// ── Hobby placeholder card ────────────────────────────────────────────────────
+function HobbyPlaceholder({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
+    >
+      <span className="text-sm leading-none">+</span>
+      <span className="text-xs">{label}</span>
+    </button>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function TabGrundinfo({ charId }: { charId: string }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
@@ -283,10 +337,12 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   if (!char) return null;
   const safeChar = char;
 
-  const [genderOpen,         setGenderOpen]         = useState(!char.info.gender);
+  const [genderOverlay,      setGenderOverlay]      = useState(false);
   const [profOpen,           setProfOpen]            = useState(!char.profession);
   const [specOverlay,        setSpecOverlay]         = useState(false);
   const [talentOverlay,      setTalentOverlay]       = useState(false);
+  const [h1Open,             setH1Open]              = useState(false);
+  const [h2Open,             setH2Open]              = useState(false);
   const [h1TalentOverlay,    setH1TalentOverlay]     = useState(false);
   const [h1SpecOverlay,      setH1SpecOverlay]       = useState(false);
   const [h2TalentOverlay,    setH2TalentOverlay]     = useState(false);
@@ -306,6 +362,11 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       c.attributes = base;
     });
   }
+
+  const hobby1Active = !!(char.hobby1Name || char.hobby1Talent);
+  const hobby2Active = !!(char.hobby2Name || char.hobby2Talent);
+  const showHobby1   = h1Open || hobby1Active;
+  const showHobby2   = showHobby1 && (h2Open || hobby2Active);
 
   const hobby1Category: TalentCategory | undefined = char.hobby1Talent
     ? (TALENT_CATEGORY_OF[char.hobby1Talent] ?? char.customTalents.find(t => t.name === char.hobby1Talent)?.category)
@@ -327,38 +388,21 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         className="w-full bg-raised border border-hairline rounded-lg px-4 py-3 text-primary text-base font-medium placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
       />
 
-      {/* ── Geschlecht ── */}
-      {!genderOpen ? (
+      {/* ── Geschlecht + Alter / Größe / Gewicht — 4 columns ── */}
+      <div className="grid grid-cols-4 gap-2">
+        {/* Gender */}
         <button
-          onClick={() => setGenderOpen(true)}
-          className={`w-full py-2.5 rounded-lg border text-base transition-colors ${
-            selectedGender
-              ? 'border-paper/60 bg-paper/5 text-paper'
-              : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
-          }`}
+          onClick={() => setGenderOverlay(true)}
+          className="bg-raised border border-hairline rounded-lg p-2 flex flex-col items-center gap-1 hover:border-muted transition-colors"
         >
-          {selectedGender ? `${selectedGender.symbol} ${selectedGender.key}` : '— Geschlecht wählen —'}
+          <span className="text-base leading-none">{selectedGender ? selectedGender.symbol : '⚧'}</span>
+          <span className={`text-sm font-mono ${selectedGender ? 'text-primary' : 'text-faint'}`}>
+            {selectedGender ? selectedGender.key.slice(0, 3) : '—'}
+          </span>
+          <span className="text-[9px] text-faint">Geschlecht</span>
         </button>
-      ) : (
-        <div className="flex gap-2">
-          {GENDER_OPTIONS.map(g => (
-            <button
-              key={g.key}
-              onClick={() => { patchInfo('gender', g.key); setGenderOpen(false); }}
-              className={`flex-1 py-3 rounded-lg border text-2xl transition-colors ${
-                char.info.gender === g.key
-                  ? 'border-paper text-paper bg-paper/10'
-                  : 'border-hairline text-faint hover:text-muted hover:border-muted'
-              }`}
-            >
-              {g.symbol}
-            </button>
-          ))}
-        </div>
-      )}
 
-      {/* ── Alter / Größe / Gewicht ── */}
-      <div className="grid grid-cols-3 gap-2">
+        {/* Age / Height / Weight */}
         {[
           { key: 'age',    icon: '⏱', placeholder: 'Alter',   suffix: 'Jahre' },
           { key: 'height', icon: '📏', placeholder: 'Größe',   suffix: 'cm'    },
@@ -452,77 +496,93 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         </div>
       </div>
 
-      {/* ── Hobby 1 ── */}
-      <div className="rounded-lg border border-hairline overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 1</span>
-          <span className="text-[10px] font-mono text-paper/40">+5 Punkte</span>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="relative">
-            <input
-              type="text"
-              value={char.hobby1Name}
-              onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
-              placeholder="Hobby-Name (optional)"
-              className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 pr-8 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-            />
-            {(char.hobby1Name || char.hobby1Talent) && (
-              <button
-                onClick={() => patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted text-sm"
-              >✕</button>
-            )}
+      {/* ── Hobbies ── */}
+      {!showHobby1 ? (
+        <HobbyPlaceholder label="1. Hobby hinzufügen" onClick={() => setH1Open(true)} />
+      ) : (
+        <>
+          {/* Hobby 1 card */}
+          <div className="rounded-lg border border-hairline overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 1</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-paper/40">+5 Punkte</span>
+                <button
+                  onClick={() => { patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; }); setH1Open(false); }}
+                  className="text-faint hover:text-muted text-sm leading-none"
+                  title="Hobby 1 entfernen"
+                >✕</button>
+              </div>
+            </div>
+            <div className="p-3 space-y-2">
+              <input
+                type="text"
+                value={char.hobby1Name}
+                onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
+                placeholder="Hobby-Name"
+                className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
+              />
+              <TalentDisplayTile
+                talentName={char.hobby1Talent}
+                bonus={5}
+                placeholder="— Talent auswählen —"
+                onClick={() => setH1TalentOverlay(true)}
+              />
+              {char.hobby1Talent && (
+                <SpecDisplayTile
+                  spec={char.specHobby1}
+                  placeholder="— Negatives Spezifikum wählen —"
+                  modifierIgnored
+                  onClick={() => setH1SpecOverlay(true)}
+                />
+              )}
+            </div>
           </div>
-          <TalentDisplayTile
-            talentName={char.hobby1Talent}
-            bonus={5}
-            placeholder="— Talent auswählen —"
-            onClick={() => setH1TalentOverlay(true)}
-          />
-          {char.hobby1Talent && (
-            <SpecDisplayTile
-              spec={char.specHobby1}
-              placeholder="— Negatives Spezifikum wählen —"
-              modifierIgnored
-              onClick={() => setH1SpecOverlay(true)}
-            />
-          )}
-        </div>
-      </div>
 
-      {/* ── Hobby 2 ── */}
-      <div className="rounded-lg border border-hairline overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 2</span>
-          <span className="text-[10px] font-mono text-paper/40">+3 Punkte</span>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="relative">
-            <input
-              type="text"
-              value={char.hobby2Name}
-              onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
-              placeholder="Hobby-Name (optional)"
-              className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 pr-8 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-            />
-            {(char.hobby2Name || char.hobby2Talent) && (
-              <button
-                onClick={() => patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted text-sm"
-              >✕</button>
-            )}
-          </div>
-          <TalentDisplayTile
-            talentName={char.hobby2Talent}
-            bonus={3}
-            placeholder="— Talent auswählen —"
-            onClick={() => setH2TalentOverlay(true)}
-          />
-        </div>
-      </div>
+          {/* Hobby 2 placeholder or card */}
+          {!showHobby2 ? (
+            <HobbyPlaceholder label="2. Hobby hinzufügen" onClick={() => setH2Open(true)} />
+          ) : (
+            <div className="rounded-lg border border-hairline overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 2</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-paper/40">+3 Punkte</span>
+                  <button
+                    onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
+                    className="text-faint hover:text-muted text-sm leading-none"
+                    title="Hobby 2 entfernen"
+                  >✕</button>
+                </div>
+              </div>
+              <div className="p-3 space-y-2">
+                <input
+                  type="text"
+                  value={char.hobby2Name}
+                  onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
+                  placeholder="Hobby-Name"
+                  className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
+                />
+                <TalentDisplayTile
+                  talentName={char.hobby2Talent}
+                  bonus={3}
+                  placeholder="— Talent auswählen —"
+                  onClick={() => setH2TalentOverlay(true)}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* ── Overlays ── */}
+      {genderOverlay && (
+        <GenderOverlay
+          value={char.info.gender}
+          onSelect={key => patchInfo('gender', key)}
+          onClose={() => setGenderOverlay(false)}
+        />
+      )}
       {specOverlay && (
         <SpecOverlay
           value={char.specProfession}

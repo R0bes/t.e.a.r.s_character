@@ -24,8 +24,20 @@ export function talentJobPts(character: Character, cat: TalentCategory): number 
   return prof?.talentPts[cat] ?? 0;
 }
 
+export function talentSpecBonus(character: Character, cat: TalentCategory): number {
+  let bonus = 0;
+  // specHobby1 is excluded — its modifier doesn't affect talent points
+  const specs = [character.specProfession, character.specFreePositive, character.specFreeNegative];
+  for (const spec of specs) {
+    if (spec && spec.category === cat) {
+      bonus -= spec.modifier; // modifier>0 = malus → reduce pts; modifier<0 = bonus → add pts
+    }
+  }
+  return bonus;
+}
+
 export function talentAvailable(character: Character, cat: TalentCategory): number {
-  return BASE_TALENT_PTS + talentJobPts(character, cat);
+  return BASE_TALENT_PTS + talentJobPts(character, cat) + talentSpecBonus(character, cat);
 }
 
 /** Fixed bonus points that go directly to a specific talent (not to the category budget) */
