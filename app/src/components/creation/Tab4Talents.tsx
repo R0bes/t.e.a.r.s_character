@@ -133,16 +133,17 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
   const lvIcon     = levelIcon(effective);
 
   const isSpecial  = isHobby1 || isHobby2 || isProfTal;
-  const tileBg     = isSpecial ? 'rgba(232,225,207,0.07)' : `${catColor}10`;
-  const tileBorder = isSpecial ? 'rgba(232,225,207,0.22)' : `${catColor}28`;
+  const tileBg     = `${catColor}10`;
+  const tileBorder = isSpecial ? `${catColor}60` : `${catColor}28`;
 
   return (
     <div
       className="flex flex-col gap-1.5 p-2 rounded-lg border transition-colors"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      {/* Name + badge row */}
+      {/* Name + icon row */}
       <div className="flex items-start gap-1">
+        <span className="text-[9px] leading-none shrink-0 mt-0.5">{catIcon}</span>
         <span className="text-[11px] font-medium text-primary leading-tight line-clamp-2 flex-1 min-w-0">
           {talentName}
         </span>
@@ -152,7 +153,6 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
 
       {/* Attr chips */}
       <div className="flex items-center gap-1 flex-wrap min-h-[11px]">
-        <span className="text-[9px] leading-none mr-0.5">{catIcon}</span>
         {isCombat
           ? <span className="text-[8px] font-mono text-faint">×2</span>
           : attrs?.map((a, i) => (
@@ -160,21 +160,19 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
                 style={{ color: ATTR_COLOR[a as AttributeKey] }}>{a}</span>
             ))
         }
-        {isProfTal && <span className="text-[7px] font-mono text-paper/70 ml-auto">Beruf +5</span>}
-        {isHobby1  && <span className="text-[7px] font-mono text-paper/70 ml-auto">H1 +5</span>}
-        {isHobby2  && <span className="text-[7px] font-mono text-paper/70 ml-auto">H2 +3</span>}
+        {isProfTal && <span className="text-[7px] font-mono text-paper/60 ml-auto">Beruf</span>}
+        {isHobby1  && <span className="text-[7px] font-mono text-paper/60 ml-auto">H1</span>}
+        {isHobby2  && <span className="text-[7px] font-mono text-paper/60 ml-auto">H2</span>}
       </div>
 
-      {/* Stepper */}
+      {/* Stepper — shows effective total directly */}
       <div className="flex items-center justify-between mt-auto">
         <button
           onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
           disabled={!canDec}
           className="w-5 h-5 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
         >−</button>
-        <span className="text-sm font-mono font-bold text-primary">
-          {stored}{fixedBonus > 0 ? `+${fixedBonus}` : ''}
-        </span>
+        <span className="text-sm font-mono font-bold text-primary">{effective}</span>
         <button
           onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
           disabled={!canInc}

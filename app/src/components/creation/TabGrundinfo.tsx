@@ -5,7 +5,6 @@ import { ATTRIBUTES } from '../../data/attributes';
 import { TALENT_CATEGORIES, TALENT_CATEGORY_OF, TALENT_CAT_MAP } from '../../data/talents';
 import { SPECIFICATIONS, isNegativeSpec } from '../../data/specifications';
 import type { Character, ProfessionKey, Specification, TalentCategory } from '../../types/character';
-import { SpecPicker } from '../ui/SpecPicker';
 
 const CAT_COLOR: Record<TalentCategory, string> = {
   koerperlich: '#E07040',
@@ -69,10 +68,11 @@ function saveSpec(
 
 // ── Spec Overlay ──────────────────────────────────────────────────────────────
 function SpecOverlay({
-  value, customSpecs, onSelect, onClose,
+  value, customSpecs, filterCategory, onSelect, onClose,
 }: {
   value: Specification | null;
   customSpecs: Specification[];
+  filterCategory?: TalentCategory;
   onSelect: (spec: Specification | null) => void;
   onClose: () => void;
 }) {
@@ -100,37 +100,41 @@ function SpecOverlay({
               — kein Spezifikum —
             </button>
           )}
-          {TALENT_CATEGORIES.map(cat => {
-            const inCat = [...negativeSpecs.filter(s => s.category === cat.key),
-                          ...negativeCustom.filter(s => s.category === cat.key)];
-            return inCat.map(spec => {
-              const selected = value?.name === spec.name;
-              return (
-                <button
-                  key={spec.name}
-                  onClick={() => { onSelect(spec); onClose(); }}
-                  className="w-full text-left px-3 py-2.5 rounded-lg border transition-all hover:opacity-90"
-                  style={{
-                    backgroundColor: selected ? `${cat.color}20` : `${cat.color}0A`,
-                    borderColor:     selected ? `${cat.color}70` : `${cat.color}28`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px]">{cat.icon}</span>
-                      <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
-                        {spec.name}
+          {TALENT_CATEGORIES
+            .filter(cat => !filterCategory || cat.key === filterCategory)
+            .map(cat => {
+              const inCat = [
+                ...negativeSpecs.filter(s => s.category === cat.key),
+                ...negativeCustom.filter(s => s.category === cat.key),
+              ];
+              return inCat.map(spec => {
+                const selected = value?.name === spec.name;
+                return (
+                  <button
+                    key={spec.name}
+                    onClick={() => { onSelect(spec); onClose(); }}
+                    className="w-full text-left px-3 py-2.5 rounded-lg border transition-all hover:opacity-90"
+                    style={{
+                      backgroundColor: selected ? `${cat.color}20` : `${cat.color}0A`,
+                      borderColor:     selected ? `${cat.color}70` : `${cat.color}28`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px]">{cat.icon}</span>
+                        <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
+                          {spec.name}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-danger ml-2 shrink-0">
+                        +{spec.modifier}
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-danger ml-2 shrink-0">
-                      +{spec.modifier}
-                    </span>
-                  </div>
-                  <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
-                </button>
-              );
-            });
-          })}
+                    <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
+                  </button>
+                );
+              });
+            })}
         </div>
       </div>
     </div>
@@ -139,8 +143,9 @@ function SpecOverlay({
 
 // ── Talent Overlay ────────────────────────────────────────────────────────────
 function TalentOverlay({
-  value, customTalents, onSelect, onClose,
+  title, value, customTalents, onSelect, onClose,
 }: {
+  title: string;
   value: string | null;
   customTalents: Character['customTalents'];
   onSelect: (name: string | null) => void;
@@ -150,9 +155,7 @@ function TalentOverlay({
     <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
       <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
-          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">
-            Berufsnahes Talent wählen
-          </span>
+          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">{title}</span>
           <button onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
             ✕
@@ -167,12 +170,8 @@ function TalentOverlay({
               — kein Talent —
             </button>
           )}
-          {TALENT_CATEGORIES.map(cat => {
-            const talents = [
-              ...cat.talents,
-              ...customTalents.filter(t => t.category === cat.key),
-            ];
-            return talents.map(t => {
+          {TALENT_CATEGORIES.map(cat =>
+            [...cat.talents, ...customTalents.filter(t => t.category === cat.key)].map(t => {
               const selected = value === t.name;
               return (
                 <button
@@ -192,28 +191,33 @@ function TalentOverlay({
                   </div>
                 </button>
               );
-            });
-          })}
+            })
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ── Spec display tile (Beruf section) ─────────────────────────────────────────
-function SpecDisplayTile({ spec, onClick }: { spec: Specification | null; onClick: () => void }) {
+// ── Spec display tile ─────────────────────────────────────────────────────────
+function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
+  spec: Specification | null;
+  placeholder: string;
+  modifierIgnored?: boolean;
+  onClick: () => void;
+}) {
   if (!spec) {
     return (
       <button
         onClick={onClick}
         className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
       >
-        — Negatives Spezifikum wählen —
+        {placeholder}
       </button>
     );
   }
-  const catMeta  = TALENT_CAT_MAP[spec.category];
-  const color    = catMeta.color;
+  const catMeta = TALENT_CAT_MAP[spec.category];
+  const color   = catMeta.color;
   return (
     <button
       onClick={onClick}
@@ -227,7 +231,7 @@ function SpecDisplayTile({ spec, onClick }: { spec: Specification | null; onClic
             {spec.name}
           </span>
         </div>
-        <span className="text-[10px] font-mono font-bold text-danger ml-2 shrink-0">
+        <span className={`text-[10px] font-mono font-bold ml-2 shrink-0 ${modifierIgnored ? 'text-faint line-through' : 'text-danger'}`}>
           +{spec.modifier}
         </span>
       </div>
@@ -236,15 +240,20 @@ function SpecDisplayTile({ spec, onClick }: { spec: Specification | null; onClic
   );
 }
 
-// ── Talent display tile (Beruf section) ───────────────────────────────────────
-function TalentDisplayTile({ talentName, onClick }: { talentName: string | null; onClick: () => void }) {
+// ── Talent display tile ───────────────────────────────────────────────────────
+function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
+  talentName: string | null;
+  bonus: number;
+  placeholder: string;
+  onClick: () => void;
+}) {
   if (!talentName) {
     return (
       <button
         onClick={onClick}
         className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
       >
-        — Berufsnahes Talent wählen (+5) —
+        {placeholder}
       </button>
     );
   }
@@ -260,7 +269,7 @@ function TalentDisplayTile({ talentName, onClick }: { talentName: string | null;
       <div className="flex items-center gap-1.5">
         {catMeta && <span className="text-[11px] leading-none shrink-0">{catMeta.icon}</span>}
         <span className="text-[11px] font-semibold" style={{ color }}>{talentName}</span>
-        <span className="text-[9px] font-mono text-paper/60 ml-auto shrink-0">+5</span>
+        <span className="text-[9px] font-mono text-paper/60 ml-auto shrink-0">+{bonus}</span>
       </div>
     </button>
   );
@@ -274,10 +283,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   if (!char) return null;
   const safeChar = char;
 
-  const [genderOpen,    setGenderOpen]    = useState(!char.info.gender);
-  const [profOpen,      setProfOpen]      = useState(!char.profession);
-  const [specOverlay,   setSpecOverlay]   = useState(false);
-  const [talentOverlay, setTalentOverlay] = useState(false);
+  const [genderOpen,         setGenderOpen]         = useState(!char.info.gender);
+  const [profOpen,           setProfOpen]            = useState(!char.profession);
+  const [specOverlay,        setSpecOverlay]         = useState(false);
+  const [talentOverlay,      setTalentOverlay]       = useState(false);
+  const [h1TalentOverlay,    setH1TalentOverlay]     = useState(false);
+  const [h1SpecOverlay,      setH1SpecOverlay]       = useState(false);
+  const [h2TalentOverlay,    setH2TalentOverlay]     = useState(false);
 
   function patchInfo(key: keyof typeof safeChar.info, value: string) {
     patch(charId, c => { (c.info as Record<string, string>)[key] = value; });
@@ -366,14 +378,12 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         ))}
       </div>
 
-      {/* ── Beruf (grouped card) ── */}
+      {/* ── Beruf ── */}
       <div className="rounded-lg border border-hairline overflow-hidden">
         <div className="px-3 py-1.5 bg-raised/60 border-b border-hairline">
           <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Beruf</span>
         </div>
-
         <div className="p-3 space-y-3">
-          {/* Row: Berufsbezeichnung + Kategorie-Icon-Button */}
           <div className="flex gap-2 items-center">
             <input
               type="text"
@@ -385,17 +395,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <button
               onClick={() => setProfOpen(v => !v)}
               className="w-11 h-11 shrink-0 rounded-lg border text-xl flex items-center justify-center transition-colors"
-              style={profColor ? {
-                borderColor: profColor + '80',
-                backgroundColor: profColor + '18',
-              } : { borderStyle: 'dashed' }}
+              style={profColor ? { borderColor: profColor + '80', backgroundColor: profColor + '18' } : { borderStyle: 'dashed' }}
               title={selectedProf ? selectedProf.label : 'Berufskategorie wählen'}
             >
               {selectedProf ? PROF_ICONS[selectedProf.key] : '?'}
             </button>
           </div>
 
-          {/* Profession picker grid */}
           {profOpen && (
             <div className="grid grid-cols-2 gap-2">
               {PROFESSIONS.map(prof => {
@@ -406,10 +412,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                     key={prof.key}
                     onClick={() => { selectProfession(prof.key); setProfOpen(false); }}
                     className="relative text-left p-3 rounded-lg border transition-colors"
-                    style={{
-                      borderColor:     selected ? color + 'CC' : '#2D303A',
-                      backgroundColor: selected ? color + '18' : '#1B1D23',
-                    }}
+                    style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-base leading-none">{PROF_ICONS[prof.key]}</span>
@@ -418,22 +421,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                     <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                       {Object.entries(prof.talentPts).map(([cat, pts]) => {
                         const c = cat as TalentCategory;
-                        return (
-                          <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>
-                            +{pts} {CAT_SHORT[c]}
-                          </span>
-                        );
+                        return <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts} {CAT_SHORT[c]}</span>;
                       })}
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {Object.entries(prof.attrMin).map(([attr, val]) => {
                         const meta = ATTRIBUTES.find(a => a.key === attr);
-                        return (
-                          <span key={attr} className="text-[9px] font-mono px-1 rounded"
-                            style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>
-                            {attr} {val}
-                          </span>
-                        );
+                        return <span key={attr} className="text-[9px] font-mono px-1 rounded" style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>{attr} {val}</span>;
                       })}
                     </div>
                   </button>
@@ -444,15 +438,15 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
           <div className="border-t border-hairline" />
 
-          {/* Berufsnahes Talent */}
           <TalentDisplayTile
             talentName={char.professionTalent}
+            bonus={5}
+            placeholder="— Berufsnahes Talent wählen (+5) —"
             onClick={() => setTalentOverlay(true)}
           />
-
-          {/* Pflicht-Spezifikum */}
           <SpecDisplayTile
             spec={char.specProfession}
+            placeholder="— Negatives Spezifikum wählen —"
             onClick={() => setSpecOverlay(true)}
           />
         </div>
@@ -480,32 +474,18 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               >✕</button>
             )}
           </div>
-          <select
-            value={char.hobby1Talent ?? ''}
-            onChange={e => {
-              const v = e.target.value || null;
-              patch(charId, c => { c.hobby1Talent = v; if (!v) c.specHobby1 = null; });
-            }}
-            className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm focus:outline-none focus:border-muted appearance-none"
-          >
-            <option value="">— Talent auswählen —</option>
-            {TALENT_CATEGORIES.map(cat => (
-              <optgroup key={cat.key} label={cat.label}>
-                {cat.talents.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                {char.customTalents.filter(ct => ct.category === cat.key).map(ct => (
-                  <option key={ct.name} value={ct.name}>{ct.name} ✎</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <TalentDisplayTile
+            talentName={char.hobby1Talent}
+            bonus={5}
+            placeholder="— Talent auswählen —"
+            onClick={() => setH1TalentOverlay(true)}
+          />
           {char.hobby1Talent && (
-            <SpecPicker
-              label="Negatives Spezifikum (Modifier wird ignoriert)"
-              polarity="negative"
-              filterCategory={hobby1Category}
-              value={char.specHobby1}
-              onChange={spec => saveSpec(patch, charId, 'specHobby1', spec)}
-              customSpecs={char.customSpecifications}
+            <SpecDisplayTile
+              spec={char.specHobby1}
+              placeholder="— Negatives Spezifikum wählen —"
+              modifierIgnored
+              onClick={() => setH1SpecOverlay(true)}
             />
           )}
         </div>
@@ -533,21 +513,12 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               >✕</button>
             )}
           </div>
-          <select
-            value={char.hobby2Talent ?? ''}
-            onChange={e => patch(charId, c => { c.hobby2Talent = e.target.value || null; })}
-            className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm focus:outline-none focus:border-muted appearance-none"
-          >
-            <option value="">— Talent auswählen —</option>
-            {TALENT_CATEGORIES.map(cat => (
-              <optgroup key={cat.key} label={cat.label}>
-                {cat.talents.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                {char.customTalents.filter(ct => ct.category === cat.key).map(ct => (
-                  <option key={ct.name} value={ct.name}>{ct.name} ✎</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <TalentDisplayTile
+            talentName={char.hobby2Talent}
+            bonus={3}
+            placeholder="— Talent auswählen —"
+            onClick={() => setH2TalentOverlay(true)}
+          />
         </div>
       </div>
 
@@ -562,10 +533,38 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       )}
       {talentOverlay && (
         <TalentOverlay
+          title="Berufsnahes Talent wählen"
           value={char.professionTalent}
           customTalents={char.customTalents}
           onSelect={name => patch(charId, c => { c.professionTalent = name; })}
           onClose={() => setTalentOverlay(false)}
+        />
+      )}
+      {h1TalentOverlay && (
+        <TalentOverlay
+          title="Hobby 1 — Talent wählen"
+          value={char.hobby1Talent}
+          customTalents={char.customTalents}
+          onSelect={name => patch(charId, c => { c.hobby1Talent = name; if (!name) c.specHobby1 = null; })}
+          onClose={() => setH1TalentOverlay(false)}
+        />
+      )}
+      {h1SpecOverlay && (
+        <SpecOverlay
+          value={char.specHobby1}
+          customSpecs={char.customSpecifications}
+          filterCategory={hobby1Category}
+          onSelect={spec => saveSpec(patch, charId, 'specHobby1', spec)}
+          onClose={() => setH1SpecOverlay(false)}
+        />
+      )}
+      {h2TalentOverlay && (
+        <TalentOverlay
+          title="Hobby 2 — Talent wählen"
+          value={char.hobby2Talent}
+          customTalents={char.customTalents}
+          onSelect={name => patch(charId, c => { c.hobby2Talent = name; })}
+          onClose={() => setH2TalentOverlay(false)}
         />
       )}
     </div>
