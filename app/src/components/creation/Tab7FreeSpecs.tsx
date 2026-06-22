@@ -116,24 +116,26 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
         borderColor:     isActive ? `${color}60` : `${color}28`,
       }}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <CatIcon src={catMeta.icon} size={32} />
-          <span className="text-[11px] font-semibold leading-tight truncate" style={{ color }}>
-            {spec.name}
-          </span>
+      <div className="flex items-start gap-2.5">
+        <CatIcon src={catMeta.icon} size={32} className="shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0 pr-8">
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <span className="text-[13px] font-semibold leading-tight truncate" style={{ color }}>
+              {spec.name}
+            </span>
+            <span
+              className={`text-[12px] font-mono font-bold shrink-0 relative ${modIgnored ? 'line-through opacity-40' : ''}`}
+              style={{ color: modColor }}
+            >
+              {isMalus ? '+' : ''}{spec.modifier}
+              {modIgnored && (
+                <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+              )}
+            </span>
+          </div>
+          <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
         </div>
-        <span
-          className={`text-[10px] font-mono font-bold shrink-0 ml-2 relative ${modIgnored ? 'line-through opacity-40' : ''}`}
-          style={{ color: modColor }}
-        >
-          {isMalus ? '+' : ''}{spec.modifier}
-          {modIgnored && (
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
-          )}
-        </span>
       </div>
-      <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
       {ribbonLabel && (
         <span
           className="absolute pointer-events-none"

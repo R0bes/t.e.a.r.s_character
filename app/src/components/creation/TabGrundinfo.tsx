@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { PROFESSIONS } from '../../data/professions';
-import { ATTRIBUTES } from '../../data/attributes';
+import { ATTR_MAP } from '../../data/attributes';
 import { TALENT_CATEGORIES, TALENT_CATEGORY_OF, TALENT_CAT_MAP } from '../../data/talents';
 import { SPECIFICATIONS, isNegativeSpec, isPositiveSpec } from '../../data/specifications';
 import type { Character, ProfessionKey, Specification, TalentCategory } from '../../types/character';
@@ -15,13 +15,6 @@ const CAT_COLOR: Record<TalentCategory, string> = {
   kampf:       '#C83030',
 };
 
-const CAT_SHORT: Record<TalentCategory, string> = {
-  koerperlich: 'KÖR',
-  motorisch:   'MOT',
-  geistig:     'GEI',
-  sozial:      'SOZ',
-  kampf:       'KBK',
-};
 
 
 const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
@@ -125,21 +118,34 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                   className="text-left p-3 rounded-lg border transition-colors"
                   style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <CatIcon src={prof.icon} size={60} />
-                    <span className="text-xs font-medium leading-tight text-primary">{prof.label}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                    {Object.entries(prof.talentPts).map(([cat, pts]) => {
-                      const c = cat as TalentCategory;
-                      return <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts} {CAT_SHORT[c]}</span>;
-                    })}
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {Object.entries(prof.attrMin).map(([attr, val]) => {
-                      const meta = ATTRIBUTES.find(a => a.key === attr);
-                      return <span key={attr} className="text-[9px] font-mono px-1 rounded" style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>{attr} {val}</span>;
-                    })}
+                  <div className="flex items-start gap-3">
+                    <CatIcon src={prof.icon} size={60} className="shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium leading-tight text-primary block mb-1.5">{prof.label}</span>
+                      <div className="flex flex-wrap gap-1.5 mb-1.5">
+                        {Object.entries(prof.talentPts).map(([cat, pts]) => {
+                          const c = cat as TalentCategory;
+                          const catMeta = TALENT_CAT_MAP[c];
+                          return (
+                            <span key={c} className="flex items-center gap-1">
+                              <CatIcon src={catMeta.icon} size={14} />
+                              <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(prof.attrMin).map(([attr, val]) => {
+                          const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
+                          return (
+                            <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
+                              <CatIcon src={meta?.icon ?? ''} size={12} />
+                              <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </button>
               );
@@ -517,30 +523,34 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               className="w-full text-left p-3 rounded-lg border transition-all hover:opacity-90"
               style={{ backgroundColor: (profColor ?? '#888') + '18', borderColor: (profColor ?? '#888') + '80' }}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <CatIcon src={selectedProf.icon} size={60} />
-                <span className="text-sm font-medium text-primary">{selectedProf.label}</span>
-              </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5">
-                {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
-                  const c = cat as TalentCategory;
-                  return (
-                    <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>
-                      +{pts} {CAT_SHORT[c]}
-                    </span>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(selectedProf.attrMin).map(([attr, val]) => {
-                  const meta = ATTRIBUTES.find(a => a.key === attr);
-                  return (
-                    <span key={attr} className="text-[9px] font-mono px-1 rounded"
-                      style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>
-                      {attr} {val}
-                    </span>
-                  );
-                })}
+              <div className="flex items-start gap-3">
+                <CatIcon src={selectedProf.icon} size={60} className="shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-primary block mb-1.5">{selectedProf.label}</span>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
+                      const c = cat as TalentCategory;
+                      const catMeta = TALENT_CAT_MAP[c];
+                      return (
+                        <span key={c} className="flex items-center gap-1">
+                          <CatIcon src={catMeta.icon} size={14} />
+                          <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(selectedProf.attrMin).map(([attr, val]) => {
+                      const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
+                      return (
+                        <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
+                          <CatIcon src={meta?.icon ?? ''} size={12} />
+                          <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </button>
           ) : (
