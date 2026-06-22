@@ -297,12 +297,10 @@ function TalentOverlay({
 }
 
 // ── Spec display tile ─────────────────────────────────────────────────────────
-function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }: {
+function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
   spec: Specification | null;
   placeholder: string;
   modifierIgnored?: boolean;
-  /** Source label shown as a rotated stamp in the bottom-right corner */
-  stamp?: string;
   onClick: () => void;
 }) {
   if (!spec) {
@@ -344,25 +342,6 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, stamp, onClick }:
           <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
         </div>
       </div>
-      {stamp && (
-        <span
-          className="absolute pointer-events-none"
-          style={{
-            bottom: 8, right: -22,
-            width: 72, textAlign: 'center',
-            fontSize: 7, fontWeight: 700,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '2px 0',
-            backgroundColor: `${color}50`,
-            color,
-            transform: 'rotate(-45deg)',
-            transformOrigin: 'center',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {stamp}
-        </span>
-      )}
     </button>
   );
 }
@@ -584,7 +563,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           <SpecDisplayTile
             spec={char.specProfession}
             placeholder="neg. Spezifikum wählen"
-            stamp="Beruf"
+
             onClick={() => setSpecOverlay(true)}
           />
         </div>
@@ -626,7 +605,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   spec={char.specHobby1}
                   placeholder="neg. Spezifikum wählen"
                   modifierIgnored
-                  stamp="1. Hobby"
+
                   onClick={() => setH1SpecOverlay(true)}
                 />
               )}
@@ -672,13 +651,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
       <SpecDisplayTile
         spec={char.specFreeNegative}
         placeholder="neg. Spezifikum wählen"
-        stamp="frei −"
+
         onClick={() => setFreeNegOverlay(true)}
       />
       <SpecDisplayTile
         spec={char.specFreePositive}
         placeholder="pos. Spezifikum wählen"
-        stamp="frei +"
+
         onClick={() => setFreePosOverlay(true)}
       />
 
