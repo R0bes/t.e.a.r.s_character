@@ -98,7 +98,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
+      <div className="flex flex-col h-full max-w-2xl mx-auto w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
           <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Berufskategorie wählen</span>
           <button onClick={onClose}
@@ -107,7 +107,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {PROFESSIONS.map(prof => {
               const selected = value === prof.key;
               const color    = CAT_COLOR[PROF_PRIMARY_CAT[prof.key]];
@@ -121,7 +121,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                   <div className="flex items-start gap-3">
                     <CatIcon src={prof.icon} size={90} className="shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium leading-tight text-primary block mb-1.5">{prof.label}</span>
+                      <span className="text-base font-semibold leading-tight block mb-1.5" style={{ color }}>{prof.label}</span>
                       <div className="flex flex-wrap gap-1.5 mb-1.5">
                         {Object.entries(prof.talentPts).map(([cat, pts]) => {
                           const c = cat as TalentCategory;
