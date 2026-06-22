@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import {
   talentAvailable, talentSpent, talentLeft, talentCanIncrease,
-  talentFixedBonus, talentSpecBonusBreakdown,
+  talentFixedBonus, talentSpecBonusBreakdown, BASE_TALENT_PTS,
   varPtsLeft, varPtsSpent,
 } from '../../rules/talentBudget';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
+import { VARIABLE_PTS } from '../../data/professions';
 import type { AttributeKey, TalentCategory } from '../../types/character';
 import { PointsBar } from '../ui/PointsBar';
-import { VARIABLE_PTS } from '../../data/professions';
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
@@ -17,6 +17,27 @@ const ATTR_COLOR: Record<AttributeKey, string> = {
   KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
   CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
 };
+
+// ── Small info popup ──────────────────────────────────────────────────────────
+function InfoPop({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex shrink-0">
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        className="w-4 h-4 rounded-full border border-hairline/60 text-[7px] text-faint flex items-center justify-center hover:text-muted hover:border-muted transition-colors leading-none"
+      >i</button>
+      {open && (
+        <span
+          className="absolute right-0 top-full mt-1.5 z-20 bg-raised border border-hairline rounded-lg px-2.5 py-2 text-[9px] font-mono text-primary shadow-xl min-w-[160px] leading-relaxed"
+          onClick={() => setOpen(false)}
+        >
+          {children}
+        </span>
+      )}
+    </span>
+  );
+}
 
 // ── Custom Talent Form ────────────────────────────────────────────────────────
 function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
@@ -51,7 +72,7 @@ function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
   }
 
   return (
-    <div className="mt-1.5 bg-raised/40 rounded-lg px-3 py-3 space-y-2.5 border border-hairline/60">
+    <div className="bg-raised/40 rounded-lg px-3 py-3 space-y-2.5 border border-hairline/60">
       <p className="text-[10px] text-warn font-medium">Neues Talent — {catLabel} (SL-Absprache)</p>
       <input
         type="text" placeholder="Talentname" value={name}
@@ -106,7 +127,7 @@ function levelIcon(effective: number): { icon: string; cls: string } | null {
   return                       { icon: '★', cls: 'text-success'  };
 }
 
-// ── Talent row (single per row) ───────────────────────────────────────────────
+// ── Talent row ────────────────────────────────────────────────────────────────
 function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
   charId: string;
   talentName: string;
@@ -141,17 +162,15 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
       className="flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      {/* Icon */}
       <span className="text-[10px] leading-none shrink-0">{catIcon}</span>
 
-      {/* Name + attr chips */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
           <span className="text-[11px] font-medium text-primary leading-tight truncate flex-1 min-w-0">
             {talentName}
           </span>
-          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
-          {lvIcon && <span className={`text-[9px] shrink-0 leading-none ${lvIcon.cls}`}>{lvIcon.icon}</span>}
+          {isCustom  && <span className="text-[7px] text-warn shrink-0">SL</span>}
+          {lvIcon    && <span className={`text-[9px] shrink-0 leading-none ${lvIcon.cls}`}>{lvIcon.icon}</span>}
           {isProfTal && <span className="text-[7px] font-mono text-paper/50 shrink-0">Beruf</span>}
           {isHobby1  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H1</span>}
           {isHobby2  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H2</span>}
@@ -167,7 +186,6 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
         </div>
       </div>
 
-      {/* Stepper */}
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
@@ -185,100 +203,66 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
   );
 }
 
-// ── Add-talent tile ───────────────────────────────────────────────────────────
-function AddTalentTile({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
-    >
-      <span className="text-sm leading-none">+</span>
-      <span className="text-xs">Eigenes Talent</span>
-    </button>
-  );
-}
-
-// ── Category section ──────────────────────────────────────────────────────────
-function CategorySection({ charId, catKey, isOpen, onOpen }: {
-  charId: string; catKey: TalentCategory; isOpen: boolean; onOpen: () => void;
-}) {
+// ── Category header row ───────────────────────────────────────────────────────
+function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentCategory }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [showCustomForm, setShowCustomForm] = useState(false);
-
   if (!char) return null;
 
-  const catMeta     = TALENT_CATEGORIES.find(c => c.key === catKey)!;
-  const available   = talentAvailable(char, catKey);
-  const spent       = talentSpent(char, catKey);
-  const left        = talentLeft(char, catKey);
-  const { job: jobBonus, spec: specBonus } = talentSpecBonusBreakdown(char, catKey);
-  const customInCat = char.customTalents.filter(t => t.category === catKey);
+  const catMeta = TALENT_CATEGORIES.find(c => c.key === catKey)!;
+  const available = talentAvailable(char, catKey);
+  const spent     = talentSpent(char, catKey);
+  const left      = talentLeft(char, catKey);
+  const { job: jobBonus } = talentSpecBonusBreakdown(char, catKey);
 
-  // Build breakdown string: "10 + 30 (Beruf) + 5 (Spez) = 45"
-  const parts: string[] = ['10'];
-  if (jobBonus !== 0)  parts.push(`${jobBonus > 0 ? '+' : ''}${jobBonus} (Beruf)`);
-  if (specBonus !== 0) parts.push(`${specBonus > 0 ? '+' : ''}${specBonus} (Spez)`);
-  const budgetLabel = parts.length > 1 ? `${parts.join(' ')} = ${available}` : `${available}`;
+  // Spec names for the tooltip
+  const specSources: string[] = [];
+  const allSpecs = [char.specProfession, char.specFreePositive, char.specFreeNegative];
+  for (const s of allSpecs) {
+    if (s && s.category === catKey) {
+      const sign = s.modifier > 0 ? '+' : '';
+      specSources.push(`${sign}${s.modifier} (${s.name})`);
+    }
+  }
+
+  const tooltipLines: ReactNode[] = [
+    <span key="base">{BASE_TALENT_PTS} TP (Basis)</span>,
+  ];
+  if (jobBonus !== 0) {
+    tooltipLines.push(<span key="job">{jobBonus > 0 ? '+' : ''}{jobBonus} TP (Beruf)</span>);
+  }
+  for (const src of specSources) {
+    tooltipLines.push(<span key={src}>{src} TP (Spez)</span>);
+  }
+  tooltipLines.push(<span key="total" className="text-paper font-bold">= {available} TP</span>);
 
   return (
-    <div className="rounded-lg overflow-hidden border border-hairline">
-      <button
-        onClick={onOpen}
-        className="w-full px-3 py-2.5 flex items-center gap-2 transition-colors hover:bg-white/5"
-        style={{ backgroundColor: `${catMeta.color}18` }}
-      >
-        <div className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: catMeta.color }} />
-        <div className="flex-1 min-w-0">
-          <span className="text-xs font-bold tracking-wider uppercase" style={{ color: catMeta.color }}>
-            {catMeta.label}
-          </span>
-          <span className="ml-1.5 text-[9px] text-faint">{budgetLabel}</span>
+    <div
+      className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 first:mt-0"
+      style={{ backgroundColor: `${catMeta.color}18`, borderColor: `${catMeta.color}40` }}
+    >
+      <span className="text-base leading-none shrink-0">{catMeta.icon}</span>
+      <span className="text-xs font-bold tracking-wider uppercase flex-1 min-w-0 truncate" style={{ color: catMeta.color }}>
+        {catMeta.label}
+      </span>
+      <div className="w-16 shrink-0">
+        <PointsBar total={available} used={spent} color={catMeta.color} />
+      </div>
+      <span className={`font-mono text-sm font-bold shrink-0 ${
+        left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
+      }`}>
+        {left}/{available}
+      </span>
+      <InfoPop>
+        <div className="flex flex-col gap-0.5">
+          {tooltipLines}
         </div>
-        <span className={`font-mono text-sm font-bold ${
-          left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
-        }`}>
-          {left}/{available}
-        </span>
-        <span className="text-faint text-xs ml-1 shrink-0">{isOpen ? '▲' : '▼'}</span>
-      </button>
-
-      {isOpen && (
-        <div className="border-t border-hairline">
-          <div className="px-3 py-1.5 bg-bg/50 border-b border-hairline">
-            <PointsBar total={available} used={spent} color={catMeta.color} />
-          </div>
-          <div className="p-2 bg-bg/60">
-            <div className="flex flex-col gap-1.5">
-              {catMeta.talents.map(t => (
-                <TalentTile key={t.name} charId={charId} talentName={t.name}
-                  attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
-                  catColor={catMeta.color} catIcon={catMeta.icon} />
-              ))}
-              {customInCat.map(ct => (
-                <TalentTile key={ct.name} charId={charId} talentName={ct.name}
-                  attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
-                  catColor={catMeta.color} catIcon={catMeta.icon} />
-              ))}
-              {!showCustomForm && (
-                <AddTalentTile onClick={() => setShowCustomForm(true)} />
-              )}
-            </div>
-
-            {showCustomForm && (
-              <CustomTalentForm catKey={catKey} catLabel={catMeta.label} charId={charId}
-                onClose={() => setShowCustomForm(false)} />
-            )}
-          </div>
-        </div>
-      )}
+      </InfoPop>
     </div>
   );
 }
 
-// ── Special abilities section (fits accordion pattern) ────────────────────────
-function SpecialAbilitiesSection({ charId, isOpen, onOpen }: {
-  charId: string; isOpen: boolean; onOpen: () => void;
-}) {
+// ── Special abilities section ─────────────────────────────────────────────────
+function SpecialAbilitiesSection({ charId }: { charId: string }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
 
@@ -298,85 +282,91 @@ function SpecialAbilitiesSection({ charId, isOpen, onOpen }: {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden border border-hairline">
-      <button
-        onClick={onOpen}
-        className="w-full px-3 py-2.5 flex items-center gap-2 transition-colors hover:bg-white/5 bg-paper/5"
-      >
-        <div className="w-1.5 h-4 rounded-full shrink-0 bg-paper/50" />
-        <span className="flex-1 text-xs font-bold tracking-wider uppercase text-paper/70 text-left">
+    <>
+      {/* Header row */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 border-paper/20 bg-paper/5">
+        <span className="text-base leading-none shrink-0">✨</span>
+        <span className="text-xs font-bold tracking-wider uppercase flex-1 text-paper/70">
           Besondere Fähigkeiten
         </span>
-        <span className={`font-mono text-sm font-bold ${left < 0 ? 'text-danger' : 'text-paper'}`}>
+        <div className="w-16 shrink-0">
+          <PointsBar total={VARIABLE_PTS} used={spent} color="#E8E1CF" />
+        </div>
+        <span className={`font-mono text-sm font-bold shrink-0 ${left < 0 ? 'text-danger' : 'text-paper'}`}>
           {left}/{VARIABLE_PTS}
         </span>
-        <span className="text-faint text-xs ml-1 shrink-0">{isOpen ? '▲' : '▼'}</span>
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="border-t border-hairline">
-          <div className="px-3 py-1.5 bg-bg/50 border-b border-hairline">
-            <PointsBar total={VARIABLE_PTS} used={spent} color="#E8E1CF" />
-          </div>
-          <div className="p-2 bg-bg/60">
-            <div className="grid grid-cols-2 gap-1.5">
-              {SPECIAL_ABILITIES.map(ability => {
-                const active    = char.specialAbilities.includes(ability.id);
-                const canAfford = left >= ability.cost;
-                return (
-                  <button
-                    key={ability.id}
-                    onClick={() => toggle(ability.id)}
-                    disabled={!active && !canAfford}
-                    className={`flex flex-col gap-1.5 p-1.5 rounded-lg border text-left transition-colors min-h-[60px] ${
-                      active
-                        ? 'border-paper/40 bg-paper/10 text-primary'
-                        : canAfford
-                          ? 'border-hairline bg-bg hover:bg-raised/30 text-muted'
-                          : 'border-hairline/30 bg-bg text-faint opacity-40 cursor-not-allowed'
-                    }`}
-                  >
-                    <span className="text-[10px] font-medium leading-tight line-clamp-2 flex-1">
-                      {ability.name}
-                    </span>
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className="text-[8px] font-mono text-faint">{ability.cost}P</span>
-                      {active && <span className="text-[9px] text-paper font-bold">✓</span>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Ability rows */}
+      {SPECIAL_ABILITIES.map(ability => {
+        const active    = char.specialAbilities.includes(ability.id);
+        const canAfford = left >= ability.cost;
+        return (
+          <button
+            key={ability.id}
+            onClick={() => toggle(ability.id)}
+            disabled={!active && !canAfford}
+            className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border text-left transition-colors ${
+              active
+                ? 'border-paper/40 bg-paper/10'
+                : canAfford
+                  ? 'border-hairline hover:bg-raised/30'
+                  : 'border-hairline/30 opacity-40 cursor-not-allowed'
+            }`}
+          >
+            <span className="text-[10px] font-medium text-primary flex-1 min-w-0 truncate">{ability.name}</span>
+            <span className="text-[8px] font-mono text-faint shrink-0">{ability.cost}P</span>
+            {active && <span className="text-[9px] text-paper font-bold shrink-0">✓</span>}
+          </button>
+        );
+      })}
+    </>
   );
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function Tab4Talents({ charId }: { charId: string }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [openCat, setOpenCat] = useState<TalentCategory | 'abilities'>(TALENT_CATEGORIES[0].key);
+  const [openCustomForm, setOpenCustomForm] = useState<TalentCategory | null>(null);
 
   if (!char) return null;
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      {TALENT_CATEGORIES.map(cat => (
-        <CategorySection
-          key={cat.key}
-          charId={charId}
-          catKey={cat.key}
-          isOpen={openCat === cat.key}
-          onOpen={() => setOpenCat(cat.key)}
-        />
-      ))}
-      <SpecialAbilitiesSection
-        charId={charId}
-        isOpen={openCat === 'abilities'}
-        onOpen={() => setOpenCat('abilities')}
-      />
+    <div className="flex flex-col gap-1.5 p-4">
+      {TALENT_CATEGORIES.map(cat => {
+        const customInCat = char.customTalents.filter(t => t.category === cat.key);
+        return (
+          <div key={cat.key} className="contents">
+            <CategoryHeaderRow charId={charId} catKey={cat.key} />
+
+            {cat.talents.map(t => (
+              <TalentTile key={t.name} charId={charId} talentName={t.name}
+                attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
+                catColor={cat.color} catIcon={cat.icon} />
+            ))}
+            {customInCat.map(ct => (
+              <TalentTile key={ct.name} charId={charId} talentName={ct.name}
+                attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
+                catColor={cat.color} catIcon={cat.icon} />
+            ))}
+
+            {openCustomForm === cat.key ? (
+              <CustomTalentForm catKey={cat.key} catLabel={cat.label} charId={charId}
+                onClose={() => setOpenCustomForm(null)} />
+            ) : (
+              <button
+                onClick={() => setOpenCustomForm(cat.key)}
+                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
+              >
+                <span className="text-sm leading-none">+</span>
+                <span className="text-xs">Eigenes Talent ({cat.label})</span>
+              </button>
+            )}
+          </div>
+        );
+      })}
+
+      <SpecialAbilitiesSection charId={charId} />
     </div>
   );
 }

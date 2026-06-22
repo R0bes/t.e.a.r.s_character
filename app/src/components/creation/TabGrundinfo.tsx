@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { PROFESSIONS } from '../../data/professions';
 import { ATTRIBUTES } from '../../data/attributes';
 import { TALENT_CATEGORIES, TALENT_CATEGORY_OF, TALENT_CAT_MAP } from '../../data/talents';
-import { SPECIFICATIONS, isNegativeSpec } from '../../data/specifications';
+import { SPECIFICATIONS, isNegativeSpec, isPositiveSpec } from '../../data/specifications';
 import type { Character, ProfessionKey, Specification, TalentCategory } from '../../types/character';
 
 const CAT_COLOR: Record<TalentCategory, string> = {
@@ -162,24 +162,29 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
 
 // ── Spec Overlay ──────────────────────────────────────────────────────────────
 function SpecOverlay({
-  value, customSpecs, filterCategory, onSelect, onClose,
+  value, customSpecs, filterCategory, specType = 'negative', excludeNames = [],
+  onSelect, onClose,
 }: {
   value: Specification | null;
   customSpecs: Specification[];
   filterCategory?: TalentCategory;
+  specType?: 'negative' | 'positive';
+  excludeNames?: string[];
   onSelect: (spec: Specification | null) => void;
   onClose: () => void;
 }) {
-  const negativeSpecs  = SPECIFICATIONS.filter(isNegativeSpec);
-  const negativeCustom = customSpecs.filter(isNegativeSpec);
+  const filterFn   = specType === 'negative' ? isNegativeSpec : isPositiveSpec;
+  const filteredBuiltin = SPECIFICATIONS.filter(filterFn).filter(s => !excludeNames.includes(s.name));
+  const filteredCustom  = customSpecs.filter(filterFn).filter(s => !excludeNames.includes(s.name));
+
+  const titleText   = specType === 'negative' ? 'Negatives Spezifikum wählen' : 'Positives Spezifikum wählen';
+  const modColor    = specType === 'negative' ? 'text-danger' : 'text-success';
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
       <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
-          <span className="text-xs font-bold uppercase tracking-widest text-danger/80">
-            Negatives Spezifikum wählen
-          </span>
+          <span className={`text-xs font-bold uppercase tracking-widest ${modColor}/80`}>{titleText}</span>
           <button onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
             ✕
@@ -198,11 +203,12 @@ function SpecOverlay({
             .filter(cat => !filterCategory || cat.key === filterCategory)
             .map(cat => {
               const inCat = [
-                ...negativeSpecs.filter(s => s.category === cat.key),
-                ...negativeCustom.filter(s => s.category === cat.key),
+                ...filteredBuiltin.filter(s => s.category === cat.key),
+                ...filteredCustom.filter(s => s.category === cat.key),
               ];
               return inCat.map(spec => {
                 const selected = value?.name === spec.name;
+                const modStr   = spec.modifier > 0 ? `+${spec.modifier}` : `${spec.modifier}`;
                 return (
                   <button
                     key={spec.name}
@@ -220,8 +226,8 @@ function SpecOverlay({
                           {spec.name}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono font-bold text-danger ml-2 shrink-0">
-                        +{spec.modifier}
+                      <span className={`text-[10px] font-mono font-bold ml-2 shrink-0 ${modColor}`}>
+                        {modStr}
                       </span>
                     </div>
                     <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
@@ -398,6 +404,8 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   const [h1TalentOverlay,    setH1TalentOverlay]     = useState(false);
   const [h1SpecOverlay,      setH1SpecOverlay]       = useState(false);
   const [h2TalentOverlay,    setH2TalentOverlay]     = useState(false);
+  const [freeNegOverlay,     setFreeNegOverlay]      = useState(false);
+  const [freePosOverlay,     setFreePosOverlay]      = useState(false);
 
   function patchInfo(key: keyof typeof safeChar.info, value: string) {
     patch(charId, c => { (c.info as Record<string, string>)[key] = value; });
@@ -492,16 +500,37 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             className="w-full bg-raised border border-hairline rounded-lg px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
           />
 
-          {/* Berufskategorie — placeholder card if not set */}
+          {/* Berufskategorie — full info card if set, placeholder otherwise */}
           {selectedProf ? (
             <button
               onClick={() => setProfCatOverlay(true)}
-              className="w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90"
-              style={{ backgroundColor: profColor + '18', borderColor: profColor + '80' }}
+              className="w-full text-left p-3 rounded-lg border transition-all hover:opacity-90"
+              style={{ backgroundColor: (profColor ?? '#888') + '18', borderColor: (profColor ?? '#888') + '80' }}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2">
                 <span className="text-base leading-none">{PROF_ICONS[selectedProf.key]}</span>
                 <span className="text-sm font-medium text-primary">{selectedProf.label}</span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5">
+                {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
+                  const c = cat as TalentCategory;
+                  return (
+                    <span key={c} className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>
+                      +{pts} {CAT_SHORT[c]}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(selectedProf.attrMin).map(([attr, val]) => {
+                  const meta = ATTRIBUTES.find(a => a.key === attr);
+                  return (
+                    <span key={attr} className="text-[9px] font-mono px-1 rounded"
+                      style={{ color: meta?.color, backgroundColor: `${meta?.color}22` }}>
+                      {attr} {val}
+                    </span>
+                  );
+                })}
               </div>
             </button>
           ) : (
@@ -608,6 +637,18 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         </>
       )}
 
+      {/* ── Freie Spezifika ── */}
+      <SpecDisplayTile
+        spec={char.specFreeNegative}
+        placeholder="neg. Spezifikum wählen"
+        onClick={() => setFreeNegOverlay(true)}
+      />
+      <SpecDisplayTile
+        spec={char.specFreePositive}
+        placeholder="pos. Spezifikum wählen"
+        onClick={() => setFreePosOverlay(true)}
+      />
+
       {/* ── Overlays ── */}
       {genderOverlay && (
         <GenderOverlay
@@ -675,6 +716,26 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           customTalents={char.customTalents}
           onSelect={name => patch(charId, c => { c.hobby2Talent = name; })}
           onClose={() => setH2TalentOverlay(false)}
+        />
+      )}
+      {freeNegOverlay && (
+        <SpecOverlay
+          value={char.specFreeNegative}
+          customSpecs={char.customSpecifications}
+          specType="negative"
+          excludeNames={[char.specProfession?.name, char.specHobby1?.name, char.specFreePositive?.name].filter(Boolean) as string[]}
+          onSelect={spec => patch(charId, c => { c.specFreeNegative = spec; })}
+          onClose={() => setFreeNegOverlay(false)}
+        />
+      )}
+      {freePosOverlay && (
+        <SpecOverlay
+          value={char.specFreePositive}
+          customSpecs={char.customSpecifications}
+          specType="positive"
+          excludeNames={[char.specFreeNegative?.name].filter(Boolean) as string[]}
+          onSelect={spec => patch(charId, c => { c.specFreePositive = spec; })}
+          onClose={() => setFreePosOverlay(false)}
         />
       )}
     </div>
