@@ -240,10 +240,8 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
       className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 first:mt-0"
       style={{ backgroundColor: `${catMeta.color}18`, borderColor: `${catMeta.color}40` }}
     >
-      <span className="text-base leading-none shrink-0">{catMeta.icon}</span>
-      <span className="text-xs font-bold tracking-wider uppercase flex-1 min-w-0 truncate" style={{ color: catMeta.color }}>
-        {catMeta.label}
-      </span>
+      <span className="text-xl leading-none shrink-0">{catMeta.icon}</span>
+      <div className="flex-1 min-w-0" />
       <div className="w-16 shrink-0">
         <PointsBar total={available} used={spent} color={catMeta.color} />
       </div>
@@ -358,8 +356,7 @@ export function Tab4Talents({ charId }: { charId: string }) {
                 onClick={() => setOpenCustomForm(cat.key)}
                 className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
               >
-                <span className="text-sm leading-none">+</span>
-                <span className="text-xs">Eigenes Talent ({cat.label})</span>
+                <span className="text-xs">{cat.icon} Talent anlegen</span>
               </button>
             )}
           </div>
