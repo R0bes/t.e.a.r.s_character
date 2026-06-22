@@ -9,7 +9,20 @@ import {
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
 import { VARIABLE_PTS } from '../../data/professions';
 import type { AttributeKey, TalentCategory } from '../../types/character';
-import { PointsBar } from '../ui/PointsBar';
+
+// ── Smooth TP health bar ─────────────────────────────────────────────────────
+function TpBar({ left, total, color }: { left: number; total: number; color: string }) {
+  const pct  = total > 0 ? Math.max(0, Math.min(100, (left / total) * 100)) : 0;
+  const over = left < 0;
+  return (
+    <div className="h-2 w-full rounded-full overflow-hidden bg-raised">
+      <div
+        className="h-full rounded-full transition-all duration-200"
+        style={{ width: `${pct}%`, backgroundColor: over ? '#D1453B' : color }}
+      />
+    </div>
+  );
+}
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
@@ -263,7 +276,7 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
       <span className="text-xl leading-none shrink-0">{catMeta.icon}</span>
       <div className="flex-1 min-w-0" />
       <div className="w-20 shrink-0">
-        <PointsBar total={available} used={left} color={catMeta.color} blockSize={5} />
+        <TpBar left={left} total={available} color={catMeta.color} />
       </div>
       <span className={`font-mono text-sm font-bold shrink-0 ${
         left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
@@ -306,8 +319,8 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
         <span className="text-xs font-bold tracking-wider uppercase flex-1 text-paper/70">
           Besondere Fähigkeiten
         </span>
-        <div className="w-16 shrink-0">
-          <PointsBar total={VARIABLE_PTS} used={left} color="#E8E1CF" />
+        <div className="w-20 shrink-0">
+          <TpBar left={left} total={VARIABLE_PTS} color="#E8E1CF" />
         </div>
         <span className={`font-mono text-sm font-bold shrink-0 ${left < 0 ? 'text-danger' : 'text-paper'}`}>
           {left}/{VARIABLE_PTS}

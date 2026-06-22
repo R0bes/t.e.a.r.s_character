@@ -99,18 +99,20 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
 
   const ribbonLabel = selectedAs
     ?? (reservedAs === 'beruf' ? 'Beruf' : reservedAs === 'hobby' ? '1. Hobby' : null);
-  const isSelected = !!selectedAs;
+  const isActive   = !!ribbonLabel; // highlighted when selected or reserved
+  const isHobby    = reservedAs === 'hobby';
+  const modIgnored = isHobby;
 
   return (
     <button
       onClick={onToggle}
       disabled={!!reservedAs}
       className={`relative text-left w-full p-2.5 rounded-lg border transition-all overflow-hidden ${
-        reservedAs ? 'opacity-45 cursor-default' : 'hover:opacity-90'
+        reservedAs ? 'cursor-default' : 'hover:opacity-90'
       }`}
       style={{
-        backgroundColor: isSelected ? `${color}20` : `${color}0C`,
-        borderColor:     isSelected ? `${color}60` : reservedAs ? '#2D303A44' : `${color}28`,
+        backgroundColor: isActive ? `${color}20` : `${color}0C`,
+        borderColor:     isActive ? `${color}60` : `${color}28`,
       }}
     >
       <div className="flex items-center justify-between mb-1">
@@ -120,8 +122,14 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
             {spec.name}
           </span>
         </div>
-        <span className="text-[10px] font-mono font-bold shrink-0 ml-2" style={{ color: modColor }}>
+        <span
+          className={`text-[10px] font-mono font-bold shrink-0 ml-2 relative ${modIgnored ? 'line-through opacity-40' : ''}`}
+          style={{ color: modColor }}
+        >
           {isMalus ? '+' : ''}{spec.modifier}
+          {modIgnored && (
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+          )}
         </span>
       </div>
       <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
