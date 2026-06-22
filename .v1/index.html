@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>T.E.A.R.S. — Charaktererstellung</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- PRINT-ONLY: character sheet, hidden in normal view -->
+  <div id="print-sheet" class="print-only"></div>
+
+  <!-- APP SHELL -->
+  <div id="app">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-brand">
+        <span class="brand-logo">T.E.A.R.S.</span>
+        <span class="brand-sub">Charaktererstellung</span>
+      </div>
+      <div class="header-progress" id="header-progress"></div>
+      <div class="header-actions">
+        <span class="save-state" id="save-state"></span>
+        <button id="btn-save"   class="btn btn-primary">Speichern</button>
+        <button id="btn-load"   class="btn btn-ghost">Laden</button>
+        <button id="btn-export" class="btn btn-ghost">Export</button>
+        <button id="btn-import" class="btn btn-ghost">Import</button>
+        <button id="btn-print"  class="btn btn-ghost">Drucken</button>
+        <button id="btn-reset"  class="btn btn-danger">Neu</button>
+        <input type="file" id="import-file" accept=".json" hidden>
+      </div>
+    </header>
+
+    <!-- COMPLETION CHECKLIST -->
+    <div class="checklist-bar" id="checklist-bar"></div>
+
+    <!-- TAB NAVIGATION -->
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="charakter">Charakter</button>
+      <button class="tab-btn"        data-tab="attribute">Attribute</button>
+      <button class="tab-btn"        data-tab="talente">Talente</button>
+      <button class="tab-btn"        data-tab="waffen">Waffen</button>
+      <button class="tab-btn"        data-tab="notizen">Notizen</button>
+    </nav>
+
+    <!-- TAB CONTENT -->
+    <main class="content" id="content">
+      <section id="tab-charakter"  class="tab-pane active"></section>
+      <section id="tab-attribute"  class="tab-pane"></section>
+      <section id="tab-talente"    class="tab-pane"></section>
+      <section id="tab-waffen"     class="tab-pane"></section>
+      <section id="tab-notizen"    class="tab-pane"></section>
+    </main>
+
+  </div><!-- /#app -->
+
+  <div id="toast-container"></div>
+
+  <!-- JS in dependency order: data → rules → state → ui → persist → main -->
+  <script src="js/data.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/persist.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
