@@ -6,7 +6,7 @@ import { calcDerived } from '../../rules/derivedValues';
 import type { AttributeKey } from '../../types/character';
 import { SpiderChart } from '../ui/SpiderChart';
 import type { SpiderAxis, HatchZone } from '../ui/SpiderChart';
-import { PointsBar } from '../ui/PointsBar';
+
 
 // ── 12 distinct colors ────────────────────────────────────────────────────────
 const C = {
@@ -116,11 +116,11 @@ function AttrControl({
   onDecrease: () => void; onIncrease: () => void; color: string; name: string; icon: string;
   onHoverChange: (delta: number) => void;
 }) {
-  const pos     = ATTR_POSITIONS[attrKey];
-  const cost    = stepCost(value);
+  const pos      = ATTR_POSITIONS[attrKey];
+  const cost     = stepCost(value);
   const prevCost = value > minValue ? stepCost(value - 1) : 0;
-  const canInc  = value < ATTR_MAX && pointsLeft >= cost;
-  const canDec  = value > minValue;
+  const canInc   = value < ATTR_MAX && pointsLeft >= cost;
+  const canDec   = value > minValue;
 
   const alignCls = pos.align === 'center' ? 'items-center'
     : pos.align === 'left' ? 'items-start'
@@ -139,29 +139,7 @@ function AttrControl({
       className={`absolute flex flex-col gap-1 ${alignCls}`}
       style={{ left: pos.left, top: pos.top, transform: 'translate(-50%, -50%)' }}
     >
-      {/* Medallion icon */}
-      <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0"
-        style={{ boxShadow: `0 0 0 2px ${color}88` }}
-      >
-        <img src={icon} alt={name} className="w-full h-full object-cover" />
-        {/* Value overlay */}
-        <div className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)' }}
-        >
-          <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
-            {value}
-          </span>
-        </div>
-      </div>
-
-      <div className={`flex items-center gap-1 ${pos.align === 'right' ? 'flex-row-reverse' : ''}`}>
-        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>
-          {attrKey}
-        </span>
-        <InfoBtn content={<span style={{ color }}>{name}</span>} dir={pos.tip} />
-      </div>
-
-      {/* Always − left, + right */}
+      {/* − icon + */}
       <div className="flex items-center gap-1">
         <button
           onClick={onDecrease} disabled={!canDec}
@@ -170,6 +148,21 @@ function AttrControl({
           className="w-6 h-6 rounded border text-sm leading-none transition-colors active:scale-95 flex items-center justify-center disabled:opacity-25"
           style={{ borderColor: color + '88', color }}
         >−</button>
+
+        {/* Medallion icon */}
+        <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0"
+          style={{ boxShadow: `0 0 0 2px ${color}88` }}
+        >
+          <img src={icon} alt={name} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+          >
+            <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+              {value}
+            </span>
+          </div>
+        </div>
+
         <button
           onClick={onIncrease} disabled={!canInc}
           onMouseEnter={() => canInc && onHoverChange(-cost)}
@@ -259,18 +252,45 @@ export function Tab3Attributes({ charId }: { charId: string }) {
   return (
     <div className="flex flex-col gap-4 p-4">
 
-      {/* Attribute points bar with hover forecast */}
+      {/* AP healthbar with forecast ghost */}
       <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <PointsBar total={ATTR_FREE} used={pointsLeft} color="#7A8A9A" />
+        <span className="text-[9px] font-mono text-faint shrink-0">AP</span>
+        <div className="relative flex-1 h-2.5 rounded-full overflow-hidden bg-raised">
+          {/* Current fill */}
+          <div
+            className="absolute inset-y-0 left-0 rounded-full transition-all duration-200"
+            style={{
+              width: `${Math.max(0, (pointsLeft / ATTR_FREE) * 100)}%`,
+              backgroundColor: '#7A8A9A',
+            }}
+          />
+          {/* Forecast ghost overlay */}
+          {hoverDelta !== 0 && (
+            <div
+              className="absolute inset-y-0 rounded-full transition-all duration-100 opacity-60"
+              style={hoverDelta > 0
+                ? {
+                    // gaining points: ghost extends right from current edge
+                    left:  `${(pointsLeft / ATTR_FREE) * 100}%`,
+                    width: `${(hoverDelta / ATTR_FREE) * 100}%`,
+                    backgroundColor: '#4FA968',
+                  }
+                : {
+                    // losing points: ghost shrinks left from current edge
+                    left:  `${(forecasted / ATTR_FREE) * 100}%`,
+                    width: `${(Math.abs(hoverDelta) / ATTR_FREE) * 100}%`,
+                    backgroundColor: '#D1453B',
+                  }
+              }
+            />
+          )}
         </div>
-        {hoverDelta !== 0 && (
-          <span className={`text-xs font-mono font-bold shrink-0 transition-colors ${
-            hoverDelta > 0 ? 'text-success' : 'text-danger'
-          }`}>
-            → {forecasted}
-          </span>
-        )}
+        <span className="text-[9px] font-mono text-faint shrink-0 w-8 text-right">
+          {forecasted !== pointsLeft
+            ? <span style={{ color: hoverDelta > 0 ? '#4FA968' : '#D1453B' }}>{forecasted}</span>
+            : pointsLeft
+          }/{ATTR_FREE}
+        </span>
       </div>
 
       {/* ── Side-by-side radars ── */}
