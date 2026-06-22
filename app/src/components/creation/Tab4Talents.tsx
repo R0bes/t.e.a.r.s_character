@@ -54,8 +54,8 @@ function InfoPop({ children }: { children: ReactNode }) {
 }
 
 // ── Custom Talent Form ────────────────────────────────────────────────────────
-function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
-  catKey: TalentCategory; catLabel: string; charId: string; onClose: () => void;
+function CustomTalentForm({ catKey, charId, onClose }: {
+  catKey: TalentCategory; charId: string; onClose: () => void;
 }) {
   const patch = useStore(s => s.patchCharacter);
   const char  = useStore(s => s.characters.find(c => c.id === charId));
@@ -87,7 +87,6 @@ function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
 
   return (
     <div className="bg-raised/40 rounded-lg px-3 py-3 space-y-2.5 border border-hairline/60">
-      <p className="text-[10px] text-warn font-medium">Neues Talent — {catLabel} (SL-Absprache)</p>
       <input
         type="text" placeholder="Talentname" value={name}
         onChange={e => setName(e.target.value)}
@@ -105,7 +104,7 @@ function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
           </button>
         ))}
       </div>
-      {mode === 'normal' ? (
+      {mode === 'normal' && (
         <div className="flex gap-1.5">
           {([0, 1, 2] as const).map(i => (
             <select key={i} value={attrs[i]} onChange={e => setAttr(i, e.target.value as AttributeKey)}
@@ -114,10 +113,6 @@ function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
             </select>
           ))}
         </div>
-      ) : (
-        <p className="text-[10px] text-faint italic">
-          Bezieht sich auf Kampfattribute — keine Primärattributbindung.
-        </p>
       )}
       {exists && <p className="text-xs text-danger">Name bereits vergeben.</p>}
       <div className="flex gap-2">
@@ -382,7 +377,7 @@ export function Tab4Talents({ charId }: { charId: string }) {
             ))}
 
             {openCustomForm === cat.key ? (
-              <CustomTalentForm catKey={cat.key} catLabel={cat.label} charId={charId}
+              <CustomTalentForm catKey={cat.key} charId={charId}
                 onClose={() => setOpenCustomForm(null)} />
             ) : (
               <button

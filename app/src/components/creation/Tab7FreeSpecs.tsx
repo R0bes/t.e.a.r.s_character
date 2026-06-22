@@ -24,52 +24,49 @@ function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => vo
     const spec: Specification = { name: name.trim(), modifier, description, category };
     patch(charId, c => {
       c.customSpecifications.push(spec);
-      if (modifier < 0 && !c.specFreePositive)  c.specFreePositive  = spec;
-      else if (modifier > 0 && !c.specFreeNegative) c.specFreeNegative = spec;
+      if (modifier >= 0 && !c.specFreePositive)  c.specFreePositive  = spec;
+      else if (modifier < 0 && !c.specFreeNegative) c.specFreeNegative = spec;
     });
     onClose();
   }
 
   return (
     <div className="bg-raised/40 rounded-lg p-3 space-y-2 border border-hairline/60">
-      <p className="text-[10px] text-warn font-medium">Neues Spezifikum (SL-Absprache)</p>
       <input
         type="text" value={name} onChange={e => setName(e.target.value)}
         placeholder="Name des Spezifikums"
         className="w-full bg-bg border border-hairline rounded px-2 py-1.5 text-primary text-sm placeholder:text-faint focus:outline-none"
       />
-      {/* Category selector */}
-      <div className="flex gap-1 flex-wrap">
+      {/* Category selector — icons only */}
+      <div className="flex gap-1.5">
         {TALENT_CATEGORIES.map(cat => (
           <button
             key={cat.key}
             onClick={() => setCat(cat.key)}
-            className="flex items-center gap-1 px-2 py-1 rounded border text-[10px] transition-colors"
+            className="p-1.5 rounded border transition-colors"
             style={{
-              borderColor:      category === cat.key ? cat.color + 'AA' : '#2D303A',
-              backgroundColor:  category === cat.key ? cat.color + '20' : 'transparent',
-              color:            category === cat.key ? cat.color : '#8C8F99',
+              borderColor:     category === cat.key ? cat.color + 'AA' : '#2D303A',
+              backgroundColor: category === cat.key ? cat.color + '20' : 'transparent',
             }}
           >
-            <CatIcon src={cat.icon} size={14} />
-            <span>{cat.label.replace(' Talente', '').replace(' & Waffen', '')}</span>
+            <CatIcon src={cat.icon} size={24} />
           </button>
         ))}
       </div>
       <div className="flex gap-2 items-center">
-        <label className="text-[10px] text-faint shrink-0">Modifier:</label>
+        <label className="text-[10px] text-faint shrink-0">Wert:</label>
         <input
           type="number" value={modifier}
           onChange={e => setMod(Number(e.target.value))}
           className="flex-1 bg-bg border border-hairline rounded px-2 py-1 text-primary text-sm font-mono focus:outline-none"
         />
-        <span className={`text-[10px] shrink-0 ${modifier > 0 ? 'text-danger' : 'text-success'}`}>
-          {modifier > 0 ? 'Malus' : 'Bonus'}
+        <span className={`text-[10px] shrink-0 ${modifier >= 0 ? 'text-success' : 'text-danger'}`}>
+          {modifier >= 0 ? 'Bonus' : 'Malus'}
         </span>
       </div>
       <input
         type="text" value={description} onChange={e => setDesc(e.target.value)}
-        placeholder="Beschreibung (optional)"
+        placeholder="Beschreibung"
         className="w-full bg-bg border border-hairline rounded px-2 py-1.5 text-primary text-sm placeholder:text-faint focus:outline-none"
       />
       {exists && <p className="text-xs text-danger">Name bereits vergeben.</p>}
@@ -77,7 +74,7 @@ function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => vo
         <button onClick={onClose} className="flex-1 py-1.5 border border-hairline rounded text-xs text-muted">
           Abbrechen
         </button>
-        <button onClick={save} disabled={!name.trim() || exists}
+        <button onClick={save} disabled={!name.trim() || !description.trim() || exists}
           className="flex-1 py-1.5 bg-paper text-bg rounded text-xs font-medium disabled:opacity-40">
           Hinzufügen
         </button>
