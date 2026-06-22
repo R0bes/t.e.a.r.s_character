@@ -510,20 +510,20 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           {selectedProf ? (
             <button
               onClick={() => setProfCatOverlay(true)}
-              className="w-full text-left p-3 rounded-lg border transition-all hover:opacity-90"
-              style={{ backgroundColor: (profColor ?? '#888') + '18', borderColor: (profColor ?? '#888') + '80' }}
+              className="w-full text-left p-3 rounded-lg border transition-colors hover:opacity-90"
+              style={{ borderColor: (profColor ?? '#888') + 'CC', backgroundColor: (profColor ?? '#888') + '18' }}
             >
               <div className="flex items-start gap-3">
-                <CatIcon src={selectedProf.icon} size={60} className="shrink-0" />
+                <CatIcon src={selectedProf.icon} size={90} className="shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-primary block mb-1.5">{selectedProf.label}</span>
+                  <span className="text-base font-semibold leading-tight block mb-1.5" style={{ color: profColor }}>{selectedProf.label}</span>
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
                       const c = cat as TalentCategory;
                       const catMeta = TALENT_CAT_MAP[c];
                       return (
                         <span key={c} className="flex items-center gap-1">
-                          <CatIcon src={catMeta.icon} size={14} />
+                          <CatIcon src={catMeta.icon} size={28} />
                           <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
                         </span>
                       );
@@ -534,7 +534,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                       const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
                       return (
                         <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
-                          <CatIcon src={meta?.icon ?? ''} size={12} />
+                          <CatIcon src={meta?.icon ?? ''} size={24} />
                           <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
                         </span>
                       );
