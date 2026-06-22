@@ -86,9 +86,9 @@ function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => vo
 }
 
 // ── Single spec tile ──────────────────────────────────────────────────────────
-function SpecTile({ spec, isSelected, reservedAs, onToggle }: {
+function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
   spec: Specification;
-  isSelected: boolean;
+  selectedAs: 'frei +' | 'frei −' | null;
   reservedAs: 'beruf' | 'hobby' | null;
   onToggle: () => void;
 }) {
@@ -97,11 +97,15 @@ function SpecTile({ spec, isSelected, reservedAs, onToggle }: {
   const isMalus  = spec.modifier > 0;
   const modColor = isMalus ? '#E83050' : '#4FA968';
 
+  const ribbonLabel = selectedAs
+    ?? (reservedAs === 'beruf' ? 'Beruf' : reservedAs === 'hobby' ? '1. Hobby' : null);
+  const isSelected = !!selectedAs;
+
   return (
     <button
       onClick={onToggle}
       disabled={!!reservedAs}
-      className={`text-left w-full p-2.5 rounded-lg border transition-all ${
+      className={`relative text-left w-full p-2.5 rounded-lg border transition-all overflow-hidden ${
         reservedAs ? 'opacity-45 cursor-default' : 'hover:opacity-90'
       }`}
       style={{
@@ -116,15 +120,30 @@ function SpecTile({ spec, isSelected, reservedAs, onToggle }: {
             {spec.name}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          <span className="text-[10px] font-mono font-bold" style={{ color: modColor }}>
-            {isMalus ? '+' : ''}{spec.modifier}
-          </span>
-          {isSelected && <span className="text-[9px] text-paper font-bold">✓</span>}
-          {reservedAs  && <span className="text-[8px] font-mono text-faint capitalize">{reservedAs}</span>}
-        </div>
+        <span className="text-[10px] font-mono font-bold shrink-0 ml-2" style={{ color: modColor }}>
+          {isMalus ? '+' : ''}{spec.modifier}
+        </span>
       </div>
-      <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
+      <p className="text-[9px] text-faint leading-snug pr-8">{spec.description}</p>
+      {ribbonLabel && (
+        <span
+          className="absolute pointer-events-none"
+          style={{
+            bottom: 8, right: -22,
+            width: 72, textAlign: 'center',
+            fontSize: 7, fontWeight: 700,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '2px 0',
+            backgroundColor: `${color}50`,
+            color,
+            transform: 'rotate(-45deg)',
+            transformOrigin: 'center',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {ribbonLabel}
+        </span>
+      )}
     </button>
   );
 }
@@ -145,8 +164,10 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
     ...char.customSpecifications,
   ];
 
-  function isSelected(name: string) {
-    return char!.specFreePositive?.name === name || char!.specFreeNegative?.name === name;
+  function selectedAs(name: string): 'frei +' | 'frei −' | null {
+    if (char!.specFreePositive?.name === name)  return 'frei +';
+    if (char!.specFreeNegative?.name === name)  return 'frei −';
+    return null;
   }
 
   function reservedAs(name: string): 'beruf' | 'hobby' | null {
@@ -157,11 +178,12 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
 
   function toggleSpec(spec: Specification) {
     const isMalus = spec.modifier > 0;
+    const alreadySelected = !!selectedAs(spec.name);
     patch(charId, c => {
       if (isMalus) {
-        c.specFreeNegative = c.specFreeNegative?.name === spec.name ? null : spec;
+        c.specFreeNegative = alreadySelected ? null : spec;
       } else {
-        c.specFreePositive = c.specFreePositive?.name === spec.name ? null : spec;
+        c.specFreePositive = alreadySelected ? null : spec;
       }
     });
   }
@@ -172,7 +194,7 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
         <SpecTile
           key={spec.name}
           spec={spec}
-          isSelected={isSelected(spec.name)}
+          selectedAs={selectedAs(spec.name)}
           reservedAs={reservedAs(spec.name)}
           onToggle={() => toggleSpec(spec)}
         />

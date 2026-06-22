@@ -120,11 +120,11 @@ function CustomTalentForm({ catKey, catLabel, charId, onClose }: {
   );
 }
 
-function levelIcon(effective: number): { icon: string; cls: string } | null {
+function qualityRibbon(effective: number): { label: string; color: string } | null {
   if (effective === 0)  return null;
-  if (effective <= 4)   return { icon: '◦', cls: 'text-warn'    };
-  if (effective <= 9)   return { icon: '◆', cls: 'text-muted'   };
-  return                       { icon: '★', cls: 'text-success'  };
+  if (effective <= 4)   return { label: 'Anfänger', color: '#E08C3C' };
+  if (effective <= 9)   return { label: 'Geübt',    color: '#8C8F99' };
+  return                       { label: 'Profi',    color: '#4FA968' };
 }
 
 // ── Talent row ────────────────────────────────────────────────────────────────
@@ -151,15 +151,16 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
   const isCombat   = costMul === 2;
   const canInc     = talentCanIncrease(char, talentName);
   const canDec     = stored > 0;
-  const lvIcon     = levelIcon(effective);
+  const qual       = qualityRibbon(effective);
 
   const isSpecial  = isHobby1 || isHobby2 || isProfTal;
   const tileBg     = `${catColor}10`;
   const tileBorder = isSpecial ? `${catColor}60` : `${catColor}28`;
+  const srcLabel   = isProfTal ? 'Beruf' : isHobby1 ? '1. Hobby' : isHobby2 ? '2. Hobby' : null;
 
   return (
     <div
-      className="flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors"
+      className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
       <span className="text-[10px] leading-none shrink-0">{catIcon}</span>
@@ -169,11 +170,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
           <span className="text-[11px] font-medium text-primary leading-tight truncate flex-1 min-w-0">
             {talentName}
           </span>
-          {isCustom  && <span className="text-[7px] text-warn shrink-0">SL</span>}
-          {lvIcon    && <span className={`text-[9px] shrink-0 leading-none ${lvIcon.cls}`}>{lvIcon.icon}</span>}
-          {isProfTal && <span className="text-[7px] font-mono text-paper/50 shrink-0">Beruf</span>}
-          {isHobby1  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H1</span>}
-          {isHobby2  && <span className="text-[7px] font-mono text-paper/50 shrink-0">H2</span>}
+          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           {isCombat
@@ -199,6 +196,30 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
           className="w-6 h-6 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
         >+</button>
       </div>
+
+      {/* Source ribbon — bottom-right */}
+      {srcLabel && (
+        <span className="absolute pointer-events-none"
+          style={{
+            bottom: 6, right: -20, width: 68, textAlign: 'center',
+            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '1px 0', backgroundColor: `${catColor}50`, color: catColor,
+            transform: 'rotate(-45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+          }}
+        >{srcLabel}</span>
+      )}
+
+      {/* Quality ribbon — bottom-left */}
+      {qual && (
+        <span className="absolute pointer-events-none"
+          style={{
+            bottom: 6, left: -20, width: 68, textAlign: 'center',
+            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '1px 0', backgroundColor: `${qual.color}50`, color: qual.color,
+            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+          }}
+        >{qual.label}</span>
+      )}
     </div>
   );
 }
@@ -241,7 +262,7 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
     >
       <span className="text-xl leading-none shrink-0">{catMeta.icon}</span>
       <div className="flex-1 min-w-0" />
-      <div className="w-16 shrink-0">
+      <div className="w-20 shrink-0">
         <PointsBar total={available} used={left} color={catMeta.color} blockSize={5} />
       </div>
       <span className={`font-mono text-sm font-bold shrink-0 ${

@@ -588,7 +588,6 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
               <span className="text-[10px] font-bold uppercase tracking-widest text-faint">1. Hobby</span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-paper/40">+5 TP</span>
                 <button
                   onClick={() => { patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; }); setH1Open(false); }}
                   className="text-faint hover:text-muted text-sm leading-none"
@@ -630,7 +629,6 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-faint">2. Hobby</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-paper/40">+3 TP</span>
                   <button
                     onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
                     className="text-faint hover:text-muted text-sm leading-none"
