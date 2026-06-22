@@ -566,13 +566,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           {/* Hobby 1 card */}
           <div className="rounded-lg border border-hairline overflow-hidden">
             <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 1</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-faint">1. Hobby</span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-paper/40">+5 TP</span>
                 <button
                   onClick={() => { patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; }); setH1Open(false); }}
                   className="text-faint hover:text-muted text-sm leading-none"
-                  title="Hobby 1 entfernen"
+                  title="1. Hobby entfernen"
                 >✕</button>
               </div>
             </div>
@@ -581,7 +581,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                 type="text"
                 value={char.hobby1Name}
                 onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
-                placeholder="Hobby-Name"
+                placeholder="Bezeichnung"
                 className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
               />
               <TalentDisplayTile
@@ -607,13 +607,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           ) : (
             <div className="rounded-lg border border-hairline overflow-hidden">
               <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Hobby 2</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-faint">2. Hobby</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-paper/40">+3 TP</span>
                   <button
                     onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
                     className="text-faint hover:text-muted text-sm leading-none"
-                    title="Hobby 2 entfernen"
+                    title="2. Hobby entfernen"
                   >✕</button>
                 </div>
               </div>
@@ -622,7 +622,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   type="text"
                   value={char.hobby2Name}
                   onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
-                  placeholder="Hobby-Name"
+                  placeholder="Bezeichnung"
                   className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
                 />
                 <TalentDisplayTile
