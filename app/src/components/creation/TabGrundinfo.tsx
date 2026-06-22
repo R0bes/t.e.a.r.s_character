@@ -119,7 +119,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                   style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
                 >
                   <div className="flex items-start gap-3">
-                    <CatIcon src={prof.icon} size={60} className="shrink-0" />
+                    <CatIcon src={prof.icon} size={90} className="shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-xs font-medium leading-tight text-primary block mb-1.5">{prof.label}</span>
                       <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -128,7 +128,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                           const catMeta = TALENT_CAT_MAP[c];
                           return (
                             <span key={c} className="flex items-center gap-1">
-                              <CatIcon src={catMeta.icon} size={14} />
+                              <CatIcon src={catMeta.icon} size={28} />
                               <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
                             </span>
                           );
@@ -139,7 +139,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                           const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
                           return (
                             <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
-                              <CatIcon src={meta?.icon ?? ''} size={12} />
+                              <CatIcon src={meta?.icon ?? ''} size={24} />
                               <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
                             </span>
                           );
