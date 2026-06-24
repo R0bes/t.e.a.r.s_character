@@ -519,42 +519,60 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         className="w-full bg-raised border border-hairline rounded-lg px-4 py-3 text-primary text-base font-medium placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
       />
 
-      {/* ── Geschlecht + Alter / Größe / Gewicht — 4 columns ── */}
-      <div className="grid grid-cols-4 gap-2">
-        {/* Gender — placeholder style when not selected */}
-        <button
-          onClick={() => setGenderOverlay(true)}
-          className={`rounded-lg p-2 flex flex-col items-center justify-center gap-1 transition-colors ${
-            selectedGender
-              ? 'bg-raised border border-hairline hover:border-muted'
-              : 'border border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
-          }`}
-        >
-          {selectedGender
-            ? <CatIcon src={selectedGender.icon} size={36} />
-            : <span className="text-2xl leading-none text-faint">?</span>
-          }
-          <span className="text-[9px] text-faint">Geschlecht</span>
-        </button>
+      {/* ── Identity row: left = 4 stacked info rows, right = character photo ── */}
+      <div className="flex gap-3">
+        {/* Left: Geschlecht + Alter + Größe + Gewicht */}
+        <div className="flex flex-col gap-1.5 flex-1">
+          {/* Gender row */}
+          <button
+            onClick={() => setGenderOverlay(true)}
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-colors ${
+              selectedGender
+                ? 'bg-raised border-hairline hover:border-muted'
+                : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
+            }`}
+          >
+            {selectedGender
+              ? <CatIcon src={selectedGender.icon} size={28} className="shrink-0" />
+              : <span className="text-lg leading-none text-faint w-7 text-center">?</span>
+            }
+            <span className="text-sm text-primary">
+              {selectedGender ? selectedGender.label : 'Geschlecht wählen'}
+            </span>
+          </button>
 
-        {/* Age / Height / Weight */}
-        {[
-          { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'Jahre' },
-          { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm'    },
-          { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg'    },
-        ].map(f => (
-          <div key={f.key} className="bg-raised border border-hairline rounded-lg p-2 flex flex-col items-center gap-1">
-            <CatIcon src={f.icon} size={32} />
-            <input
-              type="text"
-              value={(char.info as Record<string, string>)[f.key] ?? ''}
-              onChange={e => patchInfo(f.key as keyof typeof char.info, e.target.value)}
-              placeholder={f.placeholder}
-              className="w-full bg-transparent text-center text-primary text-sm font-mono placeholder:text-faint focus:outline-none"
-            />
-            <span className="text-[9px] text-faint">{f.suffix}</span>
-          </div>
-        ))}
+          {/* Age / Height / Weight */}
+          {[
+            { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'Jahre' },
+            { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm'    },
+            { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg'    },
+          ].map(f => {
+            const val = (char.info as Record<string, string>)[f.key] ?? '';
+            return (
+              <div key={f.key} className="flex items-center gap-2.5 px-3 py-2 bg-raised border border-hairline rounded-lg">
+                <CatIcon src={f.icon} size={28} className="shrink-0" />
+                <input
+                  type="text"
+                  value={val}
+                  onChange={e => patchInfo(f.key as keyof typeof char.info, e.target.value)}
+                  placeholder={f.placeholder}
+                  className="flex-1 bg-transparent text-primary text-sm font-mono placeholder:text-faint focus:outline-none min-w-0"
+                />
+                {val && <span className="text-xs text-faint shrink-0">{f.suffix}</span>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right: character photo placeholder */}
+        <div
+          className="shrink-0 rounded-lg border border-dashed border-hairline flex items-center justify-center text-faint"
+          style={{ width: 110, alignSelf: 'stretch' }}
+        >
+          <span className="text-[9px] uppercase tracking-widest text-faint/60 rotate-0 text-center px-1 leading-relaxed">
+            Charakterbild
+          </span>
+        </div>
       </div>
 
       {/* ── Beruf ── */}
