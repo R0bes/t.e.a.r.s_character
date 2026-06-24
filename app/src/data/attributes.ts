@@ -19,7 +19,7 @@ export const ATTRIBUTES: AttributeMeta[] = [
   { key: 'AU', name: 'Ausdauer',              shortName: 'AU', color: '#4FA968', tailwindColor: 'au', icon: '/icons/attr/au.png' },
   { key: 'CH', name: 'Charme',                shortName: 'CH', color: '#D45C95', tailwindColor: 'ch', icon: '/icons/attr/ch.png' },
   { key: 'IN', name: 'Intelligenz',           shortName: 'IN', color: '#8C5FC4', tailwindColor: 'in', icon: '/icons/attr/in.png' },
-  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: '#E08C3C', tailwindColor: 'mb', icon: '/icons/attr/mg.png' },
+  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: '#E08C3C', tailwindColor: 'mb', icon: '/icons/attr/mb.png' },
 ];
 
 export const ATTR_MAP = Object.fromEntries(

@@ -29,9 +29,14 @@ const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
 };
 
 const GENDER_OPTIONS = [
-  { key: 'weiblich', symbol: '♀' },
-  { key: 'männlich', symbol: '♂' },
-  { key: 'divers',   symbol: '⚥' },
+  { key: 'männlich',    label: 'Männlich',    icon: '/icons/attr/id_maennlich.png' },
+  { key: 'weiblich',    label: 'Weiblich',    icon: '/icons/attr/id_weiblich.png' },
+  { key: 'divers',      label: 'Divers',      icon: '/icons/attr/id_divers.png' },
+  { key: 'nonbinär',   label: 'Nonbinär',    icon: '/icons/attr/id_nonbinaer.png' },
+  { key: 'agender',     label: 'Agender',     icon: '/icons/attr/id_agender.png' },
+  { key: 'genderfluid', label: 'Genderfluid', icon: '/icons/attr/id_genderfluid.png' },
+  { key: 'asexuell',    label: 'Asexuell',    icon: '/icons/attr/id_asexuell.png' },
+  { key: 'unbekannt',   label: 'Unbekannt',   icon: '/icons/attr/id_unknown.png' },
 ];
 
 function saveSpec(
@@ -73,13 +78,14 @@ function GenderOverlay({ value, onSelect, onClose }: {
               <button
                 key={g.key}
                 onClick={() => { onSelect(g.key); onClose(); }}
-                className="w-full flex items-center justify-center gap-4 px-4 py-5 rounded-lg border transition-all hover:opacity-90"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:opacity-90"
                 style={{
                   backgroundColor: selected ? '#B8B8C020' : '#B8B8C00A',
                   borderColor:     selected ? '#B8B8C070' : '#2D303A',
                 }}
               >
-                <span className="text-4xl leading-none">{g.symbol}</span>
+                <CatIcon src={g.icon} size={48} className="shrink-0" />
+                <span className="text-sm font-medium text-paper">{g.label}</span>
                 {selected && <span className="text-[10px] text-paper font-bold ml-auto">✓</span>}
               </button>
             );
@@ -210,24 +216,22 @@ function SpecOverlay({
                   <button
                     key={spec.name}
                     onClick={() => { onSelect(spec); onClose(); }}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border transition-all hover:opacity-90"
+                    className="relative w-full text-left p-3 pb-10 rounded-lg border transition-all hover:opacity-90 overflow-hidden flex flex-col gap-2"
                     style={{
                       backgroundColor: selected ? `${cat.color}20` : `${cat.color}0A`,
                       borderColor:     selected ? `${cat.color}70` : `${cat.color}28`,
                     }}
                   >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <CatIcon src={cat.icon} size={32} />
-                        <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
-                          {spec.name}
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono font-bold ml-2 shrink-0 ${modColor}`}>
-                        {modStr}
+                    <div className="flex items-center gap-2">
+                      <CatIcon src={cat.icon} size={26} className="shrink-0" />
+                      <span className="text-base font-semibold leading-tight" style={{ color: cat.color }}>
+                        {spec.name}
                       </span>
                     </div>
-                    <p className="text-[9px] text-faint leading-snug">{spec.description}</p>
+                    <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
+                    <span className={`absolute bottom-2.5 right-3 text-2xl font-mono font-bold ${modColor}`}>
+                      {modStr}
+                    </span>
                   </button>
                 );
               });
@@ -240,17 +244,17 @@ function SpecOverlay({
 
 // ── Talent Overlay ────────────────────────────────────────────────────────────
 function TalentOverlay({
-  title, value, customTalents, onSelect, onClose,
+  title, value, char, onSelect, onClose,
 }: {
   title: string;
   value: string | null;
-  customTalents: Character['customTalents'];
+  char: Character;
   onSelect: (name: string | null) => void;
   onClose: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
+      <div className="flex flex-col h-full max-w-2xl mx-auto w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
           <span className="text-xs font-bold uppercase tracking-widest text-paper/70">{title}</span>
           <button onClick={onClose}
@@ -258,38 +262,66 @@ function TalentOverlay({
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           {value && (
             <button
               onClick={() => { onSelect(null); onClose(); }}
-              className="w-full text-left px-3 py-2 rounded-lg border border-dashed border-hairline text-faint text-xs hover:border-muted hover:text-muted transition-colors mb-2"
+              className="w-full text-left px-3 py-2 rounded-lg border border-dashed border-hairline text-faint text-xs hover:border-muted hover:text-muted transition-colors mb-3"
             >
               — kein Talent —
             </button>
           )}
-          {TALENT_CATEGORIES.map(cat =>
-            [...cat.talents, ...customTalents.filter(t => t.category === cat.key)].map(t => {
-              const selected = value === t.name;
-              return (
-                <button
-                  key={t.name}
-                  onClick={() => { onSelect(t.name); onClose(); }}
-                  className="w-full text-left px-3 py-2.5 rounded-lg border transition-all hover:opacity-90"
-                  style={{
-                    backgroundColor: selected ? `${cat.color}20` : `${cat.color}0A`,
-                    borderColor:     selected ? `${cat.color}70` : `${cat.color}28`,
-                  }}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <CatIcon src={cat.icon} size={32} />
-                    <span className="text-[11px] font-semibold" style={{ color: cat.color }}>
-                      {t.name}
-                    </span>
-                  </div>
-                </button>
-              );
-            })
-          )}
+          <div className="grid grid-cols-4 gap-1.5">
+            {TALENT_CATEGORIES.map(cat =>
+              [...cat.talents, ...char.customTalents.filter(t => t.category === cat.key)].map(t => {
+                const selected  = value === t.name;
+                const currentTp = char.talents[t.name] ?? 0;
+                return (
+                  <button
+                    key={t.name}
+                    onClick={() => { onSelect(t.name); onClose(); }}
+                    className="relative text-left p-2 pb-7 rounded-lg border transition-all hover:opacity-90 overflow-hidden flex flex-col gap-1.5"
+                    style={{
+                      backgroundColor: selected ? `${cat.color}20` : `${cat.color}0A`,
+                      borderColor:     selected ? `${cat.color}70` : `${cat.color}28`,
+                      minHeight: '72px',
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <CatIcon src={cat.icon} size={20} className="shrink-0" />
+                      <span
+                        className="text-[11px] font-semibold leading-tight"
+                        style={{
+                          color: cat.color,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {t.name}
+                      </span>
+                    </div>
+                    {t.attrs && (
+                      <div className="flex gap-0.5">
+                        {t.attrs.map((a, i) => (
+                          <CatIcon key={i} src={ATTR_MAP[a].icon} size={16} />
+                        ))}
+                      </div>
+                    )}
+                    {currentTp > 0 && (
+                      <span
+                        className="absolute bottom-1.5 right-2 text-lg font-mono font-bold"
+                        style={{ color: cat.color }}
+                      >
+                        {currentTp}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -315,38 +347,41 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
   }
   const catMeta  = TALENT_CAT_MAP[spec.category];
   const color    = catMeta.color;
-  const isMalus  = spec.modifier < 0;
-  const modColor = isMalus ? '#E83050' : '#4FA968';
+  const modColor = spec.modifier < 0 ? '#E83050' : '#4FA968';
   return (
     <button
       onClick={onClick}
-      className="relative w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90 overflow-hidden"
+      className="relative w-full text-left p-3 pb-10 rounded-lg border transition-all hover:opacity-90 overflow-hidden flex flex-col gap-2"
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
-      {/* modifier pinned top-right */}
-      <span
-        className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modifierIgnored ? 'line-through opacity-40' : ''}`}
-        style={{ color: modifierIgnored ? '#8C8F99' : modColor }}
-      >
-        {spec.modifier > 0 ? '+' : ''}{spec.modifier}
+      <div className="flex items-center gap-2">
+        <CatIcon src={catMeta.icon} size={26} className="shrink-0" />
+        <span className="text-base font-semibold leading-tight" style={{ color }}>{spec.name}</span>
+      </div>
+      <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
+      <span className="absolute bottom-2.5 right-3 flex items-center justify-center">
+        <span className="text-2xl font-mono font-bold" style={{ color: modColor }}>
+          {spec.modifier > 0 ? '+' : ''}{spec.modifier}
+        </span>
         {modifierIgnored && (
-          <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="44" stroke="#E83050" strokeWidth="10"/>
+            <line x1="18" y1="82" x2="82" y2="18" stroke="#E83050" strokeWidth="10" strokeLinecap="round"/>
+          </svg>
         )}
       </span>
-      <div className="flex items-start gap-2.5 pr-10">
-        <CatIcon src={catMeta.icon} size={32} className="shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-semibold leading-tight block mb-0.5" style={{ color }}>
-            {spec.name}
-          </span>
-          <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
-        </div>
-      </div>
     </button>
   );
 }
 
 // ── Talent display tile ───────────────────────────────────────────────────────
+function qualityRibbon(effective: number): { label: string; color: string } | null {
+  if (effective === 0)  return null;
+  if (effective <= 4)   return { label: 'Anfänger', color: '#E08C3C' };
+  if (effective <= 9)   return { label: 'Geübt',    color: '#8C8F99' };
+  return                       { label: 'Profi',    color: '#4FA968' };
+}
+
 function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
   talentName: string | null;
   bonus: number;
@@ -366,17 +401,28 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
   const catKey  = TALENT_CATEGORY_OF[talentName];
   const catMeta = catKey ? TALENT_CAT_MAP[catKey] : null;
   const color   = catMeta?.color ?? '#8C8F99';
+  const qual    = qualityRibbon(bonus);
   return (
     <button
       onClick={onClick}
-      className="relative w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90 overflow-hidden"
+      className="relative w-full text-left p-3 pb-10 rounded-lg border transition-all hover:opacity-90 overflow-hidden flex flex-col gap-2"
       style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
     >
-      <span className="absolute top-2 right-2.5 text-[12px] font-mono font-bold" style={{ color }}>+{bonus}</span>
-      <div className="flex items-center gap-1.5 pr-10">
-        {catMeta && <CatIcon src={catMeta.icon} size={32} />}
-        <span className="text-[13px] font-semibold" style={{ color }}>{talentName}</span>
+      <div className="flex items-center gap-2">
+        {catMeta && <CatIcon src={catMeta.icon} size={26} className="shrink-0" />}
+        <span className="text-base font-semibold leading-tight" style={{ color }}>{talentName}</span>
       </div>
+      <span className="absolute bottom-2.5 right-3 text-2xl font-mono font-bold" style={{ color }}>+{bonus}</span>
+      {qual && (
+        <span className="absolute pointer-events-none"
+          style={{
+            bottom: 6, left: -20, width: 68, textAlign: 'center',
+            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '1px 0', backgroundColor: `${qual.color}50`, color: qual.color,
+            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+          }}
+        >{qual.label}</span>
+      )}
     </button>
   );
 }
@@ -465,20 +511,21 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               : 'border border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
           }`}
         >
-          <span className={`text-2xl leading-none ${selectedGender ? '' : 'text-faint'}`}>
-            {selectedGender ? selectedGender.symbol : '?'}
-          </span>
+          {selectedGender
+            ? <CatIcon src={selectedGender.icon} size={36} />
+            : <span className="text-2xl leading-none text-faint">?</span>
+          }
           <span className="text-[9px] text-faint">Geschlecht</span>
         </button>
 
         {/* Age / Height / Weight */}
         {[
-          { key: 'age',    icon: '⏱', placeholder: 'Alter',   suffix: 'Jahre' },
-          { key: 'height', icon: '📏', placeholder: 'Größe',   suffix: 'cm'    },
-          { key: 'weight', icon: '⚖',  placeholder: 'Gewicht', suffix: 'kg'    },
+          { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'Jahre' },
+          { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm'    },
+          { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg'    },
         ].map(f => (
           <div key={f.key} className="bg-raised border border-hairline rounded-lg p-2 flex flex-col items-center gap-1">
-            <span className="text-base">{f.icon}</span>
+            <CatIcon src={f.icon} size={32} />
             <input
               type="text"
               value={(char.info as Record<string, string>)[f.key] ?? ''}
@@ -513,34 +560,41 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               className="w-full text-left p-3 rounded-lg border transition-colors hover:opacity-90"
               style={{ borderColor: (profColor ?? '#888') + 'CC', backgroundColor: (profColor ?? '#888') + '18' }}
             >
-              <div className="flex items-start gap-3">
-                <CatIcon src={selectedProf.icon} size={90} className="shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-base font-semibold leading-tight block mb-1.5" style={{ color: profColor }}>{selectedProf.label}</span>
-                  <div className="flex flex-wrap gap-1.5 mb-1.5">
-                    {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
-                      const c = cat as TalentCategory;
-                      const catMeta = TALENT_CAT_MAP[c];
-                      return (
-                        <span key={c} className="flex items-center gap-1">
-                          <CatIcon src={catMeta.icon} size={28} />
-                          <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.entries(selectedProf.attrMin).map(([attr, val]) => {
-                      const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
-                      return (
-                        <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
-                          <CatIcon src={meta?.icon ?? ''} size={24} />
-                          <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
+              {/* Icon + singular label */}
+              <div className="flex items-center gap-3 mb-2.5">
+                <CatIcon src={selectedProf.icon} size={56} className="shrink-0" />
+                <span className="text-sm font-semibold leading-snug" style={{ color: profColor }}>
+                  {selectedProf.labelSingular}
+                </span>
+              </div>
+
+              {/* Talent point chips */}
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(selectedProf.talentPts).map(([cat, pts]) => {
+                  const c = cat as TalentCategory;
+                  const catMeta = TALENT_CAT_MAP[c];
+                  return (
+                    <span key={c} className="flex items-center gap-0.5 px-1.5 py-0.5 rounded" style={{ backgroundColor: `${CAT_COLOR[c]}22` }}>
+                      <CatIcon src={catMeta.icon} size={18} />
+                      <span className="text-[10px] font-mono font-bold" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className="border-t border-hairline/40 my-2" />
+
+              {/* Attribute minimum chips */}
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(selectedProf.attrMin).map(([attr, val]) => {
+                  const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
+                  return (
+                    <span key={attr} className="flex items-center gap-0.5 px-1.5 py-0.5 rounded" style={{ backgroundColor: `${meta?.color}18` }}>
+                      <CatIcon src={meta?.icon ?? ''} size={16} />
+                      <span className="text-[9px] font-mono font-medium" style={{ color: meta?.color }}>{attr} {val}</span>
+                    </span>
+                  );
+                })}
               </div>
             </button>
           ) : (
@@ -554,18 +608,19 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
           <div className="border-t border-hairline" />
 
-          <TalentDisplayTile
-            talentName={char.professionTalent}
-            bonus={5}
-            placeholder="Talent wählen (+5 TP)"
-            onClick={() => setTalentOverlay(true)}
-          />
-          <SpecDisplayTile
-            spec={char.specProfession}
-            placeholder="neg. Spezifikum wählen"
-
-            onClick={() => setSpecOverlay(true)}
-          />
+          <div className="flex flex-col gap-2">
+            <TalentDisplayTile
+              talentName={char.professionTalent}
+              bonus={5}
+              placeholder="Talent (+5 TP)"
+              onClick={() => setTalentOverlay(true)}
+            />
+            <SpecDisplayTile
+              spec={char.specProfession}
+              placeholder="neg. Spezifikum"
+              onClick={() => setSpecOverlay(true)}
+            />
+          </div>
         </div>
       </div>
 
@@ -580,26 +635,44 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               <span className="text-[10px] font-bold uppercase tracking-widest text-faint">1. Hobby</span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => { patch(charId, c => { c.hobby1Name = ''; c.hobby1Talent = null; c.specHobby1 = null; }); setH1Open(false); }}
+                  onClick={() => {
+                    patch(charId, c => {
+                      if (c.hobby2Name || c.hobby2Talent) {
+                        c.hobby1Name   = c.hobby2Name;
+                        c.hobby1Talent = c.hobby2Talent;
+                        c.specHobby1   = null;
+                        c.hobby2Name   = '';
+                        c.hobby2Talent = null;
+                      } else {
+                        c.hobby1Name   = '';
+                        c.hobby1Talent = null;
+                        c.specHobby1   = null;
+                      }
+                    });
+                    setH2Open(false);
+                    if (!char.hobby2Name && !char.hobby2Talent) setH1Open(false);
+                  }}
                   className="text-faint hover:text-muted text-sm leading-none"
                   title="1. Hobby entfernen"
                 >✕</button>
               </div>
             </div>
             <div className="p-3 space-y-2">
-              <input
-                type="text"
-                value={char.hobby1Name}
-                onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
-                placeholder="Bezeichnung"
-                className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-              />
-              <TalentDisplayTile
-                talentName={char.hobby1Talent}
-                bonus={5}
-                placeholder="Talent wählen (+5 TP)"
-                onClick={() => setH1TalentOverlay(true)}
-              />
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={char.hobby1Name}
+                  onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
+                  placeholder="Bezeichnung"
+                  className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
+                />
+                <TalentDisplayTile
+                  talentName={char.hobby1Talent}
+                  bonus={5}
+                  placeholder="Talent (+5 TP)"
+                  onClick={() => setH1TalentOverlay(true)}
+                />
+              </div>
               {char.hobby1Talent && (
                 <SpecDisplayTile
                   spec={char.specHobby1}
@@ -628,19 +701,21 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                 </div>
               </div>
               <div className="p-3 space-y-2">
-                <input
-                  type="text"
-                  value={char.hobby2Name}
-                  onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
-                  placeholder="Bezeichnung"
-                  className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-                />
-                <TalentDisplayTile
-                  talentName={char.hobby2Talent}
-                  bonus={3}
-                  placeholder="Talent wählen (+3 TP)"
-                  onClick={() => setH2TalentOverlay(true)}
-                />
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={char.hobby2Name}
+                    onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
+                    placeholder="Bezeichnung"
+                    className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
+                  />
+                  <TalentDisplayTile
+                    talentName={char.hobby2Talent}
+                    bonus={3}
+                    placeholder="Talent (+3 TP)"
+                    onClick={() => setH2TalentOverlay(true)}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -694,7 +769,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <TalentOverlay
           title="Berufsnahes Talent wählen"
           value={char.professionTalent}
-          customTalents={char.customTalents}
+          char={safeChar}
           onSelect={name => patch(charId, c => { c.professionTalent = name; })}
           onClose={() => setTalentOverlay(false)}
         />
@@ -703,7 +778,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <TalentOverlay
           title="Hobby 1 — Talent wählen"
           value={char.hobby1Talent}
-          customTalents={char.customTalents}
+          char={safeChar}
           onSelect={name => patch(charId, c => {
             c.hobby1Talent = name;
             if (!name) {
@@ -732,7 +807,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <TalentOverlay
           title="Hobby 2 — Talent wählen"
           value={char.hobby2Talent}
-          customTalents={char.customTalents}
+          char={safeChar}
           onSelect={name => patch(charId, c => { c.hobby2Talent = name; })}
           onClose={() => setH2TalentOverlay(false)}
         />

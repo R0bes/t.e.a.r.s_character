@@ -97,7 +97,10 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
 
   const ribbonLabel = selectedAs
     ?? (reservedAs === 'beruf' ? 'Beruf' : reservedAs === 'hobby' ? '1. Hobby' : null);
-  const isActive   = !!ribbonLabel; // highlighted when selected or reserved
+  const ribbonColor = selectedAs === 'frei +' ? '#4FA968'
+    : selectedAs === 'frei −' ? '#E83050'
+    : color;
+  const isActive   = !!ribbonLabel;
   const isHobby    = reservedAs === 'hobby';
   const modIgnored = isHobby;
 
@@ -105,7 +108,7 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
     <button
       onClick={onToggle}
       disabled={!!reservedAs}
-      className={`relative text-left w-full p-2.5 rounded-lg border transition-all overflow-hidden ${
+      className={`relative text-left w-full p-3 pb-10 rounded-lg border transition-all overflow-hidden flex flex-col gap-2 ${
         reservedAs ? 'cursor-default' : 'hover:opacity-90'
       }`}
       style={{
@@ -113,37 +116,39 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
         borderColor:     isActive ? `${color}60` : `${color}28`,
       }}
     >
-      {/* modifier pinned top-right */}
-      <span
-        className={`absolute top-2 right-2.5 text-[12px] font-mono font-bold ${modIgnored ? 'line-through opacity-40' : ''}`}
-        style={{ color: modColor }}
-      >
-        {spec.modifier > 0 ? '+' : ''}{spec.modifier}
+      {/* Header: icon + name */}
+      <div className="flex items-center gap-2">
+        <CatIcon src={catMeta.icon} size={26} className="shrink-0" />
+        <span className="text-base font-semibold leading-tight" style={{ color }}>
+          {spec.name}
+        </span>
+      </div>
+      {/* Description */}
+      <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
+      {/* Modifier bottom-right */}
+      <span className="absolute bottom-2.5 right-3 flex items-center justify-center">
+        <span className="text-2xl font-mono font-bold" style={{ color: modColor }}>
+          {spec.modifier > 0 ? '+' : ''}{spec.modifier}
+        </span>
         {modIgnored && (
-          <span className="absolute inset-0 flex items-center justify-center text-[12px] not-italic no-underline opacity-70" style={{ textDecoration: 'none' }}>⊘</span>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="44" stroke="#E83050" strokeWidth="10"/>
+            <line x1="18" y1="82" x2="82" y2="18" stroke="#E83050" strokeWidth="10" strokeLinecap="round"/>
+          </svg>
         )}
       </span>
-      <div className="flex items-start gap-2.5 pr-10">
-        <CatIcon src={catMeta.icon} size={32} className="shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-semibold leading-tight truncate block mb-0.5" style={{ color }}>
-            {spec.name}
-          </span>
-          <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
-        </div>
-      </div>
       {ribbonLabel && (
         <span
           className="absolute pointer-events-none"
           style={{
-            bottom: 8, right: -22,
-            width: 72, textAlign: 'center',
-            fontSize: 7, fontWeight: 700,
+            bottom: 8, left: -22,
+            width: 80, textAlign: 'center',
+            fontSize: 8, fontWeight: 700,
             letterSpacing: '0.08em', textTransform: 'uppercase',
             padding: '2px 0',
-            backgroundColor: `${color}50`,
-            color,
-            transform: 'rotate(-45deg)',
+            backgroundColor: `${ribbonColor}50`,
+            color: ribbonColor,
+            transform: 'rotate(45deg)',
             transformOrigin: 'center',
             whiteSpace: 'nowrap',
           }}

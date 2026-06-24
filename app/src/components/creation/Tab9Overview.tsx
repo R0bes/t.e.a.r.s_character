@@ -3,7 +3,8 @@ import { ATTRIBUTES } from '../../data/attributes';
 import { PROFESSION_MAP } from '../../data/professions';
 import { calcDerived } from '../../rules/derivedValues';
 import { ABILITY_MAP } from '../../data/specialAbilities';
-import { TALENT_CATEGORIES } from '../../data/talents';
+import { TALENT_CATEGORIES, TALENT_CAT_MAP } from '../../data/talents';
+import { CatIcon } from '../ui/CatIcon';
 
 export function Tab9Overview({ charId }: { charId: string }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
@@ -92,16 +93,32 @@ export function Tab9Overview({ charId }: { charId: string }) {
       {allSpecs.length > 0 && (
         <div className="bg-surface border border-hairline rounded-lg p-3">
           <p className="text-xs text-muted mb-2 font-medium uppercase tracking-wider">Spezifika</p>
-          <div className="space-y-1">
-            {allSpecs.map((s, i) => s && (
-              <div key={i} className="flex items-center gap-2">
-                <span className={`text-xs px-1 rounded font-mono ${s.modifier > 0 ? 'text-danger' : 'text-success'}`}>
-                  {s.modifier > 0 ? `+${s.modifier}` : s.modifier}
-                </span>
-                <span className="text-sm text-primary">{s.name}</span>
-                <span className="text-xs text-faint">({s.label})</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-2">
+            {allSpecs.map((s, i) => {
+              if (!s) return null;
+              const catMeta  = TALENT_CAT_MAP[s.category];
+              const color    = catMeta.color;
+              const modColor = s.modifier < 0 ? '#E83050' : '#4FA968';
+              return (
+                <div
+                  key={i}
+                  className="relative text-left p-3 pb-10 rounded-lg border overflow-hidden flex flex-col gap-2"
+                  style={{ backgroundColor: `${color}20`, borderColor: `${color}60` }}
+                >
+                  <div className="flex items-center gap-2">
+                    <CatIcon src={catMeta.icon} size={26} className="shrink-0" />
+                    <span className="text-base font-semibold leading-tight" style={{ color }}>{s.name}</span>
+                  </div>
+                  <p className="text-[11px] text-faint leading-snug">{s.description}</p>
+                  <span className="absolute bottom-2.5 right-3 text-2xl font-mono font-bold" style={{ color: modColor }}>
+                    {s.modifier > 0 ? '+' : ''}{s.modifier}
+                  </span>
+                  <span className="absolute bottom-2 left-2 text-[8px] font-bold uppercase tracking-widest opacity-40" style={{ color }}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

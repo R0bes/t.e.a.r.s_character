@@ -134,14 +134,13 @@ function qualityRibbon(effective: number): { label: string; color: string } | nu
 }
 
 // ── Talent row ────────────────────────────────────────────────────────────────
-function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
+function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: {
   charId: string;
   talentName: string;
   attrs: readonly AttributeKey[] | null;
   costMul: 1 | 2;
   isCustom: boolean;
   catColor: string;
-  catIcon: string;
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
@@ -166,39 +165,45 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
 
   return (
     <div
-      className="relative flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
+      className="relative flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
       style={{ backgroundColor: tileBg, borderColor: tileBorder }}
     >
-      <CatIcon src={catIcon} size={28} />
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[14px] font-semibold leading-tight truncate" style={{ color: catColor }}>
-            {talentName}
-          </span>
-          {isCombat
-            ? <span className="text-[8px] font-mono text-faint shrink-0">×2</span>
-            : attrs?.map((a, i) => {
-                const meta = ATTR_MAP[a as AttributeKey];
-                return <CatIcon key={i} src={meta?.icon ?? ''} size={32} />;
-              })
-          }
-          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
-        </div>
+      {/* Titel */}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-base font-semibold leading-tight truncate" style={{ color: catColor }}>
+          {talentName}
+        </span>
+        {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
       </div>
 
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
-          disabled={!canDec}
-          className="w-6 h-6 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
-        >−</button>
-        <span className="text-sm font-mono font-bold text-primary w-6 text-center">{effective}</span>
-        <button
-          onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
-          disabled={!canInc}
-          className="w-6 h-6 flex items-center justify-center rounded border border-hairline text-xs text-muted hover:text-primary disabled:opacity-25 transition-colors"
-        >+</button>
+      {/* Attribute + Wert + Pfeile */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 pl-1">
+          {!isCombat && attrs?.map((a, i) => {
+            const meta = ATTR_MAP[a as AttributeKey];
+            return <CatIcon key={i} src={meta?.icon ?? ''} size={24} />;
+          })}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-2xl font-mono font-bold text-primary leading-none">{effective}</span>
+          <div className="flex flex-col rounded border border-hairline overflow-hidden">
+            <button
+              onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
+              disabled={!canInc}
+              className="w-7 h-5 flex items-center justify-center border-b border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
+            >
+              <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
+            </button>
+            <button
+              onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
+              disabled={!canDec}
+              className="w-7 h-5 flex items-center justify-center hover:opacity-80 disabled:opacity-20 transition-opacity"
+              style={{ transform: 'rotate(180deg)' }}
+            >
+              <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Source ribbon — bottom-right */}
@@ -363,12 +368,12 @@ export function Tab4Talents({ charId }: { charId: string }) {
             {cat.talents.map(t => (
               <TalentTile key={t.name} charId={charId} talentName={t.name}
                 attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
-                catColor={cat.color} catIcon={cat.icon} />
+                catColor={cat.color} />
             ))}
             {customInCat.map(ct => (
               <TalentTile key={ct.name} charId={charId} talentName={ct.name}
                 attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
-                catColor={cat.color} catIcon={cat.icon} />
+                catColor={cat.color} />
             ))}
 
             {openCustomForm === cat.key ? (

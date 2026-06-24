@@ -35,12 +35,12 @@ const ATTR_POSITIONS: Record<AttributeKey, {
   align: 'center' | 'left' | 'right';
   tip: 'up' | 'down' | 'left' | 'right';
 }> = {
-  KK: { left: '50%', top: '7%',  align: 'center', tip: 'down'  },
-  GE: { left: '84%', top: '28%', align: 'left',   tip: 'left'  },
-  AU: { left: '84%', top: '65%', align: 'left',   tip: 'left'  },
-  IN: { left: '50%', top: '86%', align: 'center', tip: 'up'    },
-  CH: { left: '16%', top: '65%', align: 'right',  tip: 'right' },
-  MB: { left: '16%', top: '28%', align: 'right',  tip: 'right' },
+  KK: { left: '50%',   top: '8%',  align: 'center', tip: 'down'  },
+  GE: { left: '86.4%', top: '29%', align: 'left',   tip: 'left'  },
+  AU: { left: '86.4%', top: '71%', align: 'left',   tip: 'left'  },
+  IN: { left: '50%',   top: '92%', align: 'center', tip: 'up'    },
+  CH: { left: '13.6%', top: '71%', align: 'right',  tip: 'right' },
+  MB: { left: '13.6%', top: '29%', align: 'right',  tip: 'right' },
 };
 
 const PRIMARY_GRID = [8, 14, 17];
@@ -49,15 +49,15 @@ const PRIMARY_GRID = [8, 14, 17];
 type TipDir = 'up' | 'down' | 'left' | 'right';
 
 type CombatMeta = {
-  key: string; color: string;
+  key: string; color: string; icon: string;
   left: string; top: string; tip: TipDir;
 };
 
 const COMBAT_META: CombatMeta[] = [
-  { key: 'ATN', color: C.ATN, left: '50%', top: '12%', tip: 'down'  },
-  { key: 'PA',  color: C.PA,  left: '88%', top: '50%', tip: 'left'  },
-  { key: 'ATD', color: C.ATD, left: '50%', top: '88%', tip: 'up'    },
-  { key: 'INI', color: C.INI, left: '12%', top: '50%', tip: 'right' },
+  { key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.png', left: '50%', top: '8%',  tip: 'down'  },
+  { key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.png',  left: '92%', top: '50%', tip: 'left'  },
+  { key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.png', left: '50%', top: '92%', tip: 'up'    },
+  { key: 'INI', color: C.INI, icon: '/icons/attr/ini.png', left: '8%',  top: '50%', tip: 'right' },
 ];
 
 // ── Colored tooltip helpers ───────────────────────────────────────────────────
@@ -107,6 +107,23 @@ function InfoBtn({ content, dir = 'up' }: { content: ReactNode; dir?: TipDir }) 
   );
 }
 
+// ── Arrow layout — each axis's orthogonal direction ──────────────────────────
+// rotate: CSS rotation for the + arrow image so it points outward along the
+//         spider axis (0° = up). The − arrow uses the same rotation because
+//         arrow_down is already the 180° counterpart of arrow_up.
+// perpX/Y: unit vector perpendicular to the axis; + button is placed there,
+//          − button on the opposite side.
+const ARROW_META: Record<AttributeKey, { rotate: number; perpX: number; perpY: number }> = {
+  KK: { rotate: 90,  perpX:  1,     perpY:  0     }, // axis up    → buttons left/right
+  GE: { rotate: 150, perpX:  0.5,   perpY:  0.866 }, // axis NE   → buttons SE/NW
+  AU: { rotate: 210, perpX: -0.5,   perpY:  0.866 }, // axis SE   → buttons SW/NE
+  IN: { rotate: 270, perpX: -1,     perpY:  0     }, // axis down → buttons left/right
+  CH: { rotate: 330, perpX: -0.5,   perpY: -0.866 }, // axis SW   → buttons NW/SE
+  MB: { rotate: 30,  perpX:  0.5,   perpY: -0.866 }, // axis NW   → buttons NE/SW
+};
+
+const BTN_OFFSET = 36; // px: icon-center to button-center distance
+
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
   attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name, icon,
@@ -117,14 +134,11 @@ function AttrControl({
   onHoverChange: (delta: number) => void;
 }) {
   const pos      = ATTR_POSITIONS[attrKey];
+  const arrow    = ARROW_META[attrKey];
   const cost     = stepCost(value);
   const prevCost = value > minValue ? stepCost(value - 1) : 0;
   const canInc   = value < ATTR_MAX && pointsLeft >= cost;
   const canDec   = value > minValue;
-
-  const alignCls = pos.align === 'center' ? 'items-center'
-    : pos.align === 'left' ? 'items-start'
-    : 'items-end';
 
   const plusCls = !canInc
     ? 'border-hairline/40 text-faint/40 cursor-not-allowed'
@@ -134,51 +148,59 @@ function AttrControl({
         ? 'border-amber-500/70 text-amber-400 hover:bg-amber-500/10 active:scale-95'
         : 'border-hairline text-muted hover:text-primary hover:border-muted active:scale-95';
 
+  const plusSrc  = cost >= 3     ? '/icons/attr/arrow_up3.png' : cost === 2     ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png';
+  const minusSrc = prevCost >= 3 ? '/icons/attr/arrow_up3.png' : prevCost === 2 ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png';
+
+  const px = Math.round(arrow.perpX * BTN_OFFSET);
+  const py = Math.round(arrow.perpY * BTN_OFFSET);
+
   return (
-    <div
-      className={`absolute flex flex-col gap-1 ${alignCls}`}
-      style={{ left: pos.left, top: pos.top, transform: 'translate(-50%, -50%)' }}
-    >
-      {/* − icon + */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onDecrease} disabled={!canDec}
-          onMouseEnter={() => canDec && onHoverChange(prevCost)}
-          onMouseLeave={() => onHoverChange(0)}
-          className="w-6 h-6 rounded border text-sm leading-none transition-colors active:scale-95 flex items-center justify-center disabled:opacity-25"
-          style={{ borderColor: color + '88', color }}
-        >−</button>
+    <div className="absolute overflow-visible" style={{ left: pos.left, top: pos.top }}>
 
-        {/* Medallion icon */}
-        <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0"
-          style={{ boxShadow: `0 0 0 2px ${color}88` }}
-        >
-          <img src={icon} alt={name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
-          >
-            <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
-              {value}
-            </span>
-          </div>
+      {/* Icon medallion — centered at anchor point */}
+      <div
+        className="absolute rounded-full overflow-hidden"
+        style={{ width: 40, height: 40, left: -20, top: -20, boxShadow: `0 0 0 2px ${color}88` }}
+      >
+        <img src={icon} alt={name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+            {value}
+          </span>
         </div>
-
-        <button
-          onClick={onIncrease} disabled={!canInc}
-          onMouseEnter={() => canInc && onHoverChange(-cost)}
-          onMouseLeave={() => onHoverChange(0)}
-          className={`w-6 h-6 rounded border text-sm leading-none transition-colors flex items-center justify-center ${plusCls}`}
-        >+</button>
       </div>
+
+      {/* + button — along perpendicular, pointing outward */}
+      <button
+        onClick={onIncrease} disabled={!canInc}
+        onMouseEnter={() => canInc && onHoverChange(-cost)}
+        onMouseLeave={() => onHoverChange(0)}
+        className={`absolute w-8 h-6 flex items-center justify-center rounded border transition-colors ${plusCls}`}
+        style={{ left: px - 16, top: py - 12 }}
+      >
+        <img src={plusSrc} className="w-6 h-5 object-contain" style={{ transform: `rotate(${arrow.rotate}deg)` }} />
+      </button>
+
+      {/* − button — opposite side, pointing inward */}
+      <button
+        onClick={onDecrease} disabled={!canDec}
+        onMouseEnter={() => canDec && onHoverChange(prevCost)}
+        onMouseLeave={() => onHoverChange(0)}
+        className="absolute w-8 h-6 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
+        style={{ left: -px - 16, top: -py - 12 }}
+      >
+        <img src={minusSrc} className="w-6 h-5 object-contain" style={{ transform: `rotate(${arrow.rotate + 180}deg)` }} />
+      </button>
+
     </div>
   );
 }
 
 // ── Combat attribute label ────────────────────────────────────────────────────
 function CombatLabel({
-  attrKey, color, value, left, top, tip,
+  attrKey, color, icon, value, left, top, tip,
 }: {
-  attrKey: string; color: string; value: number;
+  attrKey: string; color: string; icon: string; value: number;
   left: string; top: string; tip: TipDir;
 }) {
   return (
@@ -186,31 +208,34 @@ function CombatLabel({
       className="absolute flex flex-col items-center gap-0.5"
       style={{ left, top, transform: 'translate(-50%, -50%)' }}
     >
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-mono font-bold leading-none" style={{ color }}>
-          {attrKey}
-        </span>
-        <InfoBtn content={combatTooltip(attrKey, color)} dir={tip} />
+      <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0"
+        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+        <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <span className="text-sm font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+            {value}
+          </span>
+        </div>
       </div>
-      <span className="text-xl font-mono font-bold leading-none" style={{ color }}>
-        {value}
-      </span>
+      <InfoBtn content={combatTooltip(attrKey, color)} dir={tip} />
     </div>
   );
 }
 
 // ── LE / GG single-line row ───────────────────────────────────────────────────
 function ResourceRow({
-  shortKey, value, maxValue, color, info,
+  shortKey, value, maxValue, color, icon, info,
 }: {
-  shortKey: string; value: number; maxValue: number; color: string; info: ReactNode;
+  shortKey: string; value: number; maxValue: number; color: string; icon: string; info: ReactNode;
 }) {
   const pct = Math.min(100, Math.round((value / maxValue) * 100));
   return (
-    <div className="flex items-center gap-2">
-      <span className="font-mono text-[10px] font-bold shrink-0 w-5 leading-none" style={{ color }}>
-        {shortKey}
-      </span>
+    <div className="flex items-center gap-1.5">
+      <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0"
+        style={{ boxShadow: `0 0 0 1.5px ${color}88` }}>
+        <img src={icon} alt={shortKey} className="w-full h-full object-cover" />
+      </div>
       <span className="font-mono text-sm font-bold shrink-0 leading-none" style={{ color }}>
         {value}
       </span>
@@ -293,15 +318,12 @@ export function Tab3Attributes({ charId }: { charId: string }) {
         </span>
       </div>
 
-      {/* ── Side-by-side radars ── */}
-      <div className="flex gap-3 overflow-visible w-full">
+      {/* ── Stacked radars ── */}
+      <div className="flex flex-col gap-4">
 
-        {/* Primary radar */}
-        <div
-          className="relative overflow-visible shrink-0"
-          style={{ flex: '0 1 220px', minWidth: 160, aspectRatio: '3/4' }}
-        >
-          <div className="absolute" style={{ left: '18%', top: '24%', width: '64%', aspectRatio: '1' }}>
+        {/* Primary radar – full width, square container */}
+        <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
+          <div className="absolute" style={{ left: '16%', top: '16%', width: '68%', aspectRatio: '1' }}>
             <SpiderChart
               axes={primaryAxes}
               size={140}
@@ -337,46 +359,44 @@ export function Tab3Attributes({ charId }: { charId: string }) {
           })}
         </div>
 
-        {/* Right column: combat radar + LE/GG rows */}
-        <div className="flex-1 flex flex-col gap-2">
-          <div className="relative overflow-visible shrink-0" style={{ height: 145 }}>
-            <div
-              className="absolute"
-              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-            >
-              <SpiderChart axes={combatAxes} size={85} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" />
-            </div>
-
-            {COMBAT_META.map(m => (
-              <CombatLabel
-                key={m.key}
-                attrKey={m.key}
-                color={m.color}
-                value={derived[m.key as keyof typeof derived]}
-                left={m.left}
-                top={m.top}
-                tip={m.tip}
-              />
-            ))}
+        {/* Combat radar – square container, same approach as primary */}
+        <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
+          <div className="absolute" style={{ left: '16%', top: '16%', width: '68%', aspectRatio: '1' }}>
+            <SpiderChart axes={combatAxes} size={110} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" />
           </div>
 
-          {/* LE & GG as compact single-line rows */}
-          <div className="flex flex-col gap-2 pt-1">
-            <ResourceRow
-              shortKey="LE"
-              value={derived.LE}
-              maxValue={LE_MAX}
-              color={C.LE}
-              info={<><span style={{color:C.LE}}>Lebensenergie</span>: (<A k="KK"/>×2 + <A k="AU"/>) × 3</>}
+          {COMBAT_META.map(m => (
+            <CombatLabel
+              key={m.key}
+              attrKey={m.key}
+              color={m.color}
+              icon={m.icon}
+              value={derived[m.key as keyof typeof derived]}
+              left={m.left}
+              top={m.top}
+              tip={m.tip}
             />
-            <ResourceRow
-              shortKey="GG"
-              value={derived.GG}
-              maxValue={GG_MAX}
-              color={C.GG}
-              info={<><span style={{color:C.GG}}>Geist. Gesundheit</span>: (<A k="AU"/>+<A k="IN"/>+<A k="MB"/>×2) × 3</>}
-            />
-          </div>
+          ))}
+        </div>
+
+        {/* LE & GG */}
+        <div className="flex flex-col gap-2">
+          <ResourceRow
+            shortKey="LE"
+            value={derived.LE}
+            maxValue={LE_MAX}
+            color={C.LE}
+            icon="/icons/attr/le.png"
+            info={<><span style={{color:C.LE}}>Lebensenergie</span>: (<A k="KK"/>×2 + <A k="AU"/>) × 3</>}
+          />
+          <ResourceRow
+            shortKey="GG"
+            value={derived.GG}
+            maxValue={GG_MAX}
+            color={C.GG}
+            icon="/icons/attr/gg.png"
+            info={<><span style={{color:C.GG}}>Geist. Gesundheit</span>: (<A k="AU"/>+<A k="IN"/>+<A k="MB"/>×2) × 3</>}
+          />
         </div>
 
       </div>
