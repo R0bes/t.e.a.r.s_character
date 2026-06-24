@@ -24,7 +24,6 @@ const C = {
   GG:  '#6050C8',
 } as const;
 
-const LE_MAX = 177;
 
 // ── Primary attr layout ───────────────────────────────────────────────────────
 const RADAR_ORDER: AttributeKey[] = ['KK', 'GE', 'AU', 'IN', 'CH', 'MB'];

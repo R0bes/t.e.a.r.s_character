@@ -206,26 +206,26 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         </div>
       </div>
 
-      {/* Source ribbon — bottom-right */}
+      {/* Source ribbon — bottom-left, matching SpecTile style */}
       {srcLabel && (
         <span className="absolute pointer-events-none"
           style={{
-            bottom: 6, right: -20, width: 68, textAlign: 'center',
-            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '1px 0', backgroundColor: `${catColor}50`, color: catColor,
-            transform: 'rotate(-45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+            bottom: 8, left: -22, width: 80, textAlign: 'center',
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${catColor}50`, color: catColor,
+            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
           }}
         >{srcLabel}</span>
       )}
 
-      {/* Quality ribbon — bottom-left */}
+      {/* Quality ribbon — bottom-right */}
       {qual && (
         <span className="absolute pointer-events-none"
           style={{
-            bottom: 6, left: -20, width: 68, textAlign: 'center',
-            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '1px 0', backgroundColor: `${qual.color}50`, color: qual.color,
-            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+            bottom: 8, right: -22, width: 80, textAlign: 'center',
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${qual.color}50`, color: qual.color,
+            transform: 'rotate(-45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
           }}
         >{qual.label}</span>
       )}
