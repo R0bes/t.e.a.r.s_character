@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useStore } from '../../store/useStore';
 import { PROFESSIONS } from '../../data/professions';
 import { ATTR_MAP } from '../../data/attributes';
@@ -8,25 +8,15 @@ import type { Character, ProfessionKey, Specification, TalentCategory } from '..
 import { CatIcon } from '../ui/CatIcon';
 
 const CAT_COLOR: Record<TalentCategory, string> = {
-  koerperlich: '#E07040',
-  motorisch:   '#28B4C0',
-  geistig:     '#7C56D0',
-  sozial:      '#3CB870',
-  kampf:       '#C83030',
+  koerperlich: '#C84820',
+  motorisch:   '#C89010',
+  geistig:     '#2050B0',
+  sozial:      '#189898',
+  kampf:       '#B81818',
 };
 
 
 
-const PROF_PRIMARY_CAT: Record<ProfessionKey, TalentCategory> = {
-  koerperlich:  'koerperlich',
-  handwerklich: 'motorisch',
-  kundenkontakt:'sozial',
-  kreativ:      'geistig',
-  denkend:      'geistig',
-  militaerisch: 'kampf',
-  medizinisch:  'motorisch',
-  arbeitslos:   'sozial',
-};
 
 const GENDER_OPTIONS = [
   { key: 'männlich',    label: 'Männlich',    icon: '/icons/attr/id_maennlich.png' },
@@ -55,60 +45,121 @@ function saveSpec(
   });
 }
 
+// ── Icon tooltip wrapper ──────────────────────────────────────────────────────
+function IconTooltip({ children, label, color }: { children: ReactNode; label: string; color?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="relative inline-flex"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      {children}
+      {open && (
+        <span
+          className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none"
+          style={color ? { color } : undefined}
+        >
+          {label}
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ── Gender Overlay ────────────────────────────────────────────────────────────
-function GenderOverlay({ value, onSelect, onClose }: {
+function GenderOverlay({ value, onSelect, onClose, anchorRect }: {
   value: string;
   onSelect: (key: string) => void;
   onClose: () => void;
+  anchorRect: DOMRect | null;
 }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  function handleClose() {
+    setVisible(false);
+    setTimeout(onClose, 140);
+  }
+
+  const cardStyle: React.CSSProperties = anchorRect ? {
+    position: 'fixed',
+    top: anchorRect.top,
+    left: anchorRect.left,
+    transformOrigin: 'top left',
+    transform: visible ? 'scale(1)' : 'scale(0)',
+    opacity: visible ? 1 : 0,
+    transition: 'transform 140ms cubic-bezier(0.2,0,0,1), opacity 140ms ease',
+  } : {};
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex flex-col h-full max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
-          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Geschlecht wählen</span>
-          <button onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
-            ✕
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="grid grid-cols-4 gap-3">
-            {GENDER_OPTIONS.map(g => {
-              const selected = value === g.key;
-              return (
-                <button
-                  key={g.key}
-                  onClick={() => { onSelect(g.key); onClose(); }}
-                  className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
-                  style={{
-                    backgroundColor: selected ? '#B8B8C028' : '#B8B8C00A',
-                    borderColor:     selected ? '#B8B8C090' : '#2D303A',
-                    boxShadow:       selected ? 'inset 0 0 0 1px #B8B8C040' : 'none',
-                  }}
-                >
-                  <CatIcon src={g.icon} size={56} className="shrink-0" />
-                </button>
-              );
-            })}
-          </div>
+    <>
+      <div className="fixed inset-0 z-50" onClick={handleClose} />
+      <div
+        className="fixed z-50 bg-surface border border-hairline rounded-xl shadow-2xl p-3"
+        style={cardStyle}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="grid grid-cols-4 gap-2">
+          {GENDER_OPTIONS.map(g => {
+            const selected = value === g.key;
+            return (
+              <button
+                key={g.key}
+                onClick={() => { onSelect(g.key); handleClose(); }}
+                className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
+                style={{
+                  backgroundColor: selected ? '#B8B8C028' : '#B8B8C00A',
+                  borderColor:     selected ? '#B8B8C090' : '#2D303A',
+                  boxShadow:       selected ? 'inset 0 0 0 1px #B8B8C040' : 'none',
+                }}
+              >
+                <CatIcon src={g.icon} size={57} className="shrink-0" />
+              </button>
+            );
+          })}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 // ── Profession Category Overlay ───────────────────────────────────────────────
-function ProfCatOverlay({ value, onSelect, onClose }: {
+function ProfCatOverlay({ value, onSelect, onClose, anchorRect }: {
   value: ProfessionKey | null;
   onSelect: (key: ProfessionKey) => void;
   onClose: () => void;
+  anchorRect: DOMRect | null;
 }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  function handleClose() {
+    setVisible(false);
+    setTimeout(onClose, 140);
+  }
+
+  const overlayStyle: React.CSSProperties = anchorRect ? {
+    transformOrigin: `${anchorRect.left + anchorRect.width / 2}px ${anchorRect.top + anchorRect.height / 2}px`,
+    transform: visible ? 'scale(1)' : 'scale(0)',
+    opacity: visible ? 1 : 0,
+    transition: 'transform 140ms cubic-bezier(0.2,0,0,1), opacity 140ms ease',
+  } : {};
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" style={overlayStyle} onClick={handleClose}>
       <div className="flex flex-col h-full max-w-2xl mx-auto w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
           <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Berufskategorie wählen</span>
-          <button onClick={onClose}
+          <button onClick={handleClose}
             className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
             ✕
           </button>
@@ -117,13 +168,13 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
           <div className="grid grid-cols-1 gap-2">
             {PROFESSIONS.map(prof => {
               const selected = value === prof.key;
-              const color    = CAT_COLOR[PROF_PRIMARY_CAT[prof.key]];
+              const color    = prof.color;
               return (
                 <button
                   key={prof.key}
                   onClick={() => { onSelect(prof.key); onClose(); }}
                   className="text-left p-3 rounded-lg border transition-colors"
-                  style={{ borderColor: selected ? color + 'CC' : '#2D303A', backgroundColor: selected ? color + '18' : '#1B1D23' }}
+                  style={{ borderColor: selected ? color + 'CC' : color + '55', backgroundColor: selected ? color + '28' : color + '10' }}
                 >
                   <div className="flex items-start gap-3">
                     <CatIcon src={prof.icon} size={90} className="shrink-0" />
@@ -135,7 +186,9 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                           const catMeta = TALENT_CAT_MAP[c];
                           return (
                             <span key={c} className="flex items-center gap-1">
-                              <CatIcon src={catMeta.icon} size={28} />
+                              <IconTooltip label={catMeta.label} color={CAT_COLOR[c]}>
+                                <CatIcon src={catMeta.icon} size={28} />
+                              </IconTooltip>
                               <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
                             </span>
                           );
@@ -146,7 +199,9 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
                           const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
                           return (
                             <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
-                              <CatIcon src={meta?.icon ?? ''} size={24} />
+                              <IconTooltip label={meta?.name ?? attr} color={meta?.color}>
+                                <CatIcon src={meta?.icon ?? ''} size={24} />
+                              </IconTooltip>
                               <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
                             </span>
                           );
@@ -470,7 +525,11 @@ export function TabGrundinfo({ charId }: { charId: string }) {
   const safeChar = char;
 
   const [genderOverlay,      setGenderOverlay]      = useState(false);
+  const [genderAnchor,       setGenderAnchor]        = useState<DOMRect | null>(null);
+  const genderBtnRef = useRef<HTMLButtonElement>(null);
   const [profCatOverlay,     setProfCatOverlay]      = useState(false);
+  const [profCatAnchor,      setProfCatAnchor]       = useState<DOMRect | null>(null);
+  const profCatBtnRef = useRef<HTMLButtonElement>(null);
   const [specOverlay,        setSpecOverlay]         = useState(false);
   const [talentOverlay,      setTalentOverlay]       = useState(false);
   const [h1Open,             setH1Open]              = useState(false);
@@ -508,73 +567,79 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
   const selectedGender = GENDER_OPTIONS.find(g => g.key === char.info.gender);
   const selectedProf   = PROFESSIONS.find(p => p.key === char.profession);
-  const profColor      = selectedProf ? CAT_COLOR[PROF_PRIMARY_CAT[selectedProf.key]] : undefined;
+  const profColor      = selectedProf?.color;
 
   return (
     <div className="flex flex-col gap-5 p-4">
 
-      {/* ── Name ── */}
-      <input
-        type="text"
-        value={char.info.name}
-        onChange={e => patchInfo('name', e.target.value)}
-        placeholder="Name des Charakters"
-        className="w-full bg-raised border border-hairline rounded-lg px-4 py-3 text-primary text-base font-medium placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
-      />
-
-      {/* ── Identity row: left = 4 stacked info rows, right = character photo ── */}
-      <div className="flex gap-3">
-        {/* Left: Geschlecht + Alter + Größe + Gewicht */}
-        <div className="flex flex-col gap-1.5 flex-1">
-          {/* Gender row */}
-          <button
-            onClick={() => setGenderOverlay(true)}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-colors ${
-              selectedGender
-                ? 'bg-raised border-hairline hover:border-muted'
-                : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
-            }`}
-          >
-            {selectedGender
-              ? <CatIcon src={selectedGender.icon} size={28} className="shrink-0" />
-              : <span className="text-lg leading-none text-faint w-7 text-center">?</span>
-            }
-            <span className="text-sm text-primary">
-              {selectedGender ? selectedGender.label : 'Geschlecht wählen'}
-            </span>
-          </button>
-
-          {/* Age / Height / Weight */}
-          {[
-            { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'Jahre' },
-            { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm'    },
-            { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg'    },
-          ].map(f => {
-            const val = (char.info as Record<string, string>)[f.key] ?? '';
-            return (
-              <div key={f.key} className="flex items-center gap-2.5 px-3 py-2 bg-raised border border-hairline rounded-lg">
-                <CatIcon src={f.icon} size={28} className="shrink-0" />
-                <input
-                  type="text"
-                  value={val}
-                  onChange={e => patchInfo(f.key as keyof typeof char.info, e.target.value)}
-                  placeholder={f.placeholder}
-                  className="flex-1 bg-transparent text-primary text-sm font-mono placeholder:text-faint focus:outline-none min-w-0"
-                />
-                {val && <span className="text-xs text-faint shrink-0">{f.suffix}</span>}
-              </div>
-            );
-          })}
+      {/* ── Identity ── */}
+      <div className="rounded-lg border border-hairline overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-raised/60 border-b border-hairline">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted shrink-0">Name</span>
+          <span className="w-px h-3.5 bg-hairline shrink-0" />
+          <input
+            type="text"
+            value={char.info.name}
+            onChange={e => patchInfo('name', e.target.value)}
+            placeholder="Name des Charakters"
+            className="flex-1 bg-transparent text-primary text-sm placeholder:text-faint focus:outline-none"
+          />
         </div>
+        <div className="p-3 flex gap-3">
+          {/* Left: Alter + Größe + Gewicht + Geschlecht */}
+          <div className="flex flex-col gap-1.5 w-40 shrink-0">
+            {[
+              { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'Jahre' },
+              { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm'    },
+              { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg'    },
+            ].map(f => {
+              const val = (char.info as Record<string, string>)[f.key] ?? '';
+              return (
+                <div key={f.key} className="flex items-center gap-2 px-2.5 py-1.5 bg-raised border border-hairline rounded-lg">
+                  <CatIcon src={f.icon} size={25} className="shrink-0" />
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={e => patchInfo(f.key as keyof typeof char.info, e.target.value)}
+                    placeholder={f.placeholder}
+                    className="flex-1 bg-transparent text-primary text-sm font-mono placeholder:text-faint focus:outline-none min-w-0"
+                  />
+                  {val && <span className="text-sm text-faint shrink-0">{f.suffix}</span>}
+                </div>
+              );
+            })}
+            {/* Gender — last */}
+            <button
+              ref={genderBtnRef}
+              onClick={() => {
+                setGenderAnchor(genderBtnRef.current?.getBoundingClientRect() ?? null);
+                setGenderOverlay(true);
+              }}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-colors ${
+                selectedGender
+                  ? 'bg-raised border-hairline hover:border-muted'
+                  : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
+              }`}
+            >
+              {selectedGender
+                ? <CatIcon src={selectedGender.icon} size={25} className="shrink-0" />
+                : <span className="text-lg leading-none text-faint w-7 text-center">?</span>
+              }
+              <span className="text-sm text-primary">
+                {selectedGender ? selectedGender.label : 'Geschlecht wählen'}
+              </span>
+            </button>
+          </div>
 
-        {/* Right: character photo placeholder */}
-        <div
-          className="shrink-0 rounded-lg border border-dashed border-hairline flex items-center justify-center text-faint"
-          style={{ width: 110, alignSelf: 'stretch' }}
-        >
-          <span className="text-[9px] uppercase tracking-widest text-faint/60 rotate-0 text-center px-1 leading-relaxed">
-            Charakterbild
-          </span>
+          {/* Right: character photo placeholder */}
+          <div
+            className="flex-1 rounded-lg border border-dashed border-hairline flex items-center justify-center"
+            style={{ alignSelf: 'stretch' }}
+          >
+            <span className="text-[9px] uppercase tracking-widest text-faint/60 text-center px-1 leading-relaxed">
+              Charakterbild
+            </span>
+          </div>
         </div>
       </div>
 
@@ -596,7 +661,11 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           {/* Berufskategorie — full info card if set, placeholder otherwise */}
           {selectedProf ? (
             <button
-              onClick={() => setProfCatOverlay(true)}
+              ref={profCatBtnRef}
+              onClick={() => {
+                setProfCatAnchor(profCatBtnRef.current?.getBoundingClientRect() ?? null);
+                setProfCatOverlay(true);
+              }}
               className="w-full text-left p-3 rounded-lg border transition-colors hover:opacity-90"
               style={{ borderColor: (profColor ?? '#888') + 'CC', backgroundColor: (profColor ?? '#888') + '18' }}
             >
@@ -615,7 +684,9 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   const catMeta = TALENT_CAT_MAP[c];
                   return (
                     <span key={c} className="flex items-center gap-0.5 px-1.5 py-0.5 rounded" style={{ backgroundColor: `${CAT_COLOR[c]}22` }}>
-                      <CatIcon src={catMeta.icon} size={18} />
+                      <IconTooltip label={catMeta.label} color={CAT_COLOR[c]}>
+                        <CatIcon src={catMeta.icon} size={18} />
+                      </IconTooltip>
                       <span className="text-[10px] font-mono font-bold" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
                     </span>
                   );
@@ -630,7 +701,9 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
                   return (
                     <span key={attr} className="flex items-center gap-0.5 px-1.5 py-0.5 rounded" style={{ backgroundColor: `${meta?.color}18` }}>
-                      <CatIcon src={meta?.icon ?? ''} size={16} />
+                      <IconTooltip label={meta?.name ?? attr} color={meta?.color}>
+                        <CatIcon src={meta?.icon ?? ''} size={16} />
+                      </IconTooltip>
                       <span className="text-[9px] font-mono font-medium" style={{ color: meta?.color }}>{attr} {val}</span>
                     </span>
                   );
@@ -639,7 +712,11 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             </button>
           ) : (
             <button
-              onClick={() => setProfCatOverlay(true)}
+              ref={profCatBtnRef}
+              onClick={() => {
+                setProfCatAnchor(profCatBtnRef.current?.getBoundingClientRect() ?? null);
+                setProfCatOverlay(true);
+              }}
               className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-hairline text-faint text-sm hover:border-muted hover:text-muted transition-colors"
             >
               — Berufskategorie wählen —
@@ -787,6 +864,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           value={char.info.gender}
           onSelect={key => patchInfo('gender', key)}
           onClose={() => setGenderOverlay(false)}
+          anchorRect={genderAnchor}
         />
       )}
       {profCatOverlay && (
@@ -794,6 +872,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           value={char.profession}
           onSelect={key => selectProfession(key)}
           onClose={() => setProfCatOverlay(false)}
+          anchorRect={profCatAnchor}
         />
       )}
       {specOverlay && (

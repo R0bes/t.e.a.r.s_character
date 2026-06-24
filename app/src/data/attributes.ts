@@ -14,12 +14,12 @@ export interface AttributeMeta {
 }
 
 export const ATTRIBUTES: AttributeMeta[] = [
-  { key: 'KK', name: 'Körperkraft',          shortName: 'KK', color: '#D1453B', tailwindColor: 'kk', icon: '/icons/attr/kk.png' },
-  { key: 'GE', name: 'Geschicklichkeit',      shortName: 'GE', color: '#3E7FCE', tailwindColor: 'ge', icon: '/icons/attr/ge.png' },
-  { key: 'AU', name: 'Ausdauer',              shortName: 'AU', color: '#4FA968', tailwindColor: 'au', icon: '/icons/attr/au.png' },
-  { key: 'CH', name: 'Charme',                shortName: 'CH', color: '#D45C95', tailwindColor: 'ch', icon: '/icons/attr/ch.png' },
-  { key: 'IN', name: 'Intelligenz',           shortName: 'IN', color: '#8C5FC4', tailwindColor: 'in', icon: '/icons/attr/in.png' },
-  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: '#E08C3C', tailwindColor: 'mb', icon: '/icons/attr/mb.png' },
+  { key: 'KK', name: 'Körperkraft',          shortName: 'KK', color: '#CC2828', tailwindColor: 'kk', icon: '/icons/attr/kk.png' },
+  { key: 'GE', name: 'Geschicklichkeit',      shortName: 'GE', color: '#C89A10', tailwindColor: 'ge', icon: '/icons/attr/ge.png' },
+  { key: 'AU', name: 'Ausdauer',              shortName: 'AU', color: '#D05020', tailwindColor: 'au', icon: '/icons/attr/au.png' },
+  { key: 'CH', name: 'Charme',                shortName: 'CH', color: '#CC2888', tailwindColor: 'ch', icon: '/icons/attr/ch.png' },
+  { key: 'IN', name: 'Intelligenz',           shortName: 'IN', color: '#1E58C8', tailwindColor: 'in', icon: '/icons/attr/in.png' },
+  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: '#7030B0', tailwindColor: 'mb', icon: '/icons/attr/mb.png' },
 ];
 
 export const ATTR_MAP = Object.fromEntries(

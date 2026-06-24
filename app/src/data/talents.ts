@@ -41,7 +41,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'koerperlich',
     label: 'Körperliche Talente',
-    color: '#E07040',
+    color: '#C84820',
     tailwindColor: 'cat-physical',
     icon: '/icons/attr/kat_koerperlich.png',
     talents: [
@@ -60,7 +60,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'motorisch',
     label: 'Motorische Talente',
-    color: '#28B4C0',
+    color: '#C89010',
     tailwindColor: 'cat-motoric',
     icon: '/icons/attr/kat_motorisch.png',
     talents: [
@@ -79,7 +79,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'geistig',
     label: 'Geistige Talente',
-    color: '#7C56D0',
+    color: '#2050B0',
     tailwindColor: 'cat-mental',
     icon: '/icons/attr/kat_geistig.png',
     talents: [
@@ -98,7 +98,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'sozial',
     label: 'Soziale Talente',
-    color: '#3CB870',
+    color: '#189898',
     tailwindColor: 'cat-social',
     icon: '/icons/attr/kat_sozial.png',
     talents: [
@@ -117,7 +117,7 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'kampf',
     label: 'Kampf & Waffen',
-    color: '#C83030',
+    color: '#B81818',
     tailwindColor: 'cat-combat',
     icon: '/icons/attr/kat_kampf.png',
     talents: [

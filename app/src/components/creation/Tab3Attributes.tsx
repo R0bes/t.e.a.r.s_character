@@ -5,23 +5,23 @@ import { attrPointsLeft, attrJobMin, stepCost } from '../../rules/attributeCost'
 import { calcDerived } from '../../rules/derivedValues';
 import type { AttributeKey } from '../../types/character';
 import { SpiderChart } from '../ui/SpiderChart';
-import type { SpiderAxis, HatchZone } from '../ui/SpiderChart';
+import type { SpiderAxis, ColorZone } from '../ui/SpiderChart';
 
 
 // ── 12 distinct colors ────────────────────────────────────────────────────────
 const C = {
-  KK:  '#D1453B',
-  GE:  '#3E7FCE',
-  AU:  '#4FA968',
-  CH:  '#D45C95',
-  IN:  '#8C5FC4',
-  MB:  '#E08C3C',
-  ATN: '#C4881C',
-  PA:  '#2DB38C',
-  ATD: '#4CAED8',
-  INI: '#88C040',
-  LE:  '#E83050',
-  GG:  '#6050C8',
+  KK:  '#CC2828',
+  GE:  '#C89A10',
+  AU:  '#D05020',
+  CH:  '#CC2888',
+  IN:  '#1E58C8',
+  MB:  '#7030B0',
+  ATN: '#B82020',
+  PA:  '#607090',
+  ATD: '#28A028',
+  INI: '#D4A010',
+  LE:  '#208838',
+  GG:  '#1898A0',
 } as const;
 
 
@@ -74,36 +74,6 @@ function combatTooltip(key: string, color: string): ReactNode {
   }
 }
 
-// ── Info button with directional ReactNode tooltip ────────────────────────────
-function InfoBtn({ content, dir = 'up' }: { content: ReactNode; dir?: TipDir }) {
-  const [open, setOpen] = useState(false);
-
-  const tipPos: Record<TipDir, string> = {
-    up:    'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
-    down:  'top-full left-1/2 -translate-x-1/2 mt-1.5',
-    left:  'right-full top-1/2 -translate-y-1/2 mr-1.5',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-1.5',
-  };
-
-  return (
-    <span className="relative inline-flex shrink-0">
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        className="w-3.5 h-3.5 rounded-full border border-hairline/60 text-[7px] text-faint flex items-center justify-center hover:text-muted hover:border-muted transition-colors leading-none"
-      >
-        i
-      </button>
-      {open && (
-        <span
-          className={`absolute z-30 ${tipPos[dir]} px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl`}
-          onClick={() => setOpen(false)}
-        >
-          {content}
-        </span>
-      )}
-    </span>
-  );
-}
 
 // ── Arrow layout — each axis's orthogonal direction ──────────────────────────
 // rotate: CSS rotation for the + arrow image so it points outward along the
@@ -125,12 +95,11 @@ const BTN_OFFSET = 36; // px: icon-center to button-center distance
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
   attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name, icon,
-  onHoverChange,
 }: {
   attrKey: AttributeKey; value: number; minValue: number; pointsLeft: number;
   onDecrease: () => void; onIncrease: () => void; color: string; name: string; icon: string;
-  onHoverChange: (delta: number) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const pos      = ATTR_POSITIONS[attrKey];
   const arrow    = ARROW_META[attrKey];
   const cost     = stepCost(value);
@@ -140,48 +109,44 @@ function AttrControl({
 
   const plusSrc  = cost >= 3     ? '/icons/attr/arrow_up3.png'   : cost === 2     ? '/icons/attr/arrow_up2.png'   : '/icons/attr/arrow_up.png';
   const minusSrc = prevCost >= 3 ? '/icons/attr/arrow_down3.png' : prevCost === 2 ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png';
-  const plusGlow = cost >= 3 ? 'drop-shadow(0 0 4px #D1453B)' : cost === 2 ? 'drop-shadow(0 0 4px #E08C3C)' : undefined;
+  const plusGlow = cost >= 3 ? 'drop-shadow(0 0 4px #CC2828)' : cost === 2 ? 'drop-shadow(0 0 4px #D05020)' : undefined;
 
   const px = Math.round(arrow.perpX * BTN_OFFSET);
   const py = Math.round(arrow.perpY * BTN_OFFSET);
 
-  // Label positioned away from center based on tip direction
-  const labelStyle: React.CSSProperties = pos.tip === 'down'
-    ? { position: 'absolute', top: -18 - 4, left: 0, transform: 'translate(-50%, -100%)', textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }
-    : pos.tip === 'up'
-      ? { position: 'absolute', top: 18 + 4,  left: 0, transform: 'translateX(-50%)',         textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }
-      : pos.tip === 'left'
-        ? { position: 'absolute', top: 0, left:  18 + 7, transform: 'translateY(-50%)', textAlign: 'left',  whiteSpace: 'nowrap', pointerEvents: 'none' }
-        : { position: 'absolute', top: 0, left: -(18 + 7), transform: 'translate(-100%, -50%)', textAlign: 'right', whiteSpace: 'nowrap', pointerEvents: 'none' };
+  // Tooltip positioning: 'down' means icon is at top edge → tooltip above; 'left' means right edge → tooltip right, etc.
+  const tipPos: Record<TipDir, string> = {
+    down:  'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    up:    'top-full left-1/2 -translate-x-1/2 mt-2',
+    left:  'left-full top-1/2 -translate-y-1/2 ml-2',
+    right: 'right-full top-1/2 -translate-y-1/2 mr-2',
+  };
 
   return (
     <div className="absolute overflow-visible" style={{ left: pos.left, top: pos.top }}>
 
-      {/* Icon medallion — 36px, centered at anchor, same style as CombatLabel */}
+      {/* Icon medallion with hover tooltip */}
       <div
-        className="absolute rounded-full overflow-hidden"
-        style={{ width: 36, height: 36, left: -18, top: -18, boxShadow: `0 0 0 2px ${color}88` }}
+        className="absolute"
+        style={{ width: 44, height: 44, left: -22, top: -22 }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
       >
-        <img src={icon} alt={name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
-          <span className="text-base font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
-            {value}
-          </span>
+        <div className="w-full h-full rounded-full overflow-hidden"
+          style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+          <img src={icon} alt={name} className="w-full h-full object-cover" />
         </div>
-      </div>
-
-      {/* Key + name label, positioned away from chart center */}
-      <div style={labelStyle}>
-        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>{attrKey}</span>
-        <span className="block text-[7px] text-faint leading-none mt-0.5">{name}</span>
+        {open && (
+          <span className={`absolute z-30 ${tipPos[pos.tip]} px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none`}>
+            <span style={{ color }}>{name}</span>
+          </span>
+        )}
       </div>
 
       {/* + arrow — transparent button, no visible frame */}
       <button
         onClick={onIncrease}
         disabled={!canInc}
-        onMouseEnter={() => canInc && onHoverChange(-cost)}
-        onMouseLeave={() => onHoverChange(0)}
         className="absolute p-0 bg-transparent border-0 outline-none"
         style={{ left: px - 14, top: py - 12, width: 28, height: 24 }}
       >
@@ -196,8 +161,6 @@ function AttrControl({
       <button
         onClick={onDecrease}
         disabled={!canDec}
-        onMouseEnter={() => canDec && onHoverChange(prevCost)}
-        onMouseLeave={() => onHoverChange(0)}
         className="absolute p-0 bg-transparent border-0 outline-none"
         style={{ left: -px - 14, top: -py - 12, width: 28, height: 24 }}
       >
@@ -214,9 +177,9 @@ function AttrControl({
 
 // ── Combat attribute label ────────────────────────────────────────────────────
 function CombatLabel({
-  attrKey, color, icon, value, left, top, tip,
+  attrKey, color, icon, left, top, tip,
 }: {
-  attrKey: string; color: string; icon: string; value: number;
+  attrKey: string; color: string; icon: string;
   left: string; top: string; tip: TipDir;
 }) {
   const [open, setOpen] = useState(false);
@@ -235,15 +198,9 @@ function CombatLabel({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-default"
+      <div className="relative w-11 h-11 rounded-full overflow-hidden cursor-default"
         style={{ boxShadow: `0 0 0 2px ${color}88` }}>
         <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)' }}>
-          <span className="text-sm font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
-            {value}
-          </span>
-        </div>
       </div>
       {open && (
         <span
@@ -256,29 +213,42 @@ function CombatLabel({
   );
 }
 
-// ── LE / GG medallion overlay (matches CombatLabel style) ────────────────────
-function ResourceLabel({
-  shortKey, fullName, value, color, icon, info,
+// ── LE / GG health bar ───────────────────────────────────────────────────────
+function ResourceBar({
+  shortKey, value, maxValue, color, icon, info,
 }: {
-  shortKey: string; fullName: string; value: number; color: string; icon: string; info: ReactNode;
+  shortKey: string; value: number; maxValue: number; color: string; icon: string; info: ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  const pct = Math.max(0, Math.min(100, (value / maxValue) * 100));
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative w-9 h-9 rounded-full overflow-hidden"
+    <div
+      className="relative flex items-center gap-2.5"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden cursor-default"
         style={{ boxShadow: `0 0 0 2px ${color}88` }}>
         <img src={icon} alt={shortKey} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)' }}>
-          <span className="text-sm font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
-            {value}
-          </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline justify-between mb-1">
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>{shortKey}</span>
+          <span className="text-xs font-mono text-muted">{value}<span className="text-faint text-[10px]"> / {maxValue}</span></span>
+        </div>
+        <div className="h-2.5 rounded-full overflow-hidden bg-raised">
+          <div
+            className="h-full rounded-full transition-all duration-200"
+            style={{ width: `${pct}%`, backgroundColor: color }}
+          />
         </div>
       </div>
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>{shortKey}</span>
-        <span className="text-[7px] text-faint leading-none">{fullName}</span>
-      </div>
-      <InfoBtn content={info} dir="up" />
+      {open && (
+        <span className="absolute z-30 bottom-full left-0 mb-2 px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none">
+          {info}
+        </span>
+      )}
     </div>
   );
 }
@@ -287,13 +257,11 @@ function ResourceLabel({
 export function Tab3Attributes({ charId }: { charId: string }) {
   const char           = useStore(s => s.characters.find(c => c.id === charId));
   const patchCharacter = useStore(s => s.patchCharacter);
-  const [hoverDelta, setHoverDelta] = useState(0);
 
   if (!char) return null;
 
   const pointsLeft = attrPointsLeft(char);
   const derived    = calcDerived(char);
-  const forecasted = pointsLeft + hoverDelta;
 
   function setAttr(key: AttributeKey, val: number) {
     patchCharacter(charId, c => { c.attributes[key] = val; });
@@ -313,45 +281,19 @@ export function Tab3Attributes({ charId }: { charId: string }) {
   return (
     <div className="flex flex-col gap-4 p-4">
 
-      {/* AP healthbar with forecast ghost */}
-      <div className="flex items-center gap-2">
-        <span className="text-[9px] font-mono text-faint shrink-0">AP</span>
-        <div className="relative flex-1 h-2.5 rounded-full overflow-hidden bg-raised">
-          {/* Current fill */}
+      {/* AP bar — full width, 14 segments */}
+      <div className="relative h-2.5 w-full rounded-full overflow-hidden bg-raised">
+        <div
+          className="absolute inset-y-0 left-0 transition-all duration-200"
+          style={{ width: `${Math.max(0, (pointsLeft / ATTR_FREE) * 100)}%`, backgroundColor: '#7A8A9A' }}
+        />
+        {Array.from({ length: ATTR_FREE - 1 }, (_, i) => (
           <div
-            className="absolute inset-y-0 left-0 rounded-full transition-all duration-200"
-            style={{
-              width: `${Math.max(0, (pointsLeft / ATTR_FREE) * 100)}%`,
-              backgroundColor: '#7A8A9A',
-            }}
+            key={i}
+            className="absolute inset-y-0 w-px"
+            style={{ left: `${((i + 1) / ATTR_FREE) * 100}%`, backgroundColor: 'rgba(0,0,0,0.35)' }}
           />
-          {/* Forecast ghost overlay */}
-          {hoverDelta !== 0 && (
-            <div
-              className="absolute inset-y-0 rounded-full transition-all duration-100 opacity-60"
-              style={hoverDelta > 0
-                ? {
-                    // gaining points: ghost extends right from current edge
-                    left:  `${(pointsLeft / ATTR_FREE) * 100}%`,
-                    width: `${(hoverDelta / ATTR_FREE) * 100}%`,
-                    backgroundColor: '#4FA968',
-                  }
-                : {
-                    // losing points: ghost shrinks left from current edge
-                    left:  `${(forecasted / ATTR_FREE) * 100}%`,
-                    width: `${(Math.abs(hoverDelta) / ATTR_FREE) * 100}%`,
-                    backgroundColor: '#D1453B',
-                  }
-              }
-            />
-          )}
-        </div>
-        <span className="text-[9px] font-mono text-faint shrink-0 w-8 text-right">
-          {forecasted !== pointsLeft
-            ? <span style={{ color: hoverDelta > 0 ? '#4FA968' : '#D1453B' }}>{forecasted}</span>
-            : pointsLeft
-          }/{ATTR_FREE}
-        </span>
+        ))}
       </div>
 
       {/* ── Stacked radars ── */}
@@ -359,18 +301,21 @@ export function Tab3Attributes({ charId }: { charId: string }) {
 
         {/* Primary radar – full width, square container */}
         <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
-          <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
+          <div className="absolute" style={{ left: '17%', top: '17%', width: '66%', aspectRatio: '1' }}>
             <SpiderChart
               axes={primaryAxes}
               size={140}
               gridValues={PRIMARY_GRID}
               showGridLabels
+              showValueLabels
               chartId="primary"
               className="w-full h-full"
-              hatchZones={[
-                { from: 14, to: 17, color: '#E8A020', density: 'light' },
-                { from: 17, to: 19, color: '#C83030', density: 'dense' },
-              ] as HatchZone[]}
+              colorZones={[
+                { from:  0, to:  8, color: '#5878A0', opacity: 0.07 },
+                { from:  8, to: 14, color: '#8898A8', opacity: 0.05 },
+                { from: 14, to: 17, color: '#C89020', opacity: 0.10 },
+                { from: 17, to: 19, color: '#C83020', opacity: 0.13 },
+              ] as ColorZone[]}
             />
           </div>
 
@@ -390,7 +335,6 @@ export function Tab3Attributes({ charId }: { charId: string }) {
                 color={C[key]}
                 name={meta.name}
                 icon={meta.icon}
-                onHoverChange={setHoverDelta}
               />
             );
           })}
@@ -398,8 +342,8 @@ export function Tab3Attributes({ charId }: { charId: string }) {
 
         {/* Combat radar – square container, same approach as primary */}
         <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
-          <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
-            <SpiderChart axes={combatAxes} size={110} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" className="w-full h-full" />
+          <div className="absolute" style={{ left: '17%', top: '17%', width: '66%', aspectRatio: '1' }}>
+            <SpiderChart axes={combatAxes} size={110} gridValues={[5, 10, 15, 20]} showGridLabels showValueLabels dotRadius={4.7} chartId="combat" className="w-full h-full" />
           </div>
 
           {COMBAT_META.map(m => (
@@ -408,7 +352,6 @@ export function Tab3Attributes({ charId }: { charId: string }) {
               attrKey={m.key}
               color={m.color}
               icon={m.icon}
-              value={derived[m.key as keyof typeof derived]}
               left={m.left}
               top={m.top}
               tip={m.tip}
@@ -416,20 +359,20 @@ export function Tab3Attributes({ charId }: { charId: string }) {
           ))}
         </div>
 
-        {/* LE & GG — side by side, same medallion style as combat labels */}
-        <div className="flex justify-center gap-10">
-          <ResourceLabel
+        {/* LE & GG — stacked health bars */}
+        <div className="flex flex-col gap-3 px-1">
+          <ResourceBar
             shortKey="LE"
-            fullName="Lebensenergie"
             value={derived.LE}
+            maxValue={177}
             color={C.LE}
             icon="/icons/attr/le.png"
             info={<><span style={{color:C.LE}}>Lebensenergie</span>: (<A k="KK"/>×2 + <A k="AU"/>) × 3</>}
           />
-          <ResourceLabel
+          <ResourceBar
             shortKey="GG"
-            fullName="Geist. Gesundheit"
             value={derived.GG}
+            maxValue={237}
             color={C.GG}
             icon="/icons/attr/gg.png"
             info={<><span style={{color:C.GG}}>Geist. Gesundheit</span>: (<A k="AU"/>+<A k="IN"/>+<A k="MB"/>×2) × 3</>}

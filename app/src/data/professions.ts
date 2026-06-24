@@ -7,6 +7,7 @@ export interface ProfessionMeta {
   label: string;
   labelSingular: string;
   icon: string;
+  color: string;
   attrMin: Partial<Record<AttributeKey, number>>;
   talentPts: Partial<Record<TalentCategory, number>>;
 }
@@ -17,6 +18,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Körperliche Berufe',
     labelSingular: 'Körperlicher Beruf',
     icon: '/icons/attr/prof_koerperlich.png',
+    color: '#D04810',
     attrMin: { KK: 13, AU: 11 },
     talentPts: { koerperlich: 30, motorisch: 10 },
   },
@@ -25,6 +27,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Handwerkliche Berufe',
     labelSingular: 'Handwerklicher Beruf',
     icon: '/icons/attr/prof_handwerklich.png',
+    color: '#C89010',
     attrMin: { GE: 13, KK: 11 },
     talentPts: { motorisch: 30, koerperlich: 10 },
   },
@@ -33,6 +36,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Kundenkontaktberufe',
     labelSingular: 'Kundenkontaktberuf',
     icon: '/icons/attr/prof_kundenkontakt.png',
+    color: '#18A0A0',
     attrMin: { CH: 13, GE: 11 },
     talentPts: { sozial: 30, motorisch: 10 },
   },
@@ -41,6 +45,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Kreative Berufe',
     labelSingular: 'Kreativer Beruf',
     icon: '/icons/attr/prof_kreativ.png',
+    color: '#CC2878',
     attrMin: { MB: 13, IN: 11 },
     talentPts: { geistig: 20, motorisch: 10, sozial: 10 },
   },
@@ -49,6 +54,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Denkende Berufe',
     labelSingular: 'Denkender Beruf',
     icon: '/icons/attr/prof_denkend.png',
+    color: '#1858C0',
     attrMin: { IN: 13, MB: 11 },
     talentPts: { geistig: 30, sozial: 10 },
   },
@@ -57,6 +63,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Militärische Berufe',
     labelSingular: 'Militärischer Beruf',
     icon: '/icons/attr/prof_militaerisch.png',
+    color: '#587018',
     attrMin: { AU: 12, GE: 12 },
     talentPts: { kampf: 30, motorisch: 10 },
   },
@@ -65,6 +72,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Medizinische Berufe',
     labelSingular: 'Medizinischer Beruf',
     icon: '/icons/attr/prof_medizinisch.png',
+    color: '#188858',
     attrMin: { GE: 13, IN: 11 },
     talentPts: { motorisch: 20, geistig: 10, sozial: 10 },
   },
@@ -73,6 +81,7 @@ export const PROFESSIONS: ProfessionMeta[] = [
     label: 'Arbeitslose / Schüler / Studenten',
     labelSingular: 'Schüler / Student / Arbeitslos',
     icon: '/icons/attr/prof_arbeitslos.png',
+    color: '#6838A8',
     attrMin: { AU: 11, CH: 11, IN: 9, GE: 9 },
     talentPts: { sozial: 10, geistig: 10, motorisch: 10, koerperlich: 5, kampf: 5 },
   },

@@ -9,8 +9,8 @@ interface HexagonRadarProps {
 
 const ORDER: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 const COLORS: Record<AttributeKey, string> = {
-  KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
-  CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
+  KK: '#CC2828', GE: '#C89A10', AU: '#D05020',
+  CH: '#CC2888', IN: '#1E58C8', MB: '#7030B0',
 };
 
 function hexPoint(cx: number, cy: number, r: number, i: number): [number, number] {

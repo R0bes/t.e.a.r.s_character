@@ -89,9 +89,9 @@ function CharacterCard({ char, index }: { char: Character; index: number }) {
 
 function getCategoryColor(prof: string): string {
   const map: Record<string, string> = {
-    koerperlich: '#D1453B', handwerklich: '#3E7FCE', kundenkontakt: '#D45C95',
-    kreativ: '#8C5FC4', denkend: '#8C5FC4', militaerisch: '#7A2420',
-    medizinisch: '#4FA968', arbeitslos: '#D6B23E',
+    koerperlich: '#D05020', handwerklich: '#C89A10', kundenkontakt: '#189898',
+    kreativ: '#CC2888', denkend: '#1E58C8', militaerisch: '#608030',
+    medizinisch: '#208838', arbeitslos: '#7030B0',
   };
   return map[prof] ?? '#5A5D66';
 }

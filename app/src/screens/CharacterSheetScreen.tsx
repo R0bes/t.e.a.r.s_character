@@ -26,17 +26,17 @@ export function CharacterSheetScreen() {
   const CHART_MAX = 20;
   const radarAxes: SpiderAxis[] = [
     // Primary attributes (clockwise from top)
-    { key: 'KK',  value: char.attributes.KK,  maxValue: CHART_MAX, color: '#D1453B' },
-    { key: 'GE',  value: char.attributes.GE,  maxValue: CHART_MAX, color: '#3E7FCE' },
-    { key: 'AU',  value: char.attributes.AU,  maxValue: CHART_MAX, color: '#4FA968' },
-    { key: 'CH',  value: char.attributes.CH,  maxValue: CHART_MAX, color: '#D45C95' },
-    { key: 'IN',  value: char.attributes.IN,  maxValue: CHART_MAX, color: '#8C5FC4' },
-    { key: 'MB',  value: char.attributes.MB,  maxValue: CHART_MAX, color: '#E08C3C' },
+    { key: 'KK',  value: char.attributes.KK,  maxValue: CHART_MAX, color: '#CC2828' },
+    { key: 'GE',  value: char.attributes.GE,  maxValue: CHART_MAX, color: '#C89A10' },
+    { key: 'AU',  value: char.attributes.AU,  maxValue: CHART_MAX, color: '#D05020' },
+    { key: 'CH',  value: char.attributes.CH,  maxValue: CHART_MAX, color: '#CC2888' },
+    { key: 'IN',  value: char.attributes.IN,  maxValue: CHART_MAX, color: '#1E58C8' },
+    { key: 'MB',  value: char.attributes.MB,  maxValue: CHART_MAX, color: '#7030B0' },
     // Combat attributes (derived, lower half)
-    { key: 'ATN', value: calcATN(char), maxValue: CHART_MAX, color: '#D4724A' },
-    { key: 'PA',  value: calcPA(char),  maxValue: CHART_MAX, color: '#5BA888' },
-    { key: 'ATD', value: calcATD(char), maxValue: CHART_MAX, color: '#5AAACE' },
-    { key: 'INI', value: calcINI(char), maxValue: CHART_MAX, color: '#C4A030' },
+    { key: 'ATN', value: calcATN(char), maxValue: CHART_MAX, color: '#B82020' },
+    { key: 'PA',  value: calcPA(char),  maxValue: CHART_MAX, color: '#607090' },
+    { key: 'ATD', value: calcATD(char), maxValue: CHART_MAX, color: '#28A028' },
+    { key: 'INI', value: calcINI(char), maxValue: CHART_MAX, color: '#D4A010' },
   ];
 
   const initials = char.info.name

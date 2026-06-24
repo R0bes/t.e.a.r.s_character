@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import { CatIcon } from '../ui/CatIcon';
 import {
   talentAvailable, talentLeft, talentCanIncrease,
-  talentFixedBonus, talentSpecBonusBreakdown, BASE_TALENT_PTS,
+  talentFixedBonus,
   varPtsLeft,
 } from '../../rules/talentBudget';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
@@ -28,27 +28,6 @@ function TpBar({ left, total, color }: { left: number; total: number; color: str
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
-
-// ── Small info popup ──────────────────────────────────────────────────────────
-function InfoPop({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="relative inline-flex shrink-0">
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        className="w-4 h-4 rounded-full border border-hairline/60 text-[7px] text-faint flex items-center justify-center hover:text-muted hover:border-muted transition-colors leading-none"
-      >i</button>
-      {open && (
-        <span
-          className="absolute right-0 top-full mt-1.5 z-20 bg-raised border border-hairline rounded-lg px-2.5 py-2 text-[9px] font-mono text-primary shadow-xl min-w-[160px] leading-relaxed"
-          onClick={() => setOpen(false)}
-        >
-          {children}
-        </span>
-      )}
-    </span>
-  );
-}
 
 // ── Custom Talent Form ────────────────────────────────────────────────────────
 function CustomTalentForm({ catKey, charId, onClose }: {
@@ -144,6 +123,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
+  const [hoveredAttr, setHoveredAttr] = useState<number | null>(null);
 
   if (!char) return null;
 
@@ -159,14 +139,15 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
   const qual       = qualityRibbon(effective);
 
   const isSpecial  = isHobby1 || isHobby2 || isProfTal;
-  const tileBg     = `${catColor}10`;
-  const tileBorder = isSpecial ? `${catColor}60` : `${catColor}28`;
+  const isEmpty    = effective === 0;
+  const tileBg     = isEmpty ? `${catColor}06` : `${catColor}10`;
+  const tileBorder = isSpecial ? `${catColor}60` : isEmpty ? `${catColor}18` : `${catColor}28`;
   const srcLabel   = isProfTal ? 'Beruf' : isHobby1 ? '1. Hobby' : isHobby2 ? '2. Hobby' : null;
 
   return (
     <div
       className="relative flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
-      style={{ backgroundColor: tileBg, borderColor: tileBorder }}
+      style={{ backgroundColor: tileBg, borderColor: tileBorder, opacity: isEmpty ? 0.55 : 1 }}
     >
       {/* Titel */}
       <div className="flex items-center gap-1.5 min-w-0">
@@ -181,7 +162,20 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         <div className="flex items-center gap-2 pl-6">
           {!isCombat && attrs?.map((a, i) => {
             const meta = ATTR_MAP[a as AttributeKey];
-            return <CatIcon key={i} src={meta?.icon ?? ''} size={24} />;
+            return (
+              <div key={i} className="relative"
+                onMouseEnter={() => setHoveredAttr(i)}
+                onMouseLeave={() => setHoveredAttr(null)}
+              >
+                <CatIcon src={meta?.icon ?? ''} size={24} />
+                {hoveredAttr === i && (
+                  <span className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none"
+                    style={{ color: meta?.color }}>
+                    {meta?.name}
+                  </span>
+                )}
+              </div>
+            );
           })}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -198,9 +192,8 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
               onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
               disabled={!canDec}
               className="w-7 h-5 flex items-center justify-center hover:opacity-80 disabled:opacity-20 transition-opacity"
-              style={{ transform: 'rotate(180deg)' }}
             >
-              <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
+              <img src={isCombat ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png'} className="w-6 h-5 object-contain" />
             </button>
           </div>
         </div>
@@ -234,52 +227,30 @@ function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentC
   const char = useStore(s => s.characters.find(c => c.id === charId));
   if (!char) return null;
 
-  const catMeta = TALENT_CATEGORIES.find(c => c.key === catKey)!;
+  const catMeta   = TALENT_CATEGORIES.find(c => c.key === catKey)!;
   const available = talentAvailable(char, catKey);
   const left      = talentLeft(char, catKey);
-  const { job: jobBonus } = talentSpecBonusBreakdown(char, catKey);
-
-  // Spec names for the tooltip
-  const specSources: string[] = [];
-  const allSpecs = [char.specProfession, char.specFreePositive, char.specFreeNegative];
-  for (const s of allSpecs) {
-    if (s && s.category === catKey) {
-      const sign = s.modifier > 0 ? '+' : '';
-      specSources.push(`${sign}${s.modifier} (${s.name})`);
-    }
-  }
-
-  const tooltipLines: ReactNode[] = [
-    <span key="base">{BASE_TALENT_PTS} TP (Basis)</span>,
-  ];
-  if (jobBonus !== 0) {
-    tooltipLines.push(<span key="job">{jobBonus > 0 ? '+' : ''}{jobBonus} TP (Beruf)</span>);
-  }
-  for (const src of specSources) {
-    tooltipLines.push(<span key={src}>{src} TP (Spez)</span>);
-  }
-  tooltipLines.push(<span key="total" className="text-paper font-bold">= {available} TP</span>);
+  const fillPct   = available > 0 ? Math.max(0, Math.min(100, (left / available) * 100)) : 0;
 
   return (
     <div
       className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 first:mt-0"
       style={{ backgroundColor: `${catMeta.color}18`, borderColor: `${catMeta.color}40` }}
     >
-      <CatIcon src={catMeta.icon} size={28} />
-      <div className="flex-1 min-w-0" />
-      <div className="w-20 shrink-0">
-        <TpBar left={left} total={available} color={catMeta.color} />
+      <CatIcon src={catMeta.icon} size={28} className="shrink-0" />
+      <div className="relative flex-1 h-2.5 rounded-full overflow-hidden bg-raised">
+        <div
+          className="absolute inset-y-0 left-0 transition-all duration-200"
+          style={{ width: `${fillPct}%`, backgroundColor: left < 0 ? '#D1453B' : catMeta.color }}
+        />
+        {available > 1 && Array.from({ length: available - 1 }, (_, i) => (
+          <div
+            key={i}
+            className="absolute inset-y-0 w-px"
+            style={{ left: `${((i + 1) / available) * 100}%`, backgroundColor: 'rgba(0,0,0,0.40)' }}
+          />
+        ))}
       </div>
-      <span className={`font-mono text-sm font-bold shrink-0 ${
-        left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-paper'
-      }`}>
-        {left}/{available}
-      </span>
-      <InfoPop>
-        <div className="flex flex-col gap-0.5">
-          {tooltipLines}
-        </div>
-      </InfoPop>
     </div>
   );
 }

@@ -13,14 +13,24 @@ export interface HatchZone {
   density: 'light' | 'dense';
 }
 
+export interface ColorZone {
+  from: number;
+  to: number;
+  color: string;
+  opacity: number;
+}
+
 interface SpiderChartProps {
   axes: SpiderAxis[];
   size?: number;
   gridValues?: number[];
   showGridLabels?: boolean;
   showAxisLabels?: boolean;
+  showValueLabels?: boolean;
+  dotRadius?: number;
   chartId?: string;
   hatchZones?: HatchZone[];
+  colorZones?: ColorZone[];
   labelGap?: number;
   className?: string;
 }
@@ -45,8 +55,11 @@ export function SpiderChart({
   gridValues = [5, 10, 14, 17],
   showGridLabels = false,
   showAxisLabels = false,
+  showValueLabels = false,
+  dotRadius = 6,
   chartId = 'sc',
   hatchZones = [],
+  colorZones = [],
   labelGap = 10,
   className = '',
 }: SpiderChartProps) {
@@ -70,19 +83,16 @@ export function SpiderChart({
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible" className={className || undefined}>
       <defs>
         {axes.map((ax, i) => {
-          const j = (i + 1) % n;
-          const [ox1, oy1] = outerPts[i];
-          const [ox2, oy2] = outerPts[j];
+          const [vx, vy] = valuePts[i];
           return (
             <linearGradient
               key={ax.key}
               id={`${chartId}-grad-${i}`}
-              x1={ox1} y1={oy1}
-              x2={ox2} y2={oy2}
+              x1={cx} y1={cy} x2={vx} y2={vy}
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%"   stopColor={ax.color}       stopOpacity={0.38} />
-              <stop offset="100%" stopColor={axes[j].color}  stopOpacity={0.38} />
+              <stop offset="0%"   stopColor={ax.color} stopOpacity={0} />
+              <stop offset="100%" stopColor={ax.color} stopOpacity={0.55} />
             </linearGradient>
           );
         })}
@@ -122,6 +132,22 @@ export function SpiderChart({
         );
       })}
 
+      {/* Color zones — subtle solid band fills */}
+      {colorZones.map((zone, zi) => {
+        const fracOuter = Math.min(1, zone.to / refMax);
+        const fracInner = Math.max(0, zone.from / refMax);
+        const d = ringPath(cx, cy, maxR, fracOuter, fracInner, n);
+        return (
+          <path
+            key={zi}
+            d={d}
+            fill={zone.color}
+            fillOpacity={zone.opacity}
+            fillRule="evenodd"
+          />
+        );
+      })}
+
       {/* Hatch zones (drawn before axis lines so they don't cover them) */}
       {hatchZones.map((zone, zi) => {
         const fracOuter = Math.min(1, zone.to / refMax);
@@ -143,17 +169,17 @@ export function SpiderChart({
         <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#2D303A" strokeWidth="0.8" />
       ))}
 
-      {/* Gradient sector fills */}
+      {/* Gradient sector fills — two overlapping passes per sector for center-fade blend */}
       {axes.map((ax, i) => {
         const j = (i + 1) % n;
         const [x1, y1] = valuePts[i];
         const [x2, y2] = valuePts[j];
+        const pts = `${cx},${cy} ${x1},${y1} ${x2},${y2}`;
         return (
-          <polygon
-            key={ax.key}
-            points={`${cx},${cy} ${x1},${y1} ${x2},${y2}`}
-            fill={`url(#${chartId}-grad-${i})`}
-          />
+          <g key={ax.key}>
+            <polygon points={pts} fill={`url(#${chartId}-grad-${i})`} />
+            <polygon points={pts} fill={`url(#${chartId}-grad-${j})`} />
+          </g>
         );
       })}
 
@@ -168,9 +194,24 @@ export function SpiderChart({
         strokeWidth="1.2"
       />
 
-      {/* Vertex dots — colored per axis */}
+      {/* Vertex dots with value centered inside */}
       {valuePts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="2.5" fill={axes[i].color} />
+        <g key={i}>
+          <circle cx={x} cy={y} r={dotRadius} fill={axes[i].color} />
+          {showValueLabels && (
+            <text
+              x={x} y={y}
+              fontSize={dotRadius * (8.5 / 6)}
+              fontFamily="IBM Plex Mono"
+              fontWeight="700"
+              fill="#1B1D23"
+              textAnchor="middle"
+              dy="0.35em"
+            >
+              {axes[i].value}
+            </text>
+          )}
+        </g>
       ))}
 
       {/* Grid labels on axis 0 */}
