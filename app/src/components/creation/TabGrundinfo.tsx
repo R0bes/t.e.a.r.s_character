@@ -352,11 +352,10 @@ function TalentOverlay({
 }
 
 // ── Spec display tile ─────────────────────────────────────────────────────────
-function SpecDisplayTile({ spec, placeholder, modifierIgnored, label, onClick }: {
+function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
   spec: Specification | null;
   placeholder: string;
   modifierIgnored?: boolean;
-  label?: string;
   onClick: () => void;
 }) {
   if (!spec) {
@@ -394,16 +393,6 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, label, onClick }:
           </svg>
         )}
       </span>
-      {label && (
-        <span className="absolute pointer-events-none"
-          style={{
-            bottom: 8, left: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${color}CC`, color: '#fff',
-            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
-          }}
-        >{label}</span>
-      )}
     </button>
   );
 }
@@ -416,11 +405,10 @@ function qualityRibbon(effective: number): { label: string; color: string } | nu
   return                       { label: 'Profi',    color: '#4FA968' };
 }
 
-function TalentDisplayTile({ talentName, bonus, placeholder, label, onClick }: {
+function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
   talentName: string | null;
   bonus: number;
   placeholder: string;
-  label?: string;
   onClick: () => void;
 }) {
   if (!talentName) {
@@ -454,16 +442,6 @@ function TalentDisplayTile({ talentName, bonus, placeholder, label, onClick }: {
         >{qual.label}</span>
       )}
       <span className="absolute bottom-2.5 right-3 text-2xl font-mono font-bold" style={{ color }}>+{bonus}</span>
-      {label && (
-        <span className="absolute pointer-events-none"
-          style={{
-            bottom: 8, left: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${color}CC`, color: '#fff',
-            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
-          }}
-        >{label}</span>
-      )}
     </button>
   );
 }
@@ -653,14 +631,12 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <TalentDisplayTile
               talentName={char.professionTalent}
               bonus={5}
-              label="Beruf"
               placeholder="Talent (+5 TP)"
               onClick={() => setTalentOverlay(true)}
             />
             <SpecDisplayTile
               spec={char.specProfession}
               placeholder="neg. Spezifikum"
-              label="Beruf"
               onClick={() => setSpecOverlay(true)}
             />
           </div>
@@ -711,7 +687,6 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                 <TalentDisplayTile
                   talentName={char.hobby1Talent}
                   bonus={5}
-                  label="1. Hobby"
                   placeholder="Talent (+5 TP)"
                   onClick={() => setH1TalentOverlay(true)}
                 />
@@ -721,7 +696,6 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   spec={char.specHobby1}
                   placeholder="neg. Spezifikum wählen"
                   modifierIgnored
-                  label="1. Hobby"
                   onClick={() => setH1SpecOverlay(true)}
                 />
               )}
@@ -754,7 +728,6 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   <TalentDisplayTile
                     talentName={char.hobby2Talent}
                     bonus={3}
-                    label="2. Hobby"
                     placeholder="Talent (+3 TP)"
                     onClick={() => setH2TalentOverlay(true)}
                   />
@@ -774,13 +747,11 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           <SpecDisplayTile
             spec={char.specFreeNegative}
             placeholder="neg. Spezifikum wählen"
-            label="frei −"
             onClick={() => setFreeNegOverlay(true)}
           />
           <SpecDisplayTile
             spec={char.specFreePositive}
             placeholder="pos. Spezifikum wählen"
-            label="frei +"
             onClick={() => setFreePosOverlay(true)}
           />
         </div>
