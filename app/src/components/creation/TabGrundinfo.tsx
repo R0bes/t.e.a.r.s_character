@@ -405,12 +405,14 @@ function qualityRibbon(effective: number): { label: string; color: string } | nu
   return                       { label: 'Profi',    color: '#4FA968' };
 }
 
-function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
+function TalentDisplayTile({ talentName, bonus, placeholder, onClick, charId }: {
   talentName: string | null;
   bonus: number;
   placeholder: string;
   onClick: () => void;
+  charId: string;
 }) {
+  const stored = useStore(s => talentName ? (s.characters.find(c => c.id === charId)?.talents[talentName] ?? 0) : 0);
   if (!talentName) {
     return (
       <button
@@ -421,10 +423,11 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
       </button>
     );
   }
-  const catKey  = TALENT_CATEGORY_OF[talentName];
-  const catMeta = catKey ? TALENT_CAT_MAP[catKey] : null;
-  const color   = catMeta?.color ?? '#8C8F99';
-  const qual    = qualityRibbon(bonus);
+  const catKey   = TALENT_CATEGORY_OF[talentName];
+  const catMeta  = catKey ? TALENT_CAT_MAP[catKey] : null;
+  const color    = catMeta?.color ?? '#8C8F99';
+  const effective = stored + bonus;
+  const qual     = qualityRibbon(effective);
   return (
     <button
       onClick={onClick}
@@ -651,6 +654,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
               bonus={5}
               placeholder="Talent (+5 TP)"
               onClick={() => setTalentOverlay(true)}
+              charId={charId}
             />
             <SpecDisplayTile
               spec={char.specProfession}
@@ -707,6 +711,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   bonus={5}
                   placeholder="Talent (+5 TP)"
                   onClick={() => setH1TalentOverlay(true)}
+                  charId={charId}
                 />
               </div>
               {char.hobby1Talent && (
@@ -748,6 +753,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                     bonus={3}
                     placeholder="Talent (+3 TP)"
                     onClick={() => setH2TalentOverlay(true)}
+                    charId={charId}
                   />
                 </div>
               </div>

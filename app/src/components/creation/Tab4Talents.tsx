@@ -218,15 +218,11 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         >{srcLabel}</span>
       )}
 
-      {/* Quality ribbon — bottom-right */}
+      {/* Quality badge — top-right */}
       {qual && (
-        <span className="absolute pointer-events-none"
-          style={{
-            bottom: 8, right: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${qual.color}CC`, color: '#fff',
-            transform: 'rotate(-45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
-          }}
+        <span
+          className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide pointer-events-none"
+          style={{ backgroundColor: `${qual.color}30`, color: qual.color }}
         >{qual.label}</span>
       )}
     </div>

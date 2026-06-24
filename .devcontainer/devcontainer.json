@@ -6,11 +6,14 @@
   "portsAttributes": {
     "5173": {
       "label": "Vite Dev Server",
+      "protocol": "http",
+      "visibility": "public",
       "onAutoForward": "openBrowser"
     }
   },
   "postCreateCommand": "cd app && npm install",
-  "postStartCommand": ".devcontainer/start-dev-server.sh",
+  "postStartCommand": "bash .devcontainer/start-dev-server.sh",
+  "postAttachCommand": "bash .devcontainer/start-dev-server.sh",
   "customizations": {
     "vscode": {
       "extensions": [
