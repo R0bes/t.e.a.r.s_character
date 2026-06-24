@@ -166,7 +166,7 @@ function ProfCatOverlay({ value, onSelect, onClose }: {
 
 // ── Spec Overlay ──────────────────────────────────────────────────────────────
 function SpecOverlay({
-  value, customSpecs, filterCategory, specType = 'negative', excludeNames = [],
+  value, customSpecs, filterCategory, specType = 'negative', excludeNames = [], label,
   onSelect, onClose,
 }: {
   value: Specification | null;
@@ -174,6 +174,7 @@ function SpecOverlay({
   filterCategory?: TalentCategory;
   specType?: 'negative' | 'positive';
   excludeNames?: string[];
+  label?: string;
   onSelect: (spec: Specification | null) => void;
   onClose: () => void;
 }) {
@@ -233,6 +234,16 @@ function SpecOverlay({
                     <span className={`absolute bottom-2.5 right-3 text-2xl font-mono font-bold ${modColor}`}>
                       {modStr}
                     </span>
+                    {selected && label && (
+                      <span className="absolute pointer-events-none"
+                        style={{
+                          bottom: 8, left: -22, width: 80, textAlign: 'center',
+                          fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                          padding: '2px 0', backgroundColor: `${cat.color}CC`, color: '#fff',
+                          transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+                        }}
+                      >{label}</span>
+                    )}
                   </button>
                 );
               });
@@ -245,11 +256,12 @@ function SpecOverlay({
 
 // ── Talent Overlay ────────────────────────────────────────────────────────────
 function TalentOverlay({
-  title, value, char, onSelect, onClose,
+  title, value, char, label, onSelect, onClose,
 }: {
   title: string;
   value: string | null;
   char: Character;
+  label?: string;
   onSelect: (name: string | null) => void;
   onClose: () => void;
 }) {
@@ -318,6 +330,16 @@ function TalentOverlay({
                         {currentTp}
                       </span>
                     )}
+                    {selected && label && (
+                      <span className="absolute pointer-events-none"
+                        style={{
+                          bottom: 6, left: -20, width: 76, textAlign: 'center',
+                          fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                          padding: '2px 0', backgroundColor: `${cat.color}CC`, color: '#fff',
+                          transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+                        }}
+                      >{label}</span>
+                    )}
                   </button>
                 );
               })
@@ -330,10 +352,11 @@ function TalentOverlay({
 }
 
 // ── Spec display tile ─────────────────────────────────────────────────────────
-function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
+function SpecDisplayTile({ spec, placeholder, modifierIgnored, label, onClick }: {
   spec: Specification | null;
   placeholder: string;
   modifierIgnored?: boolean;
+  label?: string;
   onClick: () => void;
 }) {
   if (!spec) {
@@ -371,6 +394,16 @@ function SpecDisplayTile({ spec, placeholder, modifierIgnored, onClick }: {
           </svg>
         )}
       </span>
+      {label && (
+        <span className="absolute pointer-events-none"
+          style={{
+            bottom: 8, left: -22, width: 80, textAlign: 'center',
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${color}CC`, color: '#fff',
+            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
+          }}
+        >{label}</span>
+      )}
     </button>
   );
 }
@@ -627,6 +660,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <SpecDisplayTile
               spec={char.specProfession}
               placeholder="neg. Spezifikum"
+              label="Beruf"
               onClick={() => setSpecOverlay(true)}
             />
           </div>
@@ -687,7 +721,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
                   spec={char.specHobby1}
                   placeholder="neg. Spezifikum wählen"
                   modifierIgnored
-
+                  label="1. Hobby"
                   onClick={() => setH1SpecOverlay(true)}
                 />
               )}
@@ -740,11 +774,13 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           <SpecDisplayTile
             spec={char.specFreeNegative}
             placeholder="neg. Spezifikum wählen"
+            label="frei −"
             onClick={() => setFreeNegOverlay(true)}
           />
           <SpecDisplayTile
             spec={char.specFreePositive}
             placeholder="pos. Spezifikum wählen"
+            label="frei +"
             onClick={() => setFreePosOverlay(true)}
           />
         </div>
@@ -770,6 +806,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           value={char.specProfession}
           customSpecs={char.customSpecifications}
           excludeNames={[char.specHobby1?.name, char.specFreeNegative?.name].filter(Boolean) as string[]}
+          label="Beruf"
           onSelect={spec => saveSpec(patch, charId, 'specProfession', spec)}
           onClose={() => setSpecOverlay(false)}
         />
@@ -779,6 +816,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           title="Berufsnahes Talent wählen"
           value={char.professionTalent}
           char={safeChar}
+          label="Beruf"
           onSelect={name => patch(charId, c => { c.professionTalent = name; })}
           onClose={() => setTalentOverlay(false)}
         />
@@ -788,6 +826,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           title="Hobby 1 — Talent wählen"
           value={char.hobby1Talent}
           char={safeChar}
+          label="1. Hobby"
           onSelect={name => patch(charId, c => {
             c.hobby1Talent = name;
             if (!name) {
@@ -808,6 +847,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           customSpecs={char.customSpecifications}
           filterCategory={hobby1Category}
           excludeNames={[char.specProfession?.name, char.specFreeNegative?.name].filter(Boolean) as string[]}
+          label="1. Hobby"
           onSelect={spec => saveSpec(patch, charId, 'specHobby1', spec)}
           onClose={() => setH1SpecOverlay(false)}
         />
@@ -817,6 +857,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           title="Hobby 2 — Talent wählen"
           value={char.hobby2Talent}
           char={safeChar}
+          label="2. Hobby"
           onSelect={name => patch(charId, c => { c.hobby2Talent = name; })}
           onClose={() => setH2TalentOverlay(false)}
         />
@@ -827,6 +868,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           customSpecs={char.customSpecifications}
           specType="negative"
           excludeNames={[char.specProfession?.name, char.specHobby1?.name, char.specFreePositive?.name].filter(Boolean) as string[]}
+          label="frei −"
           onSelect={spec => patch(charId, c => { c.specFreeNegative = spec; })}
           onClose={() => setFreeNegOverlay(false)}
         />
@@ -837,6 +879,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
           customSpecs={char.customSpecifications}
           specType="positive"
           excludeNames={[char.specFreeNegative?.name].filter(Boolean) as string[]}
+          label="frei +"
           onSelect={spec => patch(charId, c => { c.specFreePositive = spec; })}
           onClose={() => setFreePosOverlay(false)}
         />

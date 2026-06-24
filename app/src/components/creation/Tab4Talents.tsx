@@ -206,13 +206,13 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         </div>
       </div>
 
-      {/* Source ribbon — bottom-left, matching SpecTile style */}
+      {/* Source ribbon — bottom-left */}
       {srcLabel && (
         <span className="absolute pointer-events-none"
           style={{
             bottom: 8, left: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${catColor}50`, color: catColor,
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${catColor}CC`, color: '#fff',
             transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
           }}
         >{srcLabel}</span>
@@ -223,8 +223,8 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         <span className="absolute pointer-events-none"
           style={{
             bottom: 8, right: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${qual.color}50`, color: qual.color,
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${qual.color}CC`, color: '#fff',
             transform: 'rotate(-45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
           }}
         >{qual.label}</span>
