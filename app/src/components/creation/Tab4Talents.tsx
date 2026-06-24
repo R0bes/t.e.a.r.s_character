@@ -178,7 +178,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
 
       {/* Attribute + Wert + Pfeile */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 pl-1">
+        <div className="flex items-center gap-2 pl-6">
           {!isCombat && attrs?.map((a, i) => {
             const meta = ATTR_MAP[a as AttributeKey];
             return <CatIcon key={i} src={meta?.icon ?? ''} size={24} />;

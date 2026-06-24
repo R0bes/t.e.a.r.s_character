@@ -71,25 +71,26 @@ function GenderOverlay({ value, onSelect, onClose }: {
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-          {GENDER_OPTIONS.map(g => {
-            const selected = value === g.key;
-            return (
-              <button
-                key={g.key}
-                onClick={() => { onSelect(g.key); onClose(); }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:opacity-90"
-                style={{
-                  backgroundColor: selected ? '#B8B8C020' : '#B8B8C00A',
-                  borderColor:     selected ? '#B8B8C070' : '#2D303A',
-                }}
-              >
-                <CatIcon src={g.icon} size={48} className="shrink-0" />
-                <span className="text-sm font-medium text-paper">{g.label}</span>
-                {selected && <span className="text-[10px] text-paper font-bold ml-auto">✓</span>}
-              </button>
-            );
-          })}
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="grid grid-cols-4 gap-3">
+            {GENDER_OPTIONS.map(g => {
+              const selected = value === g.key;
+              return (
+                <button
+                  key={g.key}
+                  onClick={() => { onSelect(g.key); onClose(); }}
+                  className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: selected ? '#B8B8C028' : '#B8B8C00A',
+                    borderColor:     selected ? '#B8B8C090' : '#2D303A',
+                    boxShadow:       selected ? 'inset 0 0 0 1px #B8B8C040' : 'none',
+                  }}
+                >
+                  <CatIcon src={g.icon} size={56} className="shrink-0" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -382,10 +383,11 @@ function qualityRibbon(effective: number): { label: string; color: string } | nu
   return                       { label: 'Profi',    color: '#4FA968' };
 }
 
-function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
+function TalentDisplayTile({ talentName, bonus, placeholder, label, onClick }: {
   talentName: string | null;
   bonus: number;
   placeholder: string;
+  label?: string;
   onClick: () => void;
 }) {
   if (!talentName) {
@@ -412,16 +414,22 @@ function TalentDisplayTile({ talentName, bonus, placeholder, onClick }: {
         {catMeta && <CatIcon src={catMeta.icon} size={26} className="shrink-0" />}
         <span className="text-base font-semibold leading-tight" style={{ color }}>{talentName}</span>
       </div>
-      <span className="absolute bottom-2.5 right-3 text-2xl font-mono font-bold" style={{ color }}>+{bonus}</span>
       {qual && (
+        <span
+          className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide pointer-events-none"
+          style={{ backgroundColor: `${qual.color}30`, color: qual.color }}
+        >{qual.label}</span>
+      )}
+      <span className="absolute bottom-2.5 right-3 text-2xl font-mono font-bold" style={{ color }}>+{bonus}</span>
+      {label && (
         <span className="absolute pointer-events-none"
           style={{
-            bottom: 6, left: -20, width: 68, textAlign: 'center',
-            fontSize: 6, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '1px 0', backgroundColor: `${qual.color}50`, color: qual.color,
+            bottom: 8, left: -22, width: 80, textAlign: 'center',
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '2px 0', backgroundColor: `${color}CC`, color: '#fff',
             transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
           }}
-        >{qual.label}</span>
+        >{label}</span>
       )}
     </button>
   );
@@ -540,18 +548,18 @@ export function TabGrundinfo({ charId }: { charId: string }) {
 
       {/* ── Beruf ── */}
       <div className="rounded-lg border border-hairline overflow-hidden">
-        <div className="px-3 py-1.5 bg-raised/60 border-b border-hairline">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Beruf</span>
-        </div>
-        <div className="p-3 space-y-2">
-          {/* Berufsbezeichnung */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-raised/60 border-b border-hairline">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted shrink-0">Beruf</span>
+          <span className="w-px h-3.5 bg-hairline shrink-0" />
           <input
             type="text"
             value={char.info.professionName}
             onChange={e => patchInfo('professionName', e.target.value)}
             placeholder="Berufsbezeichnung"
-            className="w-full bg-raised border border-hairline rounded-lg px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted transition-colors"
+            className="flex-1 bg-transparent text-primary text-sm placeholder:text-faint focus:outline-none"
           />
+        </div>
+        <div className="p-3 space-y-2">
 
           {/* Berufskategorie — full info card if set, placeholder otherwise */}
           {selectedProf ? (
@@ -612,6 +620,7 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <TalentDisplayTile
               talentName={char.professionTalent}
               bonus={5}
+              label="Beruf"
               placeholder="Talent (+5 TP)"
               onClick={() => setTalentOverlay(true)}
             />
@@ -631,44 +640,44 @@ export function TabGrundinfo({ charId }: { charId: string }) {
         <>
           {/* Hobby 1 card */}
           <div className="rounded-lg border border-hairline overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-faint">1. Hobby</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    patch(charId, c => {
-                      if (c.hobby2Name || c.hobby2Talent) {
-                        c.hobby1Name   = c.hobby2Name;
-                        c.hobby1Talent = c.hobby2Talent;
-                        c.specHobby1   = null;
-                        c.hobby2Name   = '';
-                        c.hobby2Talent = null;
-                      } else {
-                        c.hobby1Name   = '';
-                        c.hobby1Talent = null;
-                        c.specHobby1   = null;
-                      }
-                    });
-                    setH2Open(false);
-                    if (!char.hobby2Name && !char.hobby2Talent) setH1Open(false);
-                  }}
-                  className="text-faint hover:text-muted text-sm leading-none"
-                  title="1. Hobby entfernen"
-                >✕</button>
-              </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-raised/60 border-b border-hairline">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted shrink-0">1. Hobby</span>
+              <span className="w-px h-3.5 bg-hairline shrink-0" />
+              <input
+                type="text"
+                value={char.hobby1Name}
+                onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
+                placeholder="Bezeichnung"
+                className="flex-1 bg-transparent text-primary text-sm placeholder:text-faint focus:outline-none"
+              />
+              <button
+                onClick={() => {
+                  patch(charId, c => {
+                    if (c.hobby2Name || c.hobby2Talent) {
+                      c.hobby1Name   = c.hobby2Name;
+                      c.hobby1Talent = c.hobby2Talent;
+                      c.specHobby1   = null;
+                      c.hobby2Name   = '';
+                      c.hobby2Talent = null;
+                    } else {
+                      c.hobby1Name   = '';
+                      c.hobby1Talent = null;
+                      c.specHobby1   = null;
+                    }
+                  });
+                  setH2Open(false);
+                  if (!char.hobby2Name && !char.hobby2Talent) setH1Open(false);
+                }}
+                className="text-faint hover:text-muted text-sm leading-none shrink-0"
+                title="1. Hobby entfernen"
+              >✕</button>
             </div>
             <div className="p-3 space-y-2">
               <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={char.hobby1Name}
-                  onChange={e => patch(charId, c => { c.hobby1Name = e.target.value; })}
-                  placeholder="Bezeichnung"
-                  className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-                />
                 <TalentDisplayTile
                   talentName={char.hobby1Talent}
                   bonus={5}
+                  label="1. Hobby"
                   placeholder="Talent (+5 TP)"
                   onClick={() => setH1TalentOverlay(true)}
                 />
@@ -690,28 +699,28 @@ export function TabGrundinfo({ charId }: { charId: string }) {
             <HobbyPlaceholder label="2. Hobby hinzufügen (+3 TP)" onClick={() => setH2Open(true)} />
           ) : (
             <div className="rounded-lg border border-hairline overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-1.5 bg-raised/60 border-b border-hairline">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-faint">2. Hobby</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
-                    className="text-faint hover:text-muted text-sm leading-none"
-                    title="2. Hobby entfernen"
-                  >✕</button>
-                </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-raised/60 border-b border-hairline">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted shrink-0">2. Hobby</span>
+                <span className="w-px h-3.5 bg-hairline shrink-0" />
+                <input
+                  type="text"
+                  value={char.hobby2Name}
+                  onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
+                  placeholder="Bezeichnung"
+                  className="flex-1 bg-transparent text-primary text-sm placeholder:text-faint focus:outline-none"
+                />
+                <button
+                  onClick={() => { patch(charId, c => { c.hobby2Name = ''; c.hobby2Talent = null; }); setH2Open(false); }}
+                  className="text-faint hover:text-muted text-sm leading-none shrink-0"
+                  title="2. Hobby entfernen"
+                >✕</button>
               </div>
               <div className="p-3 space-y-2">
                 <div className="flex flex-col gap-2">
-                  <input
-                    type="text"
-                    value={char.hobby2Name}
-                    onChange={e => patch(charId, c => { c.hobby2Name = e.target.value; })}
-                    placeholder="Bezeichnung"
-                    className="w-full bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
-                  />
                   <TalentDisplayTile
                     talentName={char.hobby2Talent}
                     bonus={3}
+                    label="2. Hobby"
                     placeholder="Talent (+3 TP)"
                     onClick={() => setH2TalentOverlay(true)}
                   />

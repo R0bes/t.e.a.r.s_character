@@ -22,6 +22,7 @@ interface SpiderChartProps {
   chartId?: string;
   hatchZones?: HatchZone[];
   labelGap?: number;
+  className?: string;
 }
 
 function point(cx: number, cy: number, r: number, i: number, n: number): [number, number] {
@@ -47,6 +48,7 @@ export function SpiderChart({
   chartId = 'sc',
   hatchZones = [],
   labelGap = 10,
+  className = '',
 }: SpiderChartProps) {
   const n = axes.length;
   const cx = size / 2;
@@ -65,7 +67,7 @@ export function SpiderChart({
   const valuePoly = valuePts.map(p => p.join(',')).join(' ');
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible" className={className || undefined}>
       <defs>
         {axes.map((ax, i) => {
           const j = (i + 1) % n;

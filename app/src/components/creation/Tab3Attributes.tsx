@@ -25,7 +25,6 @@ const C = {
 } as const;
 
 const LE_MAX = 177;
-const GG_MAX = 237;
 
 // ── Primary attr layout ───────────────────────────────────────────────────────
 const RADAR_ORDER: AttributeKey[] = ['KK', 'GE', 'AU', 'IN', 'CH', 'MB'];
@@ -140,56 +139,74 @@ function AttrControl({
   const canInc   = value < ATTR_MAX && pointsLeft >= cost;
   const canDec   = value > minValue;
 
-  const plusCls = !canInc
-    ? 'border-hairline/40 text-faint/40 cursor-not-allowed'
-    : cost === 3
-      ? 'border-danger/70 text-danger hover:bg-danger/10 active:scale-95'
-      : cost === 2
-        ? 'border-amber-500/70 text-amber-400 hover:bg-amber-500/10 active:scale-95'
-        : 'border-hairline text-muted hover:text-primary hover:border-muted active:scale-95';
-
-  const plusSrc  = cost >= 3     ? '/icons/attr/arrow_up3.png' : cost === 2     ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png';
-  const minusSrc = prevCost >= 3 ? '/icons/attr/arrow_up3.png' : prevCost === 2 ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png';
+  const plusSrc  = cost >= 3     ? '/icons/attr/arrow_up3.png'   : cost === 2     ? '/icons/attr/arrow_up2.png'   : '/icons/attr/arrow_up.png';
+  const minusSrc = prevCost >= 3 ? '/icons/attr/arrow_down3.png' : prevCost === 2 ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png';
+  const plusGlow = cost >= 3 ? 'drop-shadow(0 0 4px #D1453B)' : cost === 2 ? 'drop-shadow(0 0 4px #E08C3C)' : undefined;
 
   const px = Math.round(arrow.perpX * BTN_OFFSET);
   const py = Math.round(arrow.perpY * BTN_OFFSET);
 
+  // Label positioned away from center based on tip direction
+  const labelStyle: React.CSSProperties = pos.tip === 'down'
+    ? { position: 'absolute', top: -18 - 4, left: 0, transform: 'translate(-50%, -100%)', textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }
+    : pos.tip === 'up'
+      ? { position: 'absolute', top: 18 + 4,  left: 0, transform: 'translateX(-50%)',         textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }
+      : pos.tip === 'left'
+        ? { position: 'absolute', top: 0, left:  18 + 7, transform: 'translateY(-50%)', textAlign: 'left',  whiteSpace: 'nowrap', pointerEvents: 'none' }
+        : { position: 'absolute', top: 0, left: -(18 + 7), transform: 'translate(-100%, -50%)', textAlign: 'right', whiteSpace: 'nowrap', pointerEvents: 'none' };
+
   return (
     <div className="absolute overflow-visible" style={{ left: pos.left, top: pos.top }}>
 
-      {/* Icon medallion — centered at anchor point */}
+      {/* Icon medallion — 36px, centered at anchor, same style as CombatLabel */}
       <div
         className="absolute rounded-full overflow-hidden"
-        style={{ width: 40, height: 40, left: -20, top: -20, boxShadow: `0 0 0 2px ${color}88` }}
+        style={{ width: 36, height: 36, left: -18, top: -18, boxShadow: `0 0 0 2px ${color}88` }}
       >
         <img src={icon} alt={name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
-          <span className="text-lg font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+          <span className="text-base font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
             {value}
           </span>
         </div>
       </div>
 
-      {/* + button — along perpendicular, pointing outward */}
+      {/* Key + name label, positioned away from chart center */}
+      <div style={labelStyle}>
+        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>{attrKey}</span>
+        <span className="block text-[7px] text-faint leading-none mt-0.5">{name}</span>
+      </div>
+
+      {/* + arrow — transparent button, no visible frame */}
       <button
-        onClick={onIncrease} disabled={!canInc}
+        onClick={onIncrease}
+        disabled={!canInc}
         onMouseEnter={() => canInc && onHoverChange(-cost)}
         onMouseLeave={() => onHoverChange(0)}
-        className={`absolute w-8 h-6 flex items-center justify-center rounded border transition-colors ${plusCls}`}
-        style={{ left: px - 16, top: py - 12 }}
+        className="absolute p-0 bg-transparent border-0 outline-none"
+        style={{ left: px - 14, top: py - 12, width: 28, height: 24 }}
       >
-        <img src={plusSrc} className="w-6 h-5 object-contain" style={{ transform: `rotate(${arrow.rotate}deg)` }} />
+        <img
+          src={plusSrc}
+          className="w-full h-full object-contain transition-opacity"
+          style={{ transform: `rotate(${arrow.rotate}deg)`, opacity: canInc ? 1 : 0.2, filter: plusGlow }}
+        />
       </button>
 
-      {/* − button — opposite side, pointing inward */}
+      {/* − arrow — transparent button, rotated 180° of the + arrow */}
       <button
-        onClick={onDecrease} disabled={!canDec}
+        onClick={onDecrease}
+        disabled={!canDec}
         onMouseEnter={() => canDec && onHoverChange(prevCost)}
         onMouseLeave={() => onHoverChange(0)}
-        className="absolute w-8 h-6 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
-        style={{ left: -px - 16, top: -py - 12 }}
+        className="absolute p-0 bg-transparent border-0 outline-none"
+        style={{ left: -px - 14, top: -py - 12, width: 28, height: 24 }}
       >
-        <img src={minusSrc} className="w-6 h-5 object-contain" style={{ transform: `rotate(${arrow.rotate + 180}deg)` }} />
+        <img
+          src={minusSrc}
+          className="w-full h-full object-contain transition-opacity"
+          style={{ transform: `rotate(${arrow.rotate}deg)`, opacity: canDec ? 0.8 : 0.15 }}
+        />
       </button>
 
     </div>
@@ -203,12 +220,23 @@ function CombatLabel({
   attrKey: string; color: string; icon: string; value: number;
   left: string; top: string; tip: TipDir;
 }) {
+  const [open, setOpen] = useState(false);
+
+  const tipPos: Record<TipDir, string> = {
+    up:    'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    down:  'top-full left-1/2 -translate-x-1/2 mt-2',
+    left:  'right-full top-1/2 -translate-y-1/2 mr-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  };
+
   return (
     <div
-      className="absolute flex flex-col items-center gap-0.5"
+      className="absolute"
       style={{ left, top, transform: 'translate(-50%, -50%)' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
     >
-      <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0"
+      <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-default"
         style={{ boxShadow: `0 0 0 2px ${color}88` }}>
         <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center"
@@ -218,31 +246,40 @@ function CombatLabel({
           </span>
         </div>
       </div>
-      <InfoBtn content={combatTooltip(attrKey, color)} dir={tip} />
+      {open && (
+        <span
+          className={`absolute z-30 ${tipPos[tip]} px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none`}
+        >
+          {combatTooltip(attrKey, color)}
+        </span>
+      )}
     </div>
   );
 }
 
-// ── LE / GG single-line row ───────────────────────────────────────────────────
-function ResourceRow({
-  shortKey, value, maxValue, color, icon, info,
+// ── LE / GG medallion overlay (matches CombatLabel style) ────────────────────
+function ResourceLabel({
+  shortKey, fullName, value, color, icon, info,
 }: {
-  shortKey: string; value: number; maxValue: number; color: string; icon: string; info: ReactNode;
+  shortKey: string; fullName: string; value: number; color: string; icon: string; info: ReactNode;
 }) {
-  const pct = Math.min(100, Math.round((value / maxValue) * 100));
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0"
-        style={{ boxShadow: `0 0 0 1.5px ${color}88` }}>
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-9 h-9 rounded-full overflow-hidden"
+        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
         <img src={icon} alt={shortKey} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <span className="text-sm font-mono font-bold leading-none drop-shadow-md" style={{ color }}>
+            {value}
+          </span>
+        </div>
       </div>
-      <span className="font-mono text-sm font-bold shrink-0 leading-none" style={{ color }}>
-        {value}
-      </span>
-      <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-[9px] font-mono font-bold leading-none" style={{ color }}>{shortKey}</span>
+        <span className="text-[7px] text-faint leading-none">{fullName}</span>
       </div>
-      <InfoBtn content={info} dir="left" />
+      <InfoBtn content={info} dir="up" />
     </div>
   );
 }
@@ -319,17 +356,18 @@ export function Tab3Attributes({ charId }: { charId: string }) {
       </div>
 
       {/* ── Stacked radars ── */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-8">
 
         {/* Primary radar – full width, square container */}
         <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
-          <div className="absolute" style={{ left: '16%', top: '16%', width: '68%', aspectRatio: '1' }}>
+          <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
             <SpiderChart
               axes={primaryAxes}
               size={140}
               gridValues={PRIMARY_GRID}
               showGridLabels
               chartId="primary"
+              className="w-full h-full"
               hatchZones={[
                 { from: 14, to: 17, color: '#E8A020', density: 'light' },
                 { from: 17, to: 19, color: '#C83030', density: 'dense' },
@@ -361,8 +399,8 @@ export function Tab3Attributes({ charId }: { charId: string }) {
 
         {/* Combat radar – square container, same approach as primary */}
         <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
-          <div className="absolute" style={{ left: '16%', top: '16%', width: '68%', aspectRatio: '1' }}>
-            <SpiderChart axes={combatAxes} size={110} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" />
+          <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
+            <SpiderChart axes={combatAxes} size={110} gridValues={[5, 10, 15, 20]} showGridLabels chartId="combat" className="w-full h-full" />
           </div>
 
           {COMBAT_META.map(m => (
@@ -379,20 +417,20 @@ export function Tab3Attributes({ charId }: { charId: string }) {
           ))}
         </div>
 
-        {/* LE & GG */}
-        <div className="flex flex-col gap-2">
-          <ResourceRow
+        {/* LE & GG — side by side, same medallion style as combat labels */}
+        <div className="flex justify-center gap-10">
+          <ResourceLabel
             shortKey="LE"
+            fullName="Lebensenergie"
             value={derived.LE}
-            maxValue={LE_MAX}
             color={C.LE}
             icon="/icons/attr/le.png"
             info={<><span style={{color:C.LE}}>Lebensenergie</span>: (<A k="KK"/>×2 + <A k="AU"/>) × 3</>}
           />
-          <ResourceRow
+          <ResourceLabel
             shortKey="GG"
+            fullName="Geist. Gesundheit"
             value={derived.GG}
-            maxValue={GG_MAX}
             color={C.GG}
             icon="/icons/attr/gg.png"
             info={<><span style={{color:C.GG}}>Geist. Gesundheit</span>: (<A k="AU"/>+<A k="IN"/>+<A k="MB"/>×2) × 3</>}
