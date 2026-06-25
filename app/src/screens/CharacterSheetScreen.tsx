@@ -1,16 +1,69 @@
+import { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { ATTRIBUTES } from '../data/attributes';
+import { ATTRIBUTES, ATTR_MAP } from '../data/attributes';
 import { PROFESSION_MAP } from '../data/professions';
 import { TALENT_CATEGORIES } from '../data/talents';
 import { ABILITY_MAP } from '../data/specialAbilities';
 import { calcDerived, calcATN, calcPA, calcATD, calcINI } from '../rules/derivedValues';
 import { SpiderChart } from '../components/ui/SpiderChart';
-import type { SpiderAxis } from '../components/ui/SpiderChart';
+import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
 import { AttributeChip } from '../components/ui/AttributeChip';
 
 const DERIVED_LABELS: Record<string, string> = {
   ATN: 'Nahkampf', PA: 'Parade', ATD: 'Distanz', INI: 'Initiative', LE: 'Lebensenergie', GG: 'Geist. Gesundheit',
 };
+
+const C = {
+  KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
+  CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
+  ATN: '#C4881C', PA: '#2DB38C', ATD: '#4CAED8', INI: '#88C040',
+} as const;
+
+type TipDir = 'up' | 'down' | 'left' | 'right';
+
+const SHEET_TIP_POS: Record<TipDir, string> = {
+  down:  'bottom-full left-1/2 -translate-x-1/2 mb-2',
+  up:    'top-full left-1/2 -translate-x-1/2 mt-2',
+  left:  'left-full top-1/2 -translate-y-1/2 ml-2',
+  right: 'right-full top-1/2 -translate-y-1/2 mr-2',
+};
+
+function sheetTip(leftPct: number, topPct: number): TipDir {
+  const dx = leftPct - 50;
+  const dy = topPct - 50;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'left' : 'right';
+  return dy > 0 ? 'up' : 'down';
+}
+
+// Icon-only medallion around the sheet radar — tooltip on hover, value shown in chart dot
+function SheetLabel({ attrKey, name, color, icon, leftPct, topPct }: {
+  attrKey: string; name: string; color: string; icon: string;
+  leftPct: number; topPct: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const tip = sheetTip(leftPct, topPct);
+
+  return (
+    <div
+      className="absolute"
+      style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-default"
+        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+        <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
+      </div>
+      {open && (
+        <span className={`absolute z-30 ${SHEET_TIP_POS[tip]} px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none`}>
+          <span style={{ color }}>{attrKey}</span>
+          {' — '}
+          <span className="text-muted">{name}</span>
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function CharacterSheetScreen() {
   const activeId = useStore(s => s.activeId);
@@ -22,22 +75,23 @@ export function CharacterSheetScreen() {
   const prof = char.profession ? PROFESSION_MAP[char.profession] : null;
   const derived = calcDerived(char);
 
-  // 10-axis radar: 6 primary attrs + 4 combat attrs, max=20
   const CHART_MAX = 20;
-  const radarAxes: SpiderAxis[] = [
-    // Primary attributes (clockwise from top)
-    { key: 'KK',  value: char.attributes.KK,  maxValue: CHART_MAX, color: '#CC2828' },
-    { key: 'GE',  value: char.attributes.GE,  maxValue: CHART_MAX, color: '#C89A10' },
-    { key: 'AU',  value: char.attributes.AU,  maxValue: CHART_MAX, color: '#D05020' },
-    { key: 'CH',  value: char.attributes.CH,  maxValue: CHART_MAX, color: '#CC2888' },
-    { key: 'IN',  value: char.attributes.IN,  maxValue: CHART_MAX, color: '#1E58C8' },
-    { key: 'MB',  value: char.attributes.MB,  maxValue: CHART_MAX, color: '#7030B0' },
-    // Combat attributes (derived, lower half)
-    { key: 'ATN', value: calcATN(char), maxValue: CHART_MAX, color: '#B82020' },
-    { key: 'PA',  value: calcPA(char),  maxValue: CHART_MAX, color: '#607090' },
-    { key: 'ATD', value: calcATD(char), maxValue: CHART_MAX, color: '#28A028' },
-    { key: 'INI', value: calcINI(char), maxValue: CHART_MAX, color: '#D4A010' },
+  const sheetAttrs = [
+    { key: 'KK',  name: ATTR_MAP.KK.name, color: C.KK,  icon: ATTR_MAP.KK.icon, value: char.attributes.KK  },
+    { key: 'GE',  name: ATTR_MAP.GE.name, color: C.GE,  icon: ATTR_MAP.GE.icon, value: char.attributes.GE  },
+    { key: 'AU',  name: ATTR_MAP.AU.name, color: C.AU,  icon: ATTR_MAP.AU.icon, value: char.attributes.AU  },
+    { key: 'CH',  name: ATTR_MAP.CH.name, color: C.CH,  icon: ATTR_MAP.CH.icon, value: char.attributes.CH  },
+    { key: 'IN',  name: ATTR_MAP.IN.name, color: C.IN,  icon: ATTR_MAP.IN.icon, value: char.attributes.IN  },
+    { key: 'MB',  name: ATTR_MAP.MB.name, color: C.MB,  icon: ATTR_MAP.MB.icon, value: char.attributes.MB  },
+    { key: 'ATN', name: 'Nahkampf',       color: C.ATN, icon: '/icons/attr/atn.png', value: calcATN(char) },
+    { key: 'PA',  name: 'Parade',         color: C.PA,  icon: '/icons/attr/pa.png',  value: calcPA(char)  },
+    { key: 'ATD', name: 'Distanz',        color: C.ATD, icon: '/icons/attr/atd.png', value: calcATD(char) },
+    { key: 'INI', name: 'Initiative',     color: C.INI, icon: '/icons/attr/ini.png', value: calcINI(char) },
   ];
+
+  const radarAxes: SpiderAxis[] = sheetAttrs.map(a => ({
+    key: a.key, value: a.value, maxValue: CHART_MAX, color: a.color,
+  }));
 
   const initials = char.info.name
     ? char.info.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -97,15 +151,43 @@ export function CharacterSheetScreen() {
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
 
         {/* 10-axis radar: 6 primary + 4 combat */}
-        <div className="bg-surface border border-hairline rounded-lg p-6 flex justify-center">
-          <SpiderChart
-            axes={radarAxes}
-            size={280}
-            gridValues={[5, 10, 15, 20]}
-            showGridLabels
-            showAxisLabels
-            chartId="sheet"
-          />
+        <div className="bg-surface border border-hairline rounded-lg p-4">
+          <div className="relative w-full overflow-visible" style={{ aspectRatio: '1/1' }}>
+            <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
+              <SpiderChart
+                axes={radarAxes}
+                size={280}
+                gridValues={[5, 10, 15, 20]}
+                showGridLabels
+                showValueLabels
+                chartId="sheet"
+                className="w-full h-full"
+                fillBlur={6}
+                colorZones={[
+                  { from:  0, to:  8, color: '#5878A0', opacity: 0.07 },
+                  { from:  8, to: 14, color: '#8898A8', opacity: 0.05 },
+                  { from: 14, to: 17, color: '#C89020', opacity: 0.10 },
+                  { from: 17, to: 20, color: '#C83020', opacity: 0.13 },
+                ] as ColorZone[]}
+              />
+            </div>
+            {sheetAttrs.map((attr, i) => {
+              const angle = ((i / 10) * 360 - 90) * (Math.PI / 180);
+              const leftPct = 50 + Math.cos(angle) * 42;
+              const topPct  = 50 + Math.sin(angle) * 42;
+              return (
+                <SheetLabel
+                  key={attr.key}
+                  attrKey={attr.key}
+                  name={attr.name}
+                  color={attr.color}
+                  icon={attr.icon}
+                  leftPct={leftPct}
+                  topPct={topPct}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* Attributes */}

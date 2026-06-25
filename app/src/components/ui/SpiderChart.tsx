@@ -33,6 +33,7 @@ interface SpiderChartProps {
   colorZones?: ColorZone[];
   labelGap?: number;
   className?: string;
+  fillBlur?: number;
 }
 
 function point(cx: number, cy: number, r: number, i: number, n: number): [number, number] {
@@ -62,6 +63,7 @@ export function SpiderChart({
   colorZones = [],
   labelGap = 10,
   className = '',
+  fillBlur = 0,
 }: SpiderChartProps) {
   const n = axes.length;
   const cx = size / 2;
@@ -82,20 +84,39 @@ export function SpiderChart({
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible" className={className || undefined}>
       <defs>
+        {fillBlur > 0 && (
+          <filter id={`${chartId}-fill-blur`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation={fillBlur} />
+          </filter>
+        )}
+
+        {/* Edge-to-edge color gradients: each sector transitions from color[i] to color[j] */}
         {axes.map((ax, i) => {
-          const [vx, vy] = valuePts[i];
+          const j = (i + 1) % n;
+          const [ox1, oy1] = outerPts[i];
+          const [ox2, oy2] = outerPts[j];
           return (
             <linearGradient
               key={ax.key}
-              id={`${chartId}-grad-${i}`}
-              x1={cx} y1={cy} x2={vx} y2={vy}
+              id={`${chartId}-edge-${i}`}
+              x1={ox1} y1={oy1} x2={ox2} y2={oy2}
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%"   stopColor={ax.color} stopOpacity={0} />
-              <stop offset="100%" stopColor={ax.color} stopOpacity={0.55} />
+              <stop offset="0%"   stopColor={ax.color}        stopOpacity={0.7} />
+              <stop offset="100%" stopColor={axes[j].color}   stopOpacity={0.7} />
             </linearGradient>
           );
         })}
+
+        {/* Radial mask: transparent at center, opaque at outer edge */}
+        <radialGradient id={`${chartId}-rfade`} cx={cx} cy={cy} r={maxR} gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="white" stopOpacity={0}   />
+          <stop offset="25%"  stopColor="white" stopOpacity={0.25} />
+          <stop offset="100%" stopColor="white" stopOpacity={1}   />
+        </radialGradient>
+        <mask id={`${chartId}-cmask`}>
+          <rect x={0} y={0} width={size} height={size} fill={`url(#${chartId}-rfade)`} />
+        </mask>
 
         {hatchZones.map((zone, zi) => (
           <pattern
@@ -169,19 +190,24 @@ export function SpiderChart({
         <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#2D303A" strokeWidth="0.8" />
       ))}
 
-      {/* Gradient sector fills — two overlapping passes per sector for center-fade blend */}
-      {axes.map((ax, i) => {
-        const j = (i + 1) % n;
-        const [x1, y1] = valuePts[i];
-        const [x2, y2] = valuePts[j];
-        const pts = `${cx},${cy} ${x1},${y1} ${x2},${y2}`;
-        return (
-          <g key={ax.key}>
-            <polygon points={pts} fill={`url(#${chartId}-grad-${i})`} />
-            <polygon points={pts} fill={`url(#${chartId}-grad-${j})`} />
-          </g>
-        );
-      })}
+      {/* Sector fills — one triangle per sector, edge-color gradient + center fade */}
+      <g
+        mask={`url(#${chartId}-cmask)`}
+        filter={fillBlur > 0 ? `url(#${chartId}-fill-blur)` : undefined}
+      >
+        {axes.map((ax, i) => {
+          const j = (i + 1) % n;
+          const [x1, y1] = valuePts[i];
+          const [x2, y2] = valuePts[j];
+          return (
+            <polygon
+              key={ax.key}
+              points={`${cx},${cy} ${x1},${y1} ${x2},${y2}`}
+              fill={`url(#${chartId}-edge-${i})`}
+            />
+          );
+        })}
+      </g>
 
       {/* Outer boundary */}
       <polygon points={outerPoly} fill="none" stroke="#2D303A" strokeWidth="1" />

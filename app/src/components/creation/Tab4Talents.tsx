@@ -7,6 +7,7 @@ import {
   talentFixedBonus,
   varPtsLeft,
 } from '../../rules/talentBudget';
+import { calcSuccessProb } from '../../rules/checks';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
 import { VARIABLE_PTS } from '../../data/professions';
 import { ATTR_MAP } from '../../data/attributes';
@@ -144,6 +145,22 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
   const tileBorder = isSpecial ? `${catColor}60` : isEmpty ? `${catColor}18` : `${catColor}28`;
   const srcLabel   = isProfTal ? 'Beruf' : isHobby1 ? '1. Hobby' : isHobby2 ? '2. Hobby' : null;
 
+  const prob = (!isCombat && attrs && attrs.length === 3)
+    ? calcSuccessProb(attrs.map(a => char.attributes[a]), effective)
+    : null;
+  const probColor = prob === null ? catColor
+    : prob >= 0.75 ? '#4FA968'
+    : prob >= 0.5  ? '#C8A020'
+    : '#C83030';
+
+  const attrVals = attrs ? attrs.map(a => char.attributes[a]) : null;
+  const deltaPlus  = (prob !== null && attrVals && canInc)
+    ? calcSuccessProb(attrVals, effective + 1) - prob
+    : null;
+  const deltaMinus = (prob !== null && attrVals && canDec)
+    ? prob - calcSuccessProb(attrVals, effective - 1)
+    : null;
+
   return (
     <div
       className="relative flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
@@ -180,24 +197,50 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-2xl font-mono font-bold text-primary leading-none">{effective}</span>
-          <div className="flex flex-col rounded border border-hairline overflow-hidden">
-            <button
-              onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
-              disabled={!canInc}
-              className="w-7 h-5 flex items-center justify-center border-b border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
-            >
-              <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
-            </button>
-            <button
-              onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
-              disabled={!canDec}
-              className="w-7 h-5 flex items-center justify-center hover:opacity-80 disabled:opacity-20 transition-opacity"
-            >
-              <img src={isCombat ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png'} className="w-6 h-5 object-contain" />
-            </button>
+          <div className="flex flex-col gap-px">
+            <div className="flex items-center gap-1">
+              {deltaPlus !== null && (
+                <span className="text-[8px] font-mono font-bold w-7 text-right leading-none" style={{ color: '#4FA968' }}>
+                  +{Math.round(deltaPlus * 100)}%
+                </span>
+              )}
+              <button
+                onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
+                disabled={!canInc}
+                className="w-7 h-5 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
+              >
+                <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              {deltaMinus !== null && (
+                <span className="text-[8px] font-mono font-bold w-7 text-right leading-none" style={{ color: '#C83030' }}>
+                  −{Math.round(deltaMinus * 100)}%
+                </span>
+              )}
+              <button
+                onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
+                disabled={!canDec}
+                className="w-7 h-5 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
+              >
+                <img src={isCombat ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png'} className="w-6 h-5 object-contain" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Success probability bar */}
+      {prob !== null && (
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: `${probColor}22` }}>
+            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${prob * 100}%`, backgroundColor: probColor }} />
+          </div>
+          <span className="text-[9px] font-mono font-bold shrink-0 w-7 text-right" style={{ color: probColor }}>
+            {Math.round(prob * 100)}%
+          </span>
+        </div>
+      )}
 
       {/* Source ribbon — bottom-left */}
       {srcLabel && (
