@@ -147,75 +147,45 @@ function ProfCatOverlay({ value, onSelect, onClose, anchorRect }: {
     setTimeout(onClose, 140);
   }
 
-  const overlayStyle: React.CSSProperties = anchorRect ? {
-    transformOrigin: `${anchorRect.left + anchorRect.width / 2}px ${anchorRect.top + anchorRect.height / 2}px`,
+  const cardStyle: React.CSSProperties = anchorRect ? {
+    position: 'fixed',
+    top: anchorRect.top,
+    left: anchorRect.left,
+    transformOrigin: 'top left',
     transform: visible ? 'scale(1)' : 'scale(0)',
     opacity: visible ? 1 : 0,
     transition: 'transform 140ms cubic-bezier(0.2,0,0,1), opacity 140ms ease',
   } : {};
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm" style={overlayStyle} onClick={handleClose}>
-      <div className="flex flex-col h-full max-w-2xl mx-auto w-full" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
-          <span className="text-xs font-bold uppercase tracking-widest text-paper/70">Berufskategorie wählen</span>
-          <button onClick={handleClose}
-            className="w-7 h-7 flex items-center justify-center rounded border border-hairline text-faint hover:text-primary transition-colors text-sm">
-            ✕
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 py-3">
-          <div className="grid grid-cols-1 gap-2">
-            {PROFESSIONS.map(prof => {
-              const selected = value === prof.key;
-              const color    = prof.color;
-              return (
-                <button
-                  key={prof.key}
-                  onClick={() => { onSelect(prof.key); onClose(); }}
-                  className="text-left p-3 rounded-lg border transition-colors"
-                  style={{ borderColor: selected ? color + 'CC' : color + '55', backgroundColor: selected ? color + '28' : color + '10' }}
-                >
-                  <div className="flex items-start gap-3">
-                    <CatIcon src={prof.icon} size={90} className="shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-base font-semibold leading-tight block mb-1.5" style={{ color }}>{prof.label}</span>
-                      <div className="flex flex-wrap gap-1.5 mb-1.5">
-                        {Object.entries(prof.talentPts).map(([cat, pts]) => {
-                          const c = cat as TalentCategory;
-                          const catMeta = TALENT_CAT_MAP[c];
-                          return (
-                            <span key={c} className="flex items-center gap-1">
-                              <IconTooltip label={catMeta.label} color={CAT_COLOR[c]}>
-                                <CatIcon src={catMeta.icon} size={28} />
-                              </IconTooltip>
-                              <span className="text-[10px] font-mono font-medium" style={{ color: CAT_COLOR[c] }}>+{pts}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(prof.attrMin).map(([attr, val]) => {
-                          const meta = ATTR_MAP[attr as keyof typeof ATTR_MAP];
-                          return (
-                            <span key={attr} className="flex items-center gap-0.5 px-1 rounded" style={{ backgroundColor: `${meta?.color}22` }}>
-                              <IconTooltip label={meta?.name ?? attr} color={meta?.color}>
-                                <CatIcon src={meta?.icon ?? ''} size={24} />
-                              </IconTooltip>
-                              <span className="text-[9px] font-mono" style={{ color: meta?.color }}>{val}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+    <>
+      <div className="fixed inset-0 z-50" onClick={handleClose} />
+      <div
+        className="fixed z-50 bg-surface border border-hairline rounded-xl shadow-2xl p-3"
+        style={cardStyle}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="grid grid-cols-4 gap-2">
+          {PROFESSIONS.map(prof => {
+            const selected = value === prof.key;
+            return (
+              <button
+                key={prof.key}
+                onClick={() => { onSelect(prof.key); handleClose(); }}
+                className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
+                style={{
+                  backgroundColor: selected ? `${prof.color}28` : `${prof.color}0A`,
+                  borderColor:     selected ? `${prof.color}90` : '#2D303A',
+                  boxShadow:       selected ? `inset 0 0 0 1px ${prof.color}40` : 'none',
+                }}
+              >
+                <CatIcon src={prof.icon} size={57} className="shrink-0" />
+              </button>
+            );
+          })}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

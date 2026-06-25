@@ -160,21 +160,39 @@ function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
   );
 }
 
+// ── Category tab button ───────────────────────────────────────────────────────
+function SpecCatTab({ cat, count, isActive, onClick }: {
+  cat: { key: TalentCategory; color: string; icon: string };
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="relative flex-1 flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg border transition-colors"
+      style={{
+        borderColor:     isActive ? `${cat.color}90` : `${cat.color}30`,
+        backgroundColor: isActive ? `${cat.color}20` : `${cat.color}08`,
+        boxShadow:       isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
+      }}
+    >
+      <CatIcon src={cat.icon} size={20} />
+      <span className="text-[10px] font-mono font-bold leading-none" style={{ color: cat.color }}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function Tab7FreeSpecs({ charId }: { charId: string }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
-  const [showForm, setShowForm] = useState(false);
+  const [selectedCat, setSelectedCat] = useState<TalentCategory>(TALENT_CATEGORIES[0].key);
+  const [showForm, setShowForm]       = useState(false);
 
   if (!char) return null;
-
-  // All specs: predefined (in category order) + custom
-  const allSpecs: Specification[] = [
-    ...TALENT_CATEGORIES.flatMap(cat =>
-      SPECIFICATIONS.filter(s => s.category === cat.key)
-    ),
-    ...char.customSpecifications,
-  ];
 
   function selectedAs(name: string): 'frei +' | 'frei −' | null {
     if (char!.specFreePositive?.name === name)  return 'frei +';
@@ -200,32 +218,59 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
     });
   }
 
-  return (
-    <div className="flex flex-col gap-1.5 p-4">
-      {allSpecs.map(spec => (
-        <SpecTile
-          key={spec.name}
-          spec={spec}
-          selectedAs={selectedAs(spec.name)}
-          reservedAs={reservedAs(spec.name)}
-          onToggle={() => toggleSpec(spec)}
-        />
-      ))}
+  const visibleSpecs: Specification[] = [
+    ...SPECIFICATIONS.filter(s => s.category === selectedCat),
+    ...char.customSpecifications.filter(s => s.category === selectedCat),
+  ];
 
-      {/* Single add tile at the end */}
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors mt-1"
-        >
-          <span className="text-sm leading-none">+</span>
-          <span className="text-xs">Neues Spezifikum</span>
-        </button>
-      ) : (
-        <div className="mt-1">
-          <CustomSpecForm charId={charId} onClose={() => setShowForm(false)} />
-        </div>
-      )}
+  return (
+    <div className="flex flex-col h-full">
+
+      {/* ── Category tabs ── */}
+      <div className="flex gap-1.5 px-4 pt-4 pb-2 shrink-0">
+        {TALENT_CATEGORIES.map(cat => {
+          const count = [
+            ...SPECIFICATIONS.filter(s => s.category === cat.key),
+            ...char.customSpecifications.filter(s => s.category === cat.key),
+          ].length;
+          return (
+            <SpecCatTab
+              key={cat.key}
+              cat={cat}
+              count={count}
+              isActive={selectedCat === cat.key}
+              onClick={() => { setSelectedCat(cat.key); setShowForm(false); }}
+            />
+          );
+        })}
+      </div>
+
+      {/* ── Spec tiles for selected category ── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-1.5">
+        {visibleSpecs.map(spec => (
+          <SpecTile
+            key={spec.name}
+            spec={spec}
+            selectedAs={selectedAs(spec.name)}
+            reservedAs={reservedAs(spec.name)}
+            onToggle={() => toggleSpec(spec)}
+          />
+        ))}
+
+        {!showForm ? (
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors mt-1"
+          >
+            <span className="text-sm leading-none">+</span>
+            <span className="text-xs">Neues Spezifikum</span>
+          </button>
+        ) : (
+          <div className="mt-1">
+            <CustomSpecForm charId={charId} onClose={() => setShowForm(false)} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

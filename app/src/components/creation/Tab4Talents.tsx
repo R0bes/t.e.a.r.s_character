@@ -3,8 +3,9 @@ import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import { CatIcon } from '../ui/CatIcon';
 import {
-  talentAvailable, talentLeft, talentCanIncrease,
-  talentFixedBonus,
+  talentAvailable, talentLeft, talentSpent, talentCanIncrease,
+  talentFixedBonus, talentSpecBonusBreakdown,
+  BASE_TALENT_PTS,
   varPtsLeft,
 } from '../../rules/talentBudget';
 import { calcSuccessProb } from '../../rules/checks';
@@ -31,14 +32,15 @@ const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
 
 // ── Custom Talent Form ────────────────────────────────────────────────────────
-function CustomTalentForm({ catKey, charId, onClose }: {
-  catKey: TalentCategory; charId: string; onClose: () => void;
+function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
+  catKey?: TalentCategory | null; charId: string; onClose: () => void;
 }) {
   const patch = useStore(s => s.patchCharacter);
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const [name, setName]   = useState('');
   const [mode, setMode]   = useState<'normal' | 'combat'>('normal');
   const [attrs, setAttrs] = useState<[AttributeKey, AttributeKey, AttributeKey]>(['KK', 'GE', 'AU']);
+  const [catKey, setCatKey] = useState<TalentCategory>(initialCatKey ?? TALENT_CATEGORIES[0].key);
 
   const exists = !!char?.customTalents.find(t => t.name === name.trim());
 
@@ -64,6 +66,23 @@ function CustomTalentForm({ catKey, charId, onClose }: {
 
   return (
     <div className="bg-raised/40 rounded-lg px-3 py-3 space-y-2.5 border border-hairline/60">
+      {!initialCatKey && (
+        <div className="flex gap-1">
+          {TALENT_CATEGORIES.map(cat => (
+            <button
+              key={cat.key}
+              onClick={() => setCatKey(cat.key)}
+              className="flex-1 flex items-center justify-center py-1 rounded border transition-colors"
+              style={{
+                borderColor: catKey === cat.key ? `${cat.color}80` : '#2D303A',
+                backgroundColor: catKey === cat.key ? `${cat.color}20` : 'transparent',
+              }}
+            >
+              <CatIcon src={cat.icon} size={18} />
+            </button>
+          ))}
+        </div>
+      )}
       <input
         type="text" placeholder="Talentname" value={name}
         onChange={e => setName(e.target.value)}
@@ -114,13 +133,14 @@ function qualityRibbon(effective: number): { label: string; color: string } | nu
 }
 
 // ── Talent row ────────────────────────────────────────────────────────────────
-function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: {
+function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
   charId: string;
   talentName: string;
   attrs: readonly AttributeKey[] | null;
   costMul: 1 | 2;
   isCustom: boolean;
   catColor: string;
+  catIcon: string;
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
@@ -167,7 +187,8 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
       style={{ backgroundColor: tileBg, borderColor: tileBorder, opacity: isEmpty ? 0.55 : 1 }}
     >
       {/* Titel */}
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <CatIcon src={catIcon} size={22} className="shrink-0" />
         <span className="text-base font-semibold leading-tight truncate" style={{ color: catColor }}>
           {talentName}
         </span>
@@ -176,7 +197,7 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor }: 
 
       {/* Attribute + Wert + Pfeile */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 pl-6">
+        <div className="flex items-center gap-2">
           {!isCombat && attrs?.map((a, i) => {
             const meta = ATTR_MAP[a as AttributeKey];
             return (
@@ -360,49 +381,148 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
   );
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
-export function Tab4Talents({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [openCustomForm, setOpenCustomForm] = useState<TalentCategory | null>(null);
+// ── Category TP summary tile with tooltip ────────────────────────────────────
+function CatSummaryTile({ charId, cat, index, total, isActive, onClick }: {
+  charId: string;
+  cat: { key: TalentCategory; color: string; icon: string; label: string };
+  index: number;
+  total: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const char  = useStore(s => s.characters.find(c => c.id === charId));
+  const [open, setOpen] = useState(false);
 
   if (!char) return null;
 
+  const spent     = talentSpent(char, cat.key);
+  const available = talentAvailable(char, cat.key);
+  const over      = spent > available;
+  const { job, spec } = talentSpecBonusBreakdown(char, cat.key);
+
   return (
-    <div className="flex flex-col gap-1.5 p-4">
-      {TALENT_CATEGORIES.map(cat => {
-        const customInCat = char.customTalents.filter(t => t.category === cat.key);
-        return (
-          <div key={cat.key} className="contents">
-            <CategoryHeaderRow charId={charId} catKey={cat.key} />
+    <button
+      onClick={onClick}
+      className="relative flex-1 flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg border transition-colors"
+      style={{
+        borderColor:     isActive ? `${cat.color}90` : `${cat.color}30`,
+        backgroundColor: isActive ? `${cat.color}20` : `${cat.color}08`,
+        boxShadow:       isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
+      }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <CatIcon src={cat.icon} size={20} />
+      <span
+        className="text-[10px] font-mono font-bold leading-none"
+        style={{ color: over ? '#C83030' : cat.color }}
+      >
+        {spent}/{available}
+      </span>
 
-            {cat.talents.map(t => (
-              <TalentTile key={t.name} charId={charId} talentName={t.name}
-                attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
-                catColor={cat.color} />
-            ))}
-            {customInCat.map(ct => (
-              <TalentTile key={ct.name} charId={charId} talentName={ct.name}
-                attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
-                catColor={cat.color} />
-            ))}
-
-            {openCustomForm === cat.key ? (
-              <CustomTalentForm catKey={cat.key} charId={charId}
-                onClose={() => setOpenCustomForm(null)} />
-            ) : (
-              <button
-                onClick={() => setOpenCustomForm(cat.key)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
-              >
-                <CatIcon src={cat.icon} size={14} />
-                <span className="text-xs">Talent anlegen</span>
-              </button>
+      {open && (
+        <div
+          className="absolute top-full mt-2 z-40 w-36 rounded-lg border border-hairline bg-raised shadow-xl px-3 py-2.5 pointer-events-none"
+          style={
+            index === 0               ? { left: 0 } :
+            index === total - 1       ? { right: 0 } :
+                                        { left: '50%', transform: 'translateX(-50%)' }
+          }
+        >
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: cat.color }}>
+            {cat.label}
+          </p>
+          <div className="space-y-1 text-[9px] font-mono">
+            <div className="flex justify-between text-faint">
+              <span>Basis</span>
+              <span>{BASE_TALENT_PTS}</span>
+            </div>
+            {job !== 0 && (
+              <div className="flex justify-between" style={{ color: job > 0 ? '#4FA968' : '#C83030' }}>
+                <span>Beruf</span>
+                <span>{job > 0 ? '+' : ''}{job}</span>
+              </div>
             )}
+            {spec !== 0 && (
+              <div className="flex justify-between" style={{ color: spec > 0 ? '#4FA968' : '#C83030' }}>
+                <span>Spezifikum</span>
+                <span>{spec > 0 ? '+' : ''}{spec}</span>
+              </div>
+            )}
+            <div className="border-t border-hairline pt-1 flex justify-between font-bold text-paper">
+              <span>Gesamt</span>
+              <span>{available}</span>
+            </div>
+            <div className="flex justify-between" style={{ color: over ? '#C83030' : '#4FA968' }}>
+              <span>Verbraucht</span>
+              <span>{spent}</span>
+            </div>
+            <div className="flex justify-between font-bold" style={{ color: over ? '#C83030' : cat.color }}>
+              <span>Verbleibend</span>
+              <span>{available - spent}</span>
+            </div>
           </div>
-        );
-      })}
+        </div>
+      )}
+    </button>
+  );
+}
 
-      <SpecialAbilitiesSection charId={charId} />
+// ── Main ──────────────────────────────────────────────────────────────────────
+export function Tab4Talents({ charId }: { charId: string }) {
+  const char = useStore(s => s.characters.find(c => c.id === charId));
+  const [selectedCat, setSelectedCat] = useState<TalentCategory>(TALENT_CATEGORIES[0].key);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+
+  if (!char) return null;
+
+  const activeCat = TALENT_CATEGORIES.find(c => c.key === selectedCat)!;
+  const customInCat = char.customTalents.filter(t => t.category === selectedCat);
+
+  return (
+    <div className="flex flex-col h-full">
+
+      {/* ── Category tabs ── */}
+      <div className="flex gap-1.5 px-4 pt-4 pb-2 shrink-0">
+        {TALENT_CATEGORIES.map((cat, i) => (
+          <CatSummaryTile
+            key={cat.key}
+            charId={charId}
+            cat={cat}
+            index={i}
+            total={TALENT_CATEGORIES.length}
+            isActive={selectedCat === cat.key}
+            onClick={() => { setSelectedCat(cat.key); setShowCustomForm(false); }}
+          />
+        ))}
+      </div>
+
+      {/* ── Talent cards for selected category ── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-1.5">
+        {activeCat.talents.map(t => (
+          <TalentTile key={t.name} charId={charId} talentName={t.name}
+            attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
+            catColor={activeCat.color} catIcon={activeCat.icon} />
+        ))}
+        {customInCat.map(ct => (
+          <TalentTile key={ct.name} charId={charId} talentName={ct.name}
+            attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
+            catColor={activeCat.color} catIcon={activeCat.icon} />
+        ))}
+
+        {showCustomForm ? (
+          <CustomTalentForm catKey={selectedCat} charId={charId} onClose={() => setShowCustomForm(false)} />
+        ) : (
+          <button
+            onClick={() => setShowCustomForm(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
+          >
+            <span className="text-xs">+ Talent anlegen</span>
+          </button>
+        )}
+
+        <SpecialAbilitiesSection charId={charId} />
+      </div>
     </div>
   );
 }

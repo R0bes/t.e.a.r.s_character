@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { ATTRIBUTES, ATTR_MAP } from '../data/attributes';
+import { ATTR_MAP } from '../data/attributes';
 import { PROFESSION_MAP } from '../data/professions';
 import { TALENT_CATEGORIES } from '../data/talents';
 import { ABILITY_MAP } from '../data/specialAbilities';
@@ -9,15 +9,35 @@ import { SpiderChart } from '../components/ui/SpiderChart';
 import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
 import { AttributeChip } from '../components/ui/AttributeChip';
 
-const DERIVED_LABELS: Record<string, string> = {
-  ATN: 'Nahkampf', PA: 'Parade', ATD: 'Distanz', INI: 'Initiative', LE: 'Lebensenergie', GG: 'Geist. Gesundheit',
-};
-
 const C = {
   KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
   CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
   ATN: '#C4881C', PA: '#2DB38C', ATD: '#4CAED8', INI: '#88C040',
+  LE: '#208838',  GG: '#1898A0',
 } as const;
+
+function SheetResourceBar({ shortKey, value, maxValue, color, icon }: {
+  shortKey: string; value: number; maxValue: number; color: string; icon: string;
+}) {
+  const pct = Math.max(0, Math.min(100, (value / maxValue) * 100));
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden"
+        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+        <img src={icon} alt={shortKey} className="w-full h-full object-cover" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline justify-between mb-1">
+          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color }}>{shortKey}</span>
+          <span className="text-[9px] font-mono text-muted">{value}<span className="text-faint"> / {maxValue}</span></span>
+        </div>
+        <div className="h-2 rounded-full overflow-hidden bg-raised">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type TipDir = 'up' | 'down' | 'left' | 'right';
 
@@ -35,7 +55,6 @@ function sheetTip(leftPct: number, topPct: number): TipDir {
   return dy > 0 ? 'up' : 'down';
 }
 
-// Icon-only medallion around the sheet radar — tooltip on hover, value shown in chart dot
 function SheetLabel({ attrKey, name, color, icon, leftPct, topPct }: {
   attrKey: string; name: string; color: string; icon: string;
   leftPct: number; topPct: number;
@@ -50,12 +69,12 @@ function SheetLabel({ attrKey, name, color, icon, leftPct, topPct }: {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-default"
+      <div className="relative w-8 h-8 rounded-full overflow-hidden cursor-default"
         style={{ boxShadow: `0 0 0 2px ${color}88` }}>
         <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
       </div>
       {open && (
-        <span className={`absolute z-30 ${SHEET_TIP_POS[tip]} px-2.5 py-1.5 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none`}>
+        <span className={`absolute z-30 ${SHEET_TIP_POS[tip]} px-2 py-1 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none`}>
           <span style={{ color }}>{attrKey}</span>
           {' — '}
           <span className="text-muted">{name}</span>
@@ -97,61 +116,69 @@ export function CharacterSheetScreen() {
     ? char.info.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : '??';
 
+  const metaParts = [
+    char.info.professionName || prof?.label,
+    char.info.age   && `${char.info.age} J.`,
+    char.info.height && `${char.info.height} cm`,
+    char.info.gender,
+  ].filter(Boolean);
+
   const allSpecs = [
-    char.specProfession && { ...char.specProfession, label: 'Beruf (Pflicht)' },
-    char.specHobby1 && { ...char.specHobby1, label: 'Hobby 1' },
-    char.specFreePositive && { ...char.specFreePositive, label: 'Positiv' },
-    char.specFreeNegative && { ...char.specFreeNegative, label: 'Negativ' },
+    char.specProfession  && { ...char.specProfession,  label: 'Pflicht' },
+    char.specHobby1      && { ...char.specHobby1,      label: 'Hobby'   },
+    char.specFreePositive && { ...char.specFreePositive, label: 'Frei'  },
+    char.specFreeNegative && { ...char.specFreeNegative, label: 'Frei'  },
   ].filter(Boolean);
 
   return (
     <div className="flex flex-col h-full bg-bg">
-      {/* Header */}
-      <header className="shrink-0 bg-surface border-b border-hairline px-4 py-4">
-        <div className="flex items-center gap-4">
-          {/* Avatar */}
-          <div className="w-14 h-14 rounded-full bg-raised border border-hairline flex items-center justify-center shrink-0">
-            <span className="font-display text-xl text-paper">{initials}</span>
+
+      {/* ── Compact identity header ── */}
+      <header className="shrink-0 bg-surface border-b border-hairline px-3 py-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-raised border border-hairline flex items-center justify-center shrink-0">
+            <span className="font-display text-xs text-paper">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-xl text-paper leading-tight truncate">{char.info.name || 'Unbenannt'}</h1>
-            <p className="text-sm text-muted truncate">{char.info.professionName || prof?.label || '—'}</p>
-            <div className="flex gap-2 text-xs text-faint mt-0.5">
-              {char.info.age && <span>{char.info.age} J.</span>}
-              {char.info.height && <span>{char.info.height} cm</span>}
-              {char.info.gender && <span>{char.info.gender}</span>}
-            </div>
+            <p className="text-sm font-bold text-paper leading-tight truncate">{char.info.name || 'Unbenannt'}</p>
+            {metaParts.length > 0 && (
+              <p className="text-[10px] text-faint leading-tight truncate">{metaParts.join(' · ')}</p>
+            )}
           </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => setScreen('creation')}
-            className="flex-1 py-1.5 text-xs border border-hairline rounded text-muted hover:text-primary hover:border-muted transition-colors"
-          >
-            Bearbeiten
-          </button>
-          <button
-            onClick={() => exportCharacter(char.id)}
-            className="py-1.5 px-3 text-xs border border-hairline rounded text-muted hover:text-primary hover:border-muted transition-colors"
-          >
-            Export
-          </button>
-          <button
-            onClick={() => setScreen('play')}
-            className="flex-1 py-1.5 text-xs bg-paper text-bg font-medium rounded hover:opacity-90 transition-opacity"
-          >
-            Los geht's →
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setScreen('creation')}
+              className="px-2 py-1 text-[10px] border border-hairline rounded text-muted hover:text-primary hover:border-muted transition-colors">
+              Bearb.
+            </button>
+            <button onClick={() => exportCharacter(char.id)}
+              className="px-2 py-1 text-[10px] border border-hairline rounded text-muted hover:text-primary transition-colors">
+              ↓
+            </button>
+            <button onClick={() => setScreen('play')}
+              className="px-2 py-1 text-[10px] bg-paper text-bg font-bold rounded hover:opacity-90 transition-opacity">
+              ▶
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto pb-20">
 
-        {/* 10-axis radar: 6 primary + 4 combat */}
-        <div className="bg-surface border border-hairline rounded-lg p-4">
+        {/* LE + GG — compact row */}
+        <div className="flex gap-3 px-3 pt-3 pb-2">
+          <div className="flex-1">
+            <SheetResourceBar shortKey="LE" value={char.currentLE || derived.LE}
+              maxValue={derived.LE} color={C.LE} icon="/icons/attr/le.png" />
+          </div>
+          <div className="flex-1">
+            <SheetResourceBar shortKey="GG" value={char.currentGG || derived.GG}
+              maxValue={derived.GG} color={C.GG} icon="/icons/attr/gg.png" />
+          </div>
+        </div>
+
+        {/* Radar — full width, minimal padding */}
+        <div className="px-1">
           <div className="relative w-full overflow-visible" style={{ aspectRatio: '1/1' }}>
             <div className="absolute" style={{ left: '12.5%', top: '12.5%', width: '75%', aspectRatio: '1' }}>
               <SpiderChart
@@ -172,127 +199,66 @@ export function CharacterSheetScreen() {
               />
             </div>
             {sheetAttrs.map((attr, i) => {
-              const angle = ((i / 10) * 360 - 90) * (Math.PI / 180);
+              const angle   = ((i / 10) * 360 - 90) * (Math.PI / 180);
               const leftPct = 50 + Math.cos(angle) * 42;
               const topPct  = 50 + Math.sin(angle) * 42;
               return (
-                <SheetLabel
-                  key={attr.key}
-                  attrKey={attr.key}
-                  name={attr.name}
-                  color={attr.color}
-                  icon={attr.icon}
-                  leftPct={leftPct}
-                  topPct={topPct}
-                />
+                <SheetLabel key={attr.key} attrKey={attr.key} name={attr.name}
+                  color={attr.color} icon={attr.icon} leftPct={leftPct} topPct={topPct} />
               );
             })}
           </div>
         </div>
 
-        {/* Attributes */}
-        <div className="bg-surface border border-hairline rounded-lg p-3">
-          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-3">Attribute</p>
-          <div className="space-y-2">
-            {ATTRIBUTES.map(attr => {
-              const val = char.attributes[attr.key];
-              const pct = (val / 19) * 100;
+        {/* ── Talente — compact one-line-per-category ── */}
+        {TALENT_CATEGORIES.some(cat => cat.talents.some(t => (char.talents[t.name] ?? 0) > 0)) && (
+          <div className="px-3 pt-1 pb-2 space-y-1 border-t border-hairline mt-1">
+            {TALENT_CATEGORIES.map(cat => {
+              const learned = cat.talents.filter(t => (char.talents[t.name] ?? 0) > 0);
+              if (!learned.length) return null;
               return (
-                <div key={attr.key} className="flex items-center gap-3">
-                  <span className="font-mono text-xs w-6" style={{ color: attr.color }}>{attr.key}</span>
-                  <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${pct}%`, backgroundColor: attr.color }}
-                    />
-                  </div>
-                  <span className="font-mono text-sm text-primary w-5 text-right">{val}</span>
+                <div key={cat.key} className="flex items-baseline gap-2">
+                  <span className="text-[8px] font-bold uppercase tracking-wider shrink-0 w-14 leading-tight" style={{ color: cat.color }}>
+                    {cat.label}
+                  </span>
+                  <span className="text-[10px] text-primary leading-snug">
+                    {learned.map((t, i) => (
+                      <span key={t.name}>
+                        {t.name}
+                        {t.attrs && (
+                          <span className="inline-flex gap-0.5 mx-0.5 align-middle">
+                            {t.attrs.map((a, ai) => <AttributeChip key={ai} attr={a} size="xs" />)}
+                          </span>
+                        )}
+                        <span className="font-mono text-faint text-[9px]"> {char.talents[t.name]}</span>
+                        {i < learned.length - 1 && <span className="text-hairline mx-1">·</span>}
+                      </span>
+                    ))}
+                  </span>
                 </div>
               );
             })}
           </div>
-        </div>
+        )}
 
-        {/* Derived values */}
-        <div className="bg-surface border border-hairline rounded-lg p-3">
-          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-3">Abgeleitete Werte</p>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(derived).map(([key, val]) => (
-              <div key={key} className="bg-raised border border-hairline rounded p-2 text-center">
-                <div className="font-mono text-xs text-muted">{key}</div>
-                <div className="font-mono text-xl text-primary font-medium">{val}</div>
-                <div className="text-[10px] text-faint">{DERIVED_LABELS[key]}</div>
-              </div>
+        {/* ── Spezifika + Fähigkeiten — tag cloud ── */}
+        {(allSpecs.length > 0 || char.specialAbilities.length > 0) && (
+          <div className="px-3 py-2 flex flex-wrap gap-1.5 border-t border-hairline">
+            {allSpecs.map((s, i) => s && (
+              <span key={i}
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded border leading-tight ${s.modifier > 0 ? 'border-danger/40 text-danger bg-danger/5' : 'border-success/40 text-success bg-success/5'}`}>
+                {s.modifier > 0 ? `+${s.modifier}` : s.modifier} {s.name}
+              </span>
+            ))}
+            {char.specialAbilities.map(id => (
+              <span key={id}
+                className="text-[9px] text-muted bg-raised px-1.5 py-0.5 rounded border border-hairline leading-tight">
+                {ABILITY_MAP[id]?.name ?? id}
+              </span>
             ))}
           </div>
-        </div>
-
-        {/* Talents */}
-        <div className="bg-surface border border-hairline rounded-lg p-3">
-          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-3">Talente</p>
-          {TALENT_CATEGORIES.map(cat => {
-            const learned = cat.talents.filter(t => (char.talents[t.name] ?? 0) > 0);
-            if (learned.length === 0) return null;
-            return (
-              <div key={cat.key} className="mb-3 last:mb-0">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                  <span className="text-xs font-medium" style={{ color: cat.color }}>{cat.label}</span>
-                </div>
-                <div className="space-y-1 ml-3">
-                  {learned.map(t => {
-                    const val = char.talents[t.name] ?? 0;
-                    return (
-                      <div key={t.name} className="flex items-center gap-2">
-                        <span className="text-sm text-primary flex-1">{t.name}</span>
-                        {t.attrs && (
-                          <div className="flex gap-0.5">
-                            {t.attrs.map((a, i) => <AttributeChip key={i} attr={a} size="xs" />)}
-                          </div>
-                        )}
-                        <span className="font-mono text-sm text-paper w-4 text-right">{val}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Specifications */}
-        {allSpecs.length > 0 && (
-          <div className="bg-surface border border-hairline rounded-lg p-3">
-            <p className="text-xs text-muted font-medium uppercase tracking-wider mb-3">Spezifika</p>
-            <div className="space-y-2">
-              {allSpecs.map((s, i) => s && (
-                <div key={i} className={`flex items-start gap-2 p-2 rounded border ${s.modifier > 0 ? 'border-danger/30 bg-danger/5' : 'border-success/30 bg-success/5'}`}>
-                  <span className={`font-mono text-xs mt-0.5 shrink-0 ${s.modifier > 0 ? 'text-danger' : 'text-success'}`}>
-                    {s.modifier > 0 ? `+${s.modifier}` : s.modifier}
-                  </span>
-                  <div>
-                    <span className="text-sm text-primary">{s.name}</span>
-                    <span className="text-xs text-faint ml-2">({s.label})</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
-        {/* Special abilities */}
-        {char.specialAbilities.length > 0 && (
-          <div className="bg-surface border border-hairline rounded-lg p-3">
-            <p className="text-xs text-muted font-medium uppercase tracking-wider mb-2">Besondere Fähigkeiten</p>
-            <div className="flex flex-wrap gap-2">
-              {char.specialAbilities.map(id => (
-                <span key={id} className="text-sm text-primary bg-raised px-2 py-1 rounded border border-hairline">
-                  {ABILITY_MAP[id]?.name ?? id}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
