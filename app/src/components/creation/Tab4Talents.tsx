@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { TALENT_CATEGORIES } from '../../data/talents';
 import { CatIcon } from '../ui/CatIcon';
 import {
-  talentAvailable, talentLeft, talentSpent, talentCanIncrease,
+  talentAvailable, talentSpent, talentCanIncrease,
   talentFixedBonus, talentSpecBonusBreakdown,
   BASE_TALENT_PTS,
   varPtsLeft,
@@ -286,38 +286,6 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
   );
 }
 
-// ── Category header row ───────────────────────────────────────────────────────
-function CategoryHeaderRow({ charId, catKey }: { charId: string; catKey: TalentCategory }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
-  if (!char) return null;
-
-  const catMeta   = TALENT_CATEGORIES.find(c => c.key === catKey)!;
-  const available = talentAvailable(char, catKey);
-  const left      = talentLeft(char, catKey);
-  const fillPct   = available > 0 ? Math.max(0, Math.min(100, (left / available) * 100)) : 0;
-
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 first:mt-0"
-      style={{ backgroundColor: `${catMeta.color}18`, borderColor: `${catMeta.color}40` }}
-    >
-      <CatIcon src={catMeta.icon} size={28} className="shrink-0" />
-      <div className="relative flex-1 h-2.5 rounded-full overflow-hidden bg-raised">
-        <div
-          className="absolute inset-y-0 left-0 transition-all duration-200"
-          style={{ width: `${fillPct}%`, backgroundColor: left < 0 ? '#D1453B' : catMeta.color }}
-        />
-        {available > 1 && Array.from({ length: available - 1 }, (_, i) => (
-          <div
-            key={i}
-            className="absolute inset-y-0 w-px"
-            style={{ left: `${((i + 1) / available) * 100}%`, backgroundColor: 'rgba(0,0,0,0.40)' }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Special abilities section ─────────────────────────────────────────────────
 function SpecialAbilitiesSection({ charId }: { charId: string }) {

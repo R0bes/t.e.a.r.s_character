@@ -10,16 +10,16 @@ import type { SpiderAxis, ColorZone } from '../ui/SpiderChart';
 
 // ── 12 distinct colors ────────────────────────────────────────────────────────
 const C = {
-  KK:  '#CC2828',
-  GE:  '#C89A10',
-  AU:  '#D05020',
-  CH:  '#CC2888',
-  IN:  '#1E58C8',
+  KK:  '#D1453B',
+  GE:  '#3E7FCE',
+  AU:  '#4FA968',
+  CH:  '#D45C95',
+  IN:  '#8C5FC4',
   MB:  '#7030B0',
-  ATN: '#B82020',
-  PA:  '#607090',
-  ATD: '#28A028',
-  INI: '#D4A010',
+  ATN: '#C4881C',
+  PA:  '#2DB38C',
+  ATD: '#4CAED8',
+  INI: '#88C040',
   LE:  '#208838',
   GG:  '#1898A0',
 } as const;
@@ -70,6 +70,8 @@ function combatTooltip(key: string, color: string): ReactNode {
     case 'PA':  return <><span style={{color}}>Parade</span>: (<A k="KK"/>+<A k="AU"/>+<A k="GE"/>) ÷ 3</>;
     case 'ATD': return <><span style={{color}}>Attacke Distanz</span>: (<A k="GE"/>+<A k="GE"/>+<A k="AU"/>) ÷ 3</>;
     case 'INI': return <><span style={{color}}>Initiative</span>: (<A k="KK"/>+5) − <A k="GE"/>÷2</>;
+    case 'LE':  return <><span style={{color}}>Lebensenergie</span>: (<A k="KK"/>×2 + <A k="AU"/>) × 3</>;
+    case 'GG':  return <><span style={{color}}>Geist. Gesundheit</span>: (<A k="AU"/>+<A k="IN"/>+<A k="MB"/>×2) × 3</>;
     default:    return null;
   }
 }
@@ -92,16 +94,54 @@ const ARROW_META: Record<AttributeKey, { rotate: number; perpX: number; perpY: n
 
 const BTN_OFFSET = 36; // px: icon-center to button-center distance
 
+// ── Combined (10-gon) chart data ──────────────────────────────────────────────
+type CombatKey = 'ATN' | 'PA' | 'ATD' | 'INI' | 'LE' | 'GG';
+type CombinedEntry =
+  | { type: 'primary'; key: AttributeKey; color: string; icon: string; maxValue?: number }
+  | { type: 'combat';  key: CombatKey;   color: string; icon: string; maxValue?: number };
+
+const COMBINED_ENTRIES: CombinedEntry[] = [
+  { type: 'primary', key: 'KK',  color: C.KK,  icon: '/icons/attr/kk.png'  },  // 0° oben
+  { type: 'combat',  key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.png' },  // 30°  KK×2+GE
+  { type: 'primary', key: 'GE',  color: C.GE,  icon: '/icons/attr/ge.png'  },  // 60°
+  { type: 'combat',  key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.png'  },  // 90°  KK+GE+AU
+  { type: 'primary', key: 'AU',  color: C.AU,  icon: '/icons/attr/au.png'  },  // 120°
+  { type: 'combat',  key: 'LE',  color: C.LE,  icon: '/icons/attr/le.png',  maxValue: 180 }, // 150° KK×2+AU
+  { type: 'combat',  key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.png' },  // 180° unten GE×2+AU
+  { type: 'primary', key: 'IN',  color: C.IN,  icon: '/icons/attr/in.png'  },  // 210°
+  { type: 'combat',  key: 'GG',  color: C.GG,  icon: '/icons/attr/gg.png',  maxValue: 240 }, // 240° AU+IN+MB×2
+  { type: 'primary', key: 'MB',  color: C.MB,  icon: '/icons/attr/mb.png'  },  // 270°
+  { type: 'primary', key: 'CH',  color: C.CH,  icon: '/icons/attr/ch.png'  },  // 300°
+  { type: 'combat',  key: 'INI', color: C.INI, icon: '/icons/attr/ini.png' },  // 330° KK+5−GE/2
+];
+
+function combinedGeom(i: number, n: number) {
+  const θ = (i / n * 360 - 90) * (Math.PI / 180);
+  const leftPct = 50 + Math.cos(θ) * 43;
+  const topPct  = 50 + Math.sin(θ) * 43;
+  const perpX   = -Math.sin(θ);
+  const perpY   =  Math.cos(θ);
+  const rotate  = Math.round(Math.atan2(perpY, perpX) * 180 / Math.PI + 90);
+  const dx = leftPct - 50, dy = topPct - 50;
+  const tip: TipDir = Math.abs(dx) >= Math.abs(dy)
+    ? (dx > 0 ? 'left' : 'right')
+    : (dy > 0 ? 'up'   : 'down');
+  return { leftPct, topPct, perpX, perpY, rotate, tip };
+}
+
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
   attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name, icon,
+  overridePos, overrideArrow,
 }: {
   attrKey: AttributeKey; value: number; minValue: number; pointsLeft: number;
   onDecrease: () => void; onIncrease: () => void; color: string; name: string; icon: string;
+  overridePos?:   { left: string; top: string; align: 'center'|'left'|'right'; tip: TipDir };
+  overrideArrow?: { rotate: number; perpX: number; perpY: number };
 }) {
   const [open, setOpen] = useState(false);
-  const pos      = ATTR_POSITIONS[attrKey];
-  const arrow    = ARROW_META[attrKey];
+  const pos      = overridePos   ?? ATTR_POSITIONS[attrKey];
+  const arrow    = overrideArrow ?? ARROW_META[attrKey];
   const cost     = stepCost(value);
   const prevCost = value > minValue ? stepCost(value - 1) : 0;
   const canInc   = value < ATTR_MAX && pointsLeft >= cost;
@@ -278,6 +318,15 @@ export function Tab3Attributes({ charId }: { charId: string }) {
     color: m.color,
   }));
 
+  const combinedAxes: SpiderAxis[] = COMBINED_ENTRIES.map(entry => ({
+    key: entry.key,
+    value: entry.type === 'primary'
+      ? char.attributes[entry.key as AttributeKey]
+      : derived[entry.key as keyof typeof derived] as number,
+    maxValue: entry.maxValue ?? 20,
+    color: entry.color,
+  }));
+
   return (
     <div className="flex flex-col gap-4 p-4">
 
@@ -298,6 +347,67 @@ export function Tab3Attributes({ charId }: { charId: string }) {
 
       {/* ── Stacked radars ── */}
       <div className="flex flex-col gap-8">
+
+        {/* Combined radar — primary editable, combat reactive */}
+        <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>
+          <div className="absolute" style={{ left: '17%', top: '17%', width: '66%', aspectRatio: '1' }}>
+            <SpiderChart
+              axes={combinedAxes}
+              size={140}
+              gridValues={[5, 10, 15, 20]}
+              showGridLabels
+              showValueLabels
+              chartId="combined"
+              className="w-full h-full"
+              colorZones={[
+                { from:  0, to:  5, color: '#5878A0', opacity: 0.07 },
+                { from:  5, to: 10, color: '#8898A8', opacity: 0.05 },
+                { from: 10, to: 15, color: '#C89020', opacity: 0.10 },
+                { from: 15, to: 20, color: '#C83020', opacity: 0.13 },
+              ] as ColorZone[]}
+            />
+          </div>
+
+          {COMBINED_ENTRIES.map((entry, i) => {
+            const { leftPct, topPct, perpX, perpY, rotate, tip } = combinedGeom(i, COMBINED_ENTRIES.length);
+            const left = `${leftPct.toFixed(1)}%`;
+            const top  = `${topPct.toFixed(1)}%`;
+
+            if (entry.type === 'primary') {
+              const meta   = ATTRIBUTES.find(a => a.key === entry.key)!;
+              const val    = char.attributes[entry.key];
+              const minVal = attrJobMin(char, entry.key);
+              return (
+                <AttrControl
+                  key={entry.key}
+                  attrKey={entry.key}
+                  value={val}
+                  minValue={minVal}
+                  pointsLeft={pointsLeft}
+                  onDecrease={() => setAttr(entry.key, Math.max(minVal, val - 1))}
+                  onIncrease={() => setAttr(entry.key, Math.min(ATTR_MAX, val + 1))}
+                  color={entry.color}
+                  name={meta.name}
+                  icon={entry.icon}
+                  overridePos={{ left, top, align: 'center', tip }}
+                  overrideArrow={{ rotate, perpX, perpY }}
+                />
+              );
+            }
+
+            return (
+              <CombatLabel
+                key={entry.key}
+                attrKey={entry.key}
+                color={entry.color}
+                icon={entry.icon}
+                left={left}
+                top={top}
+                tip={tip}
+              />
+            );
+          })}
+        </div>
 
         {/* Primary radar – full width, square container */}
         <div className="relative overflow-visible w-full" style={{ aspectRatio: '1/1' }}>

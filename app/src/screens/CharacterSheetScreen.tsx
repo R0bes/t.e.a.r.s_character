@@ -6,12 +6,12 @@ import { TALENT_CATEGORIES } from '../data/talents';
 import { ABILITY_MAP } from '../data/specialAbilities';
 import { calcDerived, calcATN, calcPA, calcATD, calcINI } from '../rules/derivedValues';
 import { SpiderChart } from '../components/ui/SpiderChart';
-import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
+import type { SpiderAxis } from '../components/ui/SpiderChart';
 import { AttributeChip } from '../components/ui/AttributeChip';
 
 const C = {
   KK: '#D1453B', GE: '#3E7FCE', AU: '#4FA968',
-  CH: '#D45C95', IN: '#8C5FC4', MB: '#E08C3C',
+  CH: '#D45C95', IN: '#8C5FC4', MB: '#7030B0',
   ATN: '#C4881C', PA: '#2DB38C', ATD: '#4CAED8', INI: '#88C040',
   LE: '#208838',  GG: '#1898A0',
 } as const;
@@ -102,14 +102,20 @@ export function CharacterSheetScreen() {
     { key: 'CH',  name: ATTR_MAP.CH.name, color: C.CH,  icon: ATTR_MAP.CH.icon, value: char.attributes.CH  },
     { key: 'IN',  name: ATTR_MAP.IN.name, color: C.IN,  icon: ATTR_MAP.IN.icon, value: char.attributes.IN  },
     { key: 'MB',  name: ATTR_MAP.MB.name, color: C.MB,  icon: ATTR_MAP.MB.icon, value: char.attributes.MB  },
-    { key: 'ATN', name: 'Nahkampf',       color: C.ATN, icon: '/icons/attr/atn.png', value: calcATN(char) },
-    { key: 'PA',  name: 'Parade',         color: C.PA,  icon: '/icons/attr/pa.png',  value: calcPA(char)  },
-    { key: 'ATD', name: 'Distanz',        color: C.ATD, icon: '/icons/attr/atd.png', value: calcATD(char) },
-    { key: 'INI', name: 'Initiative',     color: C.INI, icon: '/icons/attr/ini.png', value: calcINI(char) },
+    { key: 'ATN', name: 'Nahkampf',        color: C.ATN, icon: '/icons/attr/atn.png', value: calcATN(char) },
+    { key: 'PA',  name: 'Parade',          color: C.PA,  icon: '/icons/attr/pa.png',  value: calcPA(char)  },
+    { key: 'ATD', name: 'Distanz',         color: C.ATD, icon: '/icons/attr/atd.png', value: calcATD(char) },
+    { key: 'INI', name: 'Initiative',      color: C.INI, icon: '/icons/attr/ini.png', value: calcINI(char) },
+    { key: 'LE',  name: 'Lebensenergie',   color: C.LE,  icon: '/icons/attr/le.png',  value: derived.LE   },
+    { key: 'GG',  name: 'Geist. Gesundh.', color: C.GG,  icon: '/icons/attr/gg.png',  value: derived.GG   },
   ];
 
+  const LE_MAX = 180; // (KK*2+AU)*3 at max attrs
+  const GG_MAX = 240; // (AU+IN+MB*2)*3 at max attrs
   const radarAxes: SpiderAxis[] = sheetAttrs.map(a => ({
-    key: a.key, value: a.value, maxValue: CHART_MAX, color: a.color,
+    key: a.key, value: a.value,
+    maxValue: a.key === 'LE' ? LE_MAX : a.key === 'GG' ? GG_MAX : CHART_MAX,
+    color: a.color,
   }));
 
   const initials = char.info.name
@@ -190,16 +196,10 @@ export function CharacterSheetScreen() {
                 chartId="sheet"
                 className="w-full h-full"
                 fillBlur={6}
-                colorZones={[
-                  { from:  0, to:  8, color: '#5878A0', opacity: 0.07 },
-                  { from:  8, to: 14, color: '#8898A8', opacity: 0.05 },
-                  { from: 14, to: 17, color: '#C89020', opacity: 0.10 },
-                  { from: 17, to: 20, color: '#C83020', opacity: 0.13 },
-                ] as ColorZone[]}
               />
             </div>
             {sheetAttrs.map((attr, i) => {
-              const angle   = ((i / 10) * 360 - 90) * (Math.PI / 180);
+              const angle   = ((i / sheetAttrs.length) * 360 - 90) * (Math.PI / 180);
               const leftPct = 50 + Math.cos(angle) * 42;
               const topPct  = 50 + Math.sin(angle) * 42;
               return (
