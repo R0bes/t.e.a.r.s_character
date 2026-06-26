@@ -8,20 +8,23 @@ import { SpiderChart } from '../ui/SpiderChart';
 import type { SpiderAxis, ColorZone } from '../ui/SpiderChart';
 
 
-// ── 12 distinct colors ────────────────────────────────────────────────────────
+// ── 12 colors — rainbow spectrum, strict primary/combat alternation ──────────
+// Even positions (0,2,4,6,8,10) = primary; odd (1,3,5,7,9,11) = combat
+// GG sits at 210° between IN and MB — both in its formula AU+IN+MB×2 ✓✓
+// ATD at 270° is the unavoidable "orphan" slot (no formula links MB+CH)
 const C = {
-  KK:  '#D1453B',
-  GE:  '#3E7FCE',
-  AU:  '#4FA968',
-  CH:  '#D45C95',
-  IN:  '#8C5FC4',
-  MB:  '#7030B0',
-  ATN: '#C4881C',
-  PA:  '#2DB38C',
-  ATD: '#4CAED8',
-  INI: '#88C040',
-  LE:  '#208838',
-  GG:  '#1898A0',
+  KK:  '#E03838',  // 0°   warm red    – Körperkraft (Stärke, Kraft)
+  INI: '#E06828',  // 30°  orange      – Initiative (Reaktion, Schnelligkeit)
+  GE:  '#D4A820',  // 60°  amber       – Geschicklichkeit (Präzision, Gold)
+  PA:  '#98C818',  // 90°  chartreuse  – Parade (defensiv, Alert)
+  AU:  '#28B040',  // 120° green       – Ausdauer (Vitalität, Natur)
+  LE:  '#18A868',  // 150° sea-green   – Lebensenergie (Heilung, Leben)
+  IN:  '#10A8D0',  // 180° cyan        – Intelligenz (Verstand, Klarheit)
+  GG:  '#2870D8',  // 210° blue        – Geist. Gesundheit (Psyche, Tiefe)
+  MB:  '#5040C8',  // 240° indigo      – Ment. Belastbarkeit (Willenskraft)
+  ATD: '#8828C0',  // 270° violet      – Attacke Distanz (Weite, Kraft)
+  CH:  '#C82888',  // 300° magenta     – Charme (sozial, Persönlichkeit)
+  ATN: '#B82030',  // 330° deep garnet – Attacke Nahkampf (dunkel, intensiv)
 } as const;
 
 
@@ -41,7 +44,7 @@ const ATTR_POSITIONS: Record<AttributeKey, {
   MB: { left: '13.6%', top: '29%', align: 'right',  tip: 'right' },
 };
 
-const PRIMARY_GRID = [8, 14, 17];
+const PRIMARY_GRID = [8, 14, 18];
 
 // ── Combat attr layout ────────────────────────────────────────────────────────
 type TipDir = 'up' | 'down' | 'left' | 'right';
@@ -101,27 +104,35 @@ type CombinedEntry =
   | { type: 'combat';  key: CombatKey;   color: string; icon: string; maxValue?: number };
 
 const COMBINED_ENTRIES: CombinedEntry[] = [
-  { type: 'primary', key: 'KK',  color: C.KK,  icon: '/icons/attr/kk.png'  },  // 0° oben
-  { type: 'combat',  key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.png' },  // 30°  KK×2+GE
-  { type: 'primary', key: 'GE',  color: C.GE,  icon: '/icons/attr/ge.png'  },  // 60°
-  { type: 'combat',  key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.png'  },  // 90°  KK+GE+AU
-  { type: 'primary', key: 'AU',  color: C.AU,  icon: '/icons/attr/au.png'  },  // 120°
-  { type: 'combat',  key: 'LE',  color: C.LE,  icon: '/icons/attr/le.png',  maxValue: 180 }, // 150° KK×2+AU
-  { type: 'combat',  key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.png' },  // 180° unten GE×2+AU
-  { type: 'primary', key: 'IN',  color: C.IN,  icon: '/icons/attr/in.png'  },  // 210°
-  { type: 'combat',  key: 'GG',  color: C.GG,  icon: '/icons/attr/gg.png',  maxValue: 240 }, // 240° AU+IN+MB×2
-  { type: 'primary', key: 'MB',  color: C.MB,  icon: '/icons/attr/mb.png'  },  // 270°
-  { type: 'primary', key: 'CH',  color: C.CH,  icon: '/icons/attr/ch.png'  },  // 300°
-  { type: 'combat',  key: 'INI', color: C.INI, icon: '/icons/attr/ini.png' },  // 330° KK+5−GE/2
+  { type: 'primary', key: 'KK',  color: C.KK,  icon: '/icons/attr/kk.png'  },  // 0°   primär  – oben
+  { type: 'combat',  key: 'INI', color: C.INI, icon: '/icons/attr/ini.png' },  // 30°  kampf   – KK+5−GE/2 (zwischen KK & GE)
+  { type: 'primary', key: 'GE',  color: C.GE,  icon: '/icons/attr/ge.png'  },  // 60°  primär
+  { type: 'combat',  key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.png'  },  // 90°  kampf   – (KK+GE+AU)/3
+  { type: 'primary', key: 'AU',  color: C.AU,  icon: '/icons/attr/au.png'  },  // 120° primär
+  { type: 'combat',  key: 'LE',  color: C.LE,  icon: '/icons/attr/le.png',  maxValue: 180 }, // 150° kampf   – (KK×2+AU)×3
+  { type: 'primary', key: 'IN',  color: C.IN,  icon: '/icons/attr/in.png'  },  // 180° primär  – unten
+  { type: 'combat',  key: 'GG',  color: C.GG,  icon: '/icons/attr/gg.png',  maxValue: 240 }, // 210° kampf   – (AU+IN+MB×2)×3 (zwischen IN & MB)
+  { type: 'primary', key: 'MB',  color: C.MB,  icon: '/icons/attr/mb.png'  },  // 240° primär
+  { type: 'combat',  key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.png' },  // 270° kampf   – (GE×2+AU)/3
+  { type: 'primary', key: 'CH',  color: C.CH,  icon: '/icons/attr/ch.png'  },  // 300° primär
+  { type: 'combat',  key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.png' },  // 330° kampf   – (KK×2+GE)/3 (neben KK)
 ];
+
+// Normalize an axis angle (degrees, clockwise from top) to [-90°, 90°] for readable text
+function normRot(deg: number): number {
+  let a = ((deg % 180) + 180) % 180; // into [0, 180)
+  if (a > 90) a -= 180;               // into (-90, 90]
+  return a;
+}
 
 function combinedGeom(i: number, n: number) {
   const θ = (i / n * 360 - 90) * (Math.PI / 180);
   const leftPct = 50 + Math.cos(θ) * 43;
   const topPct  = 50 + Math.sin(θ) * 43;
-  const perpX   = -Math.sin(θ);
-  const perpY   =  Math.cos(θ);
-  const rotate  = Math.round(Math.atan2(perpY, perpX) * 180 / Math.PI + 90);
+  // Radial direction: + arrow points away from center, − arrow toward center
+  const perpX   = Math.cos(θ);
+  const perpY   = Math.sin(θ);
+  const rotate  = Math.round(i / n * 360);
   const dx = leftPct - 50, dy = topPct - 50;
   const tip: TipDir = Math.abs(dx) >= Math.abs(dy)
     ? (dx > 0 ? 'left' : 'right')
@@ -132,12 +143,13 @@ function combinedGeom(i: number, n: number) {
 // ── Primary attribute control ─────────────────────────────────────────────────
 function AttrControl({
   attrKey, value, minValue, pointsLeft, onDecrease, onIncrease, color, name, icon,
-  overridePos, overrideArrow,
+  overridePos, overrideArrow, textRotation = 0,
 }: {
   attrKey: AttributeKey; value: number; minValue: number; pointsLeft: number;
   onDecrease: () => void; onIncrease: () => void; color: string; name: string; icon: string;
   overridePos?:   { left: string; top: string; align: 'center'|'left'|'right'; tip: TipDir };
   overrideArrow?: { rotate: number; perpX: number; perpY: number };
+  textRotation?: number;
 }) {
   const [open, setOpen] = useState(false);
   const pos      = overridePos   ?? ATTR_POSITIONS[attrKey];
@@ -147,9 +159,10 @@ function AttrControl({
   const canInc   = value < ATTR_MAX && pointsLeft >= cost;
   const canDec   = value > minValue;
 
-  const plusSrc  = cost >= 3     ? '/icons/attr/arrow_up3.png'   : cost === 2     ? '/icons/attr/arrow_up2.png'   : '/icons/attr/arrow_up.png';
-  const minusSrc = prevCost >= 3 ? '/icons/attr/arrow_down3.png' : prevCost === 2 ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png';
-  const plusGlow = cost >= 3 ? 'drop-shadow(0 0 4px #CC2828)' : cost === 2 ? 'drop-shadow(0 0 4px #D05020)' : undefined;
+  const plusLabel  = cost >= 3     ? '+++' : cost === 2     ? '++' : '+';
+  const minusLabel = prevCost >= 3 ? '−−−' : prevCost === 2 ? '−−' : '−';
+  const plusSize   = cost >= 3     ? 'text-xs' : cost === 2     ? 'text-sm' : 'text-xl';
+  const minusSize  = prevCost >= 3 ? 'text-xs' : prevCost === 2 ? 'text-sm' : 'text-xl';
 
   const px = Math.round(arrow.perpX * BTN_OFFSET);
   const py = Math.round(arrow.perpY * BTN_OFFSET);
@@ -173,7 +186,7 @@ function AttrControl({
         onMouseLeave={() => setOpen(false)}
       >
         <div className="w-full h-full rounded-full overflow-hidden"
-          style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+          style={{ boxShadow: `0 0 0 2px ${color}, 0 0 6px 1px ${color}aa, 0 0 14px 4px ${color}44` }}>
           <img src={icon} alt={name} className="w-full h-full object-cover" />
         </div>
         {open && (
@@ -183,32 +196,34 @@ function AttrControl({
         )}
       </div>
 
-      {/* + arrow — transparent button, no visible frame */}
+      {/* + button — green */}
       <button
         onClick={onIncrease}
         disabled={!canInc}
-        className="absolute p-0 bg-transparent border-0 outline-none"
+        className="absolute p-0 bg-transparent border-0 outline-none cursor-pointer"
         style={{ left: px - 14, top: py - 12, width: 28, height: 24 }}
       >
-        <img
-          src={plusSrc}
-          className="w-full h-full object-contain transition-opacity"
-          style={{ transform: `rotate(${arrow.rotate}deg)`, opacity: canInc ? 1 : 0.2, filter: plusGlow }}
-        />
+        <span
+          className={`flex items-center justify-center w-full h-full font-bold ${plusSize} leading-none select-none transition-opacity`}
+          style={{ color: '#22c55e', opacity: canInc ? 1 : 0.2, transform: `rotate(${textRotation}deg)` }}
+        >
+          {plusLabel}
+        </span>
       </button>
 
-      {/* − arrow — transparent button, rotated 180° of the + arrow */}
+      {/* − button — red */}
       <button
         onClick={onDecrease}
         disabled={!canDec}
-        className="absolute p-0 bg-transparent border-0 outline-none"
+        className="absolute p-0 bg-transparent border-0 outline-none cursor-pointer"
         style={{ left: -px - 14, top: -py - 12, width: 28, height: 24 }}
       >
-        <img
-          src={minusSrc}
-          className="w-full h-full object-contain transition-opacity"
-          style={{ transform: `rotate(${arrow.rotate}deg)`, opacity: canDec ? 0.8 : 0.15 }}
-        />
+        <span
+          className={`flex items-center justify-center w-full h-full font-bold ${minusSize} leading-none select-none transition-opacity`}
+          style={{ color: '#ef4444', opacity: canDec ? 0.9 : 0.15, transform: `rotate(${textRotation}deg)` }}
+        >
+          {minusLabel}
+        </span>
       </button>
 
     </div>
@@ -239,7 +254,7 @@ function CombatLabel({
       onMouseLeave={() => setOpen(false)}
     >
       <div className="relative w-11 h-11 rounded-full overflow-hidden cursor-default"
-        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+        style={{ boxShadow: `0 0 0 2px ${color}, 0 0 6px 1px ${color}aa, 0 0 14px 4px ${color}44` }}>
         <img src={icon} alt={attrKey} className="w-full h-full object-cover" />
       </div>
       {open && (
@@ -269,7 +284,7 @@ function ResourceBar({
       onMouseLeave={() => setOpen(false)}
     >
       <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden cursor-default"
-        style={{ boxShadow: `0 0 0 2px ${color}88` }}>
+        style={{ boxShadow: `0 0 0 2px ${color}, 0 0 6px 1px ${color}aa, 0 0 14px 4px ${color}44` }}>
         <img src={icon} alt={shortKey} className="w-full h-full object-cover" />
       </div>
       <div className="flex-1 min-w-0">
@@ -354,16 +369,16 @@ export function Tab3Attributes({ charId }: { charId: string }) {
             <SpiderChart
               axes={combinedAxes}
               size={140}
-              gridValues={[5, 10, 15, 20]}
+              gridValues={[5, 10, 14, 18]}
               showGridLabels
               showValueLabels
               chartId="combined"
               className="w-full h-full"
               colorZones={[
                 { from:  0, to:  5, color: '#5878A0', opacity: 0.07 },
-                { from:  5, to: 10, color: '#8898A8', opacity: 0.05 },
-                { from: 10, to: 15, color: '#C89020', opacity: 0.10 },
-                { from: 15, to: 20, color: '#C83020', opacity: 0.13 },
+                { from:  5, to: 14, color: '#8898A8', opacity: 0.05 },
+                { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
+                { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
               ] as ColorZone[]}
             />
           </div>
@@ -391,6 +406,7 @@ export function Tab3Attributes({ charId }: { charId: string }) {
                   icon={entry.icon}
                   overridePos={{ left, top, align: 'center', tip }}
                   overrideArrow={{ rotate, perpX, perpY }}
+                  textRotation={normRot(rotate)}
                 />
               );
             }
@@ -423,8 +439,8 @@ export function Tab3Attributes({ charId }: { charId: string }) {
               colorZones={[
                 { from:  0, to:  8, color: '#5878A0', opacity: 0.07 },
                 { from:  8, to: 14, color: '#8898A8', opacity: 0.05 },
-                { from: 14, to: 17, color: '#C89020', opacity: 0.10 },
-                { from: 17, to: 19, color: '#C83020', opacity: 0.13 },
+                { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
+                { from: 18, to: 19, color: '#C83020', opacity: 0.13 },
               ] as ColorZone[]}
             />
           </div>
@@ -445,6 +461,7 @@ export function Tab3Attributes({ charId }: { charId: string }) {
                 color={C[key]}
                 name={meta.name}
                 icon={meta.icon}
+                textRotation={normRot(ARROW_META[key].rotate - 90)}
               />
             );
           })}
