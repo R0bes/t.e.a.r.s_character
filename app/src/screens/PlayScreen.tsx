@@ -1,188 +1,418 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { TALENT_CATEGORIES, TALENT_MAP } from '../data/talents';
-import type { AttributeKey } from '../types/character';
-import { resolveCheck, randomD20 } from '../rules/checks';
+import { ATTR_MAP } from '../data/attributes';
+import { PROFESSION_MAP } from '../data/professions';
+import { calcSuccessProb, resolveCheck, randomD20 } from '../rules/checks';
 import { calcLE, calcGG } from '../rules/derivedValues';
-import { AttributeChip } from '../components/ui/AttributeChip';
+import { talentFixedBonus } from '../rules/talentBudget';
+import { CatIcon } from '../components/ui/CatIcon';
+import type { AttributeKey } from '../types/character';
 
 type PlayTab = 'probe' | 'inventar' | 'notizen';
 
-function HealthSection({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
-  const patchCharacter = useStore(s => s.patchCharacter);
+const C = {
+  LE: '#208838',
+  GG: '#1898A0',
+} as const;
 
-  if (!char) return null;
-  const maxLE = calcLE(char);
-  const maxGG = calcGG(char);
-  const le = char.currentLE;
-  const gg = char.currentGG;
-
-  function adjustLE(delta: number) {
-    patchCharacter(charId, c => { c.currentLE = Math.max(0, Math.min(maxLE, c.currentLE + delta)); });
-  }
-  function adjustGG(delta: number) {
-    patchCharacter(charId, c => { c.currentGG = Math.max(0, Math.min(maxGG, c.currentGG + delta)); });
-  }
+// ── Vital bar with +/- controls ───────────────────────────────────────────────
+function VitalBar({ label, icon, color, current, max, onAdjust }: {
+  label: string;
+  icon: string;
+  color: string;
+  current: number;
+  max: number;
+  onAdjust: (delta: number) => void;
+}) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  const isLow = pct < 30;
 
   return (
-    <div className="px-4 pt-3 pb-3 bg-surface border-b border-hairline space-y-3">
-      {/* LE */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-danger font-medium w-6">LE</span>
-        <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-          <div className="h-full bg-danger rounded-full transition-all" style={{ width: `${(le / maxLE) * 100}%` }} />
-        </div>
-        <span className="font-mono text-sm text-primary w-12 text-right">{le}/{maxLE}</span>
-        <button onClick={() => adjustLE(-1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-danger">−</button>
-        <button onClick={() => adjustLE(+1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-success">+</button>
+    <div className="flex items-center gap-3">
+      <div
+        className="shrink-0 rounded-full overflow-hidden"
+        style={{ width: 36, height: 36, boxShadow: `0 0 0 2px ${color}99, 0 0 12px 3px ${color}44` }}
+      >
+        <img src={icon} alt={label} className="w-full h-full object-cover" />
       </div>
-      {/* GG */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-in font-medium w-6">GG</span>
-        <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-          <div className="h-full bg-in rounded-full transition-all" style={{ width: `${(gg / maxGG) * 100}%` }} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>{label}</span>
+          <span className="font-mono text-sm font-bold text-paper">
+            {current}
+            <span className="text-faint font-normal text-xs"> / {max}</span>
+          </span>
         </div>
-        <span className="font-mono text-sm text-primary w-12 text-right">{gg}/{maxGG}</span>
-        <button onClick={() => adjustGG(-1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-danger">−</button>
-        <button onClick={() => adjustGG(+1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-success">+</button>
+        <div className="h-3 rounded-full overflow-hidden bg-raised border border-hairline">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${pct}%`,
+              backgroundColor: color,
+              boxShadow: isLow ? `0 0 10px ${color}` : `0 0 6px ${color}88`,
+            }}
+          />
+        </div>
       </div>
+      <button
+        onClick={() => onAdjust(-1)}
+        className="shrink-0 flex items-center justify-center rounded-lg border border-hairline text-muted hover:text-paper hover:border-muted transition-colors font-bold text-lg"
+        style={{ width: 40, height: 40 }}
+        aria-label={`${label} verringern`}
+      >
+        −
+      </button>
+      <button
+        onClick={() => onAdjust(+1)}
+        className="shrink-0 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors"
+        style={{
+          width: 40, height: 40,
+          borderColor: `${color}60`,
+          color,
+          backgroundColor: `${color}10`,
+        }}
+        aria-label={`${label} erhöhen`}
+      >
+        +
+      </button>
     </div>
   );
 }
 
-// ── Talent Check ───────────────────────────────────────────────────────────────
-function TalentCheckTab({ charId }: { charId: string }) {
+// ── Talent tile for Probe tab ─────────────────────────────────────────────────
+function ProbeTalentTile({ talentName, catColor, effective, prob, attrs, charId, onSelect }: {
+  talentName: string;
+  catColor: string;
+  effective: number;
+  prob: number | null;
+  attrs: readonly AttributeKey[] | null;
+  charId: string;
+  onSelect: () => void;
+}) {
+  const char   = useStore(s => s.characters.find(c => c.id === charId));
+  const probPct = prob !== null ? Math.round(prob * 100) : null;
+  const probColor = probPct === null ? '#888'
+    : probPct >= 80 ? '#4FA968'
+    : probPct >= 50 ? '#C89020'
+    : '#C84820';
+
+  return (
+    <button
+      onClick={onSelect}
+      className="w-full text-left rounded-lg border transition-colors hover:opacity-90 overflow-hidden"
+      style={{ borderColor: `${catColor}30`, backgroundColor: `${catColor}08` }}
+    >
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex-1 text-sm font-semibold truncate" style={{ color: catColor }}>
+          {talentName}
+        </span>
+        {attrs && char && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            {attrs.map((a, i) => {
+              const meta = ATTR_MAP[a];
+              return (
+                <div
+                  key={i}
+                  className="rounded-full overflow-hidden"
+                  style={{ width: 14, height: 14, border: `1px solid ${meta?.color ?? '#888'}55` }}
+                  title={`${a}: ${char.attributes[a]}`}
+                >
+                  <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <span className="font-mono font-bold text-xs text-paper shrink-0">{effective}</span>
+        {probPct !== null && (
+          <span className="font-mono text-xs font-bold shrink-0 w-8 text-right" style={{ color: probColor }}>
+            {probPct}%
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ── Probe tab ─────────────────────────────────────────────────────────────────
+function ProbeTab({ charId }: { charId: string }) {
   const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [selectedTalent, setSelectedTalent] = useState('');
-  const [rolls, setRolls] = useState<(number | '')[]>(['', '', '']);
+  const [selectedTalent, setSelectedTalent] = useState<string | null>(null);
+  const [rolls, setRolls]   = useState<(number | '')[]>(['', '', '']);
   const [result, setResult] = useState<ReturnType<typeof resolveCheck> | null>(null);
 
   if (!char) return null;
 
-  const talentMeta = selectedTalent ? TALENT_MAP[selectedTalent] : null;
-  const talentValue = selectedTalent ? (char.talents[selectedTalent] ?? 0) : 0;
-  const attrValues = talentMeta?.attrs
+  const talentMeta   = selectedTalent ? TALENT_MAP[selectedTalent] : null;
+  const stored       = selectedTalent ? (char.talents[selectedTalent] ?? 0) : 0;
+  const fixedBonus   = selectedTalent ? talentFixedBonus(char, selectedTalent) : 0;
+  const effective    = stored + fixedBonus;
+  const isCombat     = talentMeta?.costMultiplier === 2;
+  const attrVals     = talentMeta?.attrs
     ? talentMeta.attrs.map(a => char.attributes[a as AttributeKey])
     : [0, 0, 0];
+  const prob = (!isCombat && talentMeta?.attrs && attrVals.length === 3)
+    ? calcSuccessProb(attrVals, effective)
+    : null;
+  const probPct = prob !== null ? Math.round(prob * 100) : null;
+  const probColor = probPct === null ? '#888'
+    : probPct >= 80 ? '#4FA968'
+    : probPct >= 50 ? '#C89020'
+    : '#C84820';
 
   function rollAuto() {
     const r = [randomD20(), randomD20(), randomD20()];
     setRolls(r);
     if (talentMeta) {
-      setResult(resolveCheck(r, attrValues, talentValue));
+      setResult(resolveCheck(r, attrVals, effective));
     }
   }
 
   function rollManual() {
-    const r = rolls.map(v => Number(v) || 0);
+    const r = rolls.map(v => (v === '' ? 0 : Number(v)));
     if (talentMeta) {
-      setResult(resolveCheck(r, attrValues, talentValue));
+      setResult(resolveCheck(r, attrVals, effective));
     }
   }
 
+  function deselect() {
+    setSelectedTalent(null);
+    setRolls(['', '', '']);
+    setResult(null);
+  }
+
+  function selectTalent(name: string) {
+    setSelectedTalent(name);
+    setRolls(['', '', '']);
+    setResult(null);
+  }
+
+  if (!selectedTalent) {
+    return (
+      <div className="p-4 space-y-4">
+        {TALENT_CATEGORIES.map(cat => {
+          const learned = cat.talents.filter(t => {
+            const s = char.talents[t.name] ?? 0;
+            const b = talentFixedBonus(char, t.name);
+            return s > 0 || b > 0;
+          });
+          if (learned.length === 0) return null;
+          return (
+            <div key={cat.key}>
+              <div className="flex items-center gap-2 mb-2">
+                <CatIcon src={cat.icon} size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
+                  {cat.label}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {learned.map(t => {
+                  const s = char.talents[t.name] ?? 0;
+                  const b = talentFixedBonus(char, t.name);
+                  const eff = s + b;
+                  const isCmbt = t.costMultiplier === 2;
+                  const av = t.attrs
+                    ? (t.attrs as AttributeKey[]).map(a => char.attributes[a])
+                    : null;
+                  const p = (!isCmbt && av && av.length === 3)
+                    ? calcSuccessProb(av, eff)
+                    : null;
+                  return (
+                    <ProbeTalentTile
+                      key={t.name}
+                      talentName={t.name}
+                      catColor={cat.color}
+                      effective={eff}
+                      prob={p}
+                      attrs={t.attrs}
+                      charId={charId}
+                      onSelect={() => selectTalent(t.name)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const catMeta = TALENT_CATEGORIES.find(cat =>
+    cat.talents.some(t => t.name === selectedTalent)
+  );
+
   return (
     <div className="p-4 space-y-4">
-      {/* Talent select */}
-      <div className="space-y-1">
-        <label className="text-xs text-muted">Talent auswählen</label>
-        <select
-          value={selectedTalent}
-          onChange={e => { setSelectedTalent(e.target.value); setResult(null); setRolls(['', '', '']); }}
-          className="w-full bg-raised border border-hairline rounded px-2 py-2 text-primary text-sm"
+      {/* Back + talent header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={deselect}
+          className="text-muted hover:text-primary transition-colors text-sm shrink-0"
         >
-          <option value="">— Talent wählen —</option>
-          {TALENT_CATEGORIES.map(cat => (
-            <optgroup key={cat.key} label={cat.label}>
-              {cat.talents.filter(t => (char.talents[t.name] ?? 0) > 0).map(t => (
-                <option key={t.name} value={t.name}>{t.name} ({char.talents[t.name]})</option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+          ← Zurück
+        </button>
+        <div
+          className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border"
+          style={{
+            borderColor: `${catMeta?.color ?? '#888'}40`,
+            backgroundColor: `${catMeta?.color ?? '#888'}0D`,
+          }}
+        >
+          {catMeta && <CatIcon src={catMeta.icon} size={16} />}
+          <span className="flex-1 font-semibold text-paper truncate">{selectedTalent}</span>
+          <span
+            className="font-mono font-bold text-sm px-2 py-0.5 rounded"
+            style={{ color: catMeta?.color ?? '#888', backgroundColor: `${catMeta?.color ?? '#888'}18` }}
+          >
+            TP {effective}
+          </span>
+        </div>
       </div>
 
-      {/* Talent info */}
-      {talentMeta && (
-        <div className="bg-surface border border-hairline rounded-lg p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-primary">{selectedTalent}</span>
-            <span className="font-mono text-xs text-paper bg-paper/10 px-1.5 rounded">TW: {talentValue}</span>
+      {/* Success probability */}
+      {prob !== null && (
+        <div className="rounded-xl border border-hairline bg-surface p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Erfolgswahrscheinlichkeit</span>
+            <span className="font-mono font-bold text-lg" style={{ color: probColor }}>{probPct}%</span>
           </div>
-          {talentMeta.attrs && (
-            <div className="flex gap-2 items-center">
-              {talentMeta.attrs.map((a, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <AttributeChip attr={a} size="sm" />
-                  <span className="font-mono text-xs text-muted">{char.attributes[a as AttributeKey]}</span>
+          <div className="h-2 rounded-full overflow-hidden bg-raised">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${(prob * 100).toFixed(1)}%`, backgroundColor: probColor, boxShadow: `0 0 6px ${probColor}88` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Attribute display */}
+      {talentMeta?.attrs && (
+        <div className="grid grid-cols-3 gap-2">
+          {(talentMeta.attrs as AttributeKey[]).map((a, i) => {
+            const meta = ATTR_MAP[a];
+            const val  = char.attributes[a];
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg border"
+                style={{ borderColor: `${meta?.color ?? '#888'}40`, backgroundColor: `${meta?.color ?? '#888'}0D` }}
+              >
+                <div
+                  className="rounded-full overflow-hidden shrink-0"
+                  style={{ width: 24, height: 24, boxShadow: `0 0 0 1.5px ${meta?.color ?? '#888'}88` }}
+                >
+                  <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="min-w-0">
+                  <div className="text-[9px] font-bold uppercase tracking-wider" style={{ color: meta?.color ?? '#888' }}>
+                    {a}
+                  </div>
+                  <div className="font-mono font-bold text-paper leading-none">{val}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {/* Roll inputs */}
-      {talentMeta && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-2">
-            {[0, 1, 2].map(i => (
-              <div key={i} className="flex flex-col gap-1">
-                <label className="text-xs text-muted text-center">
-                  Wurf {i + 1} ({talentMeta.attrs?.[i] ?? '—'}: {attrValues[i]})
-                </label>
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map(i => {
+            const attrKey = talentMeta?.attrs?.[i] as AttributeKey | undefined;
+            const attrMeta = attrKey ? ATTR_MAP[attrKey] : null;
+            return (
+              <div key={i} className="flex flex-col gap-1.5">
+                <div className="text-center text-[10px] text-muted font-mono">
+                  {attrKey && attrMeta ? (
+                    <span style={{ color: attrMeta.color }}>{attrKey} {char.attributes[attrKey]}</span>
+                  ) : (
+                    <span>Wurf {i + 1}</span>
+                  )}
+                </div>
                 <input
                   type="number"
                   min={1}
                   max={20}
                   value={rolls[i]}
                   onChange={e => {
-                    const r = [...rolls]; r[i] = e.target.value === '' ? '' : Number(e.target.value);
-                    setRolls(r); setResult(null);
+                    const r = [...rolls];
+                    r[i] = e.target.value === '' ? '' : Number(e.target.value);
+                    setRolls(r);
+                    setResult(null);
                   }}
-                  placeholder="1-20"
-                  className="bg-raised border border-hairline rounded px-2 py-2 text-primary text-center font-mono text-lg focus:outline-none focus:border-muted"
+                  placeholder="W20"
+                  className="bg-raised border border-hairline rounded-lg px-2 py-3 text-paper text-center font-mono text-xl font-bold focus:outline-none focus:border-muted"
                 />
               </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={rollAuto}
-              className="flex-1 py-2.5 bg-paper text-bg font-medium rounded text-sm hover:opacity-90"
-            >
-              🎲 Automatisch würfeln
-            </button>
-            <button
-              onClick={rollManual}
-              disabled={rolls.some(r => r === '')}
-              className="flex-1 py-2.5 border border-hairline rounded text-sm text-muted hover:text-primary disabled:opacity-30"
-            >
-              Auswerten
-            </button>
-          </div>
+            );
+          })}
         </div>
-      )}
+        <div className="flex gap-2">
+          <button
+            onClick={rollAuto}
+            className="flex-1 py-3 bg-paper text-bg font-bold rounded-lg text-sm hover:opacity-90 transition-opacity"
+          >
+            🎲 Automatisch würfeln
+          </button>
+          <button
+            onClick={rollManual}
+            disabled={rolls.some(r => r === '')}
+            className="flex-1 py-3 border border-hairline rounded-lg text-sm text-muted hover:text-primary disabled:opacity-30 transition-colors font-medium"
+          >
+            Auswerten
+          </button>
+        </div>
+      </div>
 
       {/* Result */}
       {result && (
-        <div className={`rounded-lg p-4 border-2 text-center ${result.success ? 'border-success bg-success/10' : 'border-danger bg-danger/10'}`}>
-          <div className={`font-display text-3xl font-bold tracking-widest ${result.success ? 'text-success' : 'text-danger'}`}>
+        <div
+          className="rounded-xl border-2 p-5 text-center space-y-3"
+          style={{
+            borderColor: result.success ? '#4FA96880' : '#C8304880',
+            backgroundColor: result.success ? '#4FA96810' : '#C8304810',
+          }}
+        >
+          <div
+            className="text-3xl font-bold tracking-widest"
+            style={{ color: result.success ? '#4FA968' : '#C83048' }}
+          >
             {result.success ? 'ERFOLG' : 'FEHLSCHLAG'}
           </div>
-          <div className="text-sm text-muted mt-2">
+          <div className="text-sm text-muted">
             {result.success
               ? `Verbleibende Talentpunkte: ${result.remaining}`
               : `Fehlende Punkte: ${Math.abs(result.remaining)}`
             }
           </div>
-          <div className="flex justify-center gap-3 mt-3">
-            {result.rolls.map((r, i) => (
-              <div key={i} className="text-center">
-                <div className={`font-mono text-lg ${r.success ? 'text-success' : 'text-danger'}`}>{r.roll}</div>
-                <div className="text-xs text-faint">{r.diff > 0 ? `−${r.diff}` : '✓'}</div>
-              </div>
-            ))}
+          <div className="flex justify-center gap-4">
+            {result.rolls.map((r, i) => {
+              const attrKey = talentMeta?.attrs?.[i] as AttributeKey | undefined;
+              const meta = attrKey ? ATTR_MAP[attrKey] : null;
+              return (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center font-mono text-lg font-bold border-2"
+                    style={{
+                      borderColor: r.success ? '#4FA96880' : '#C8304880',
+                      backgroundColor: r.success ? '#4FA96815' : '#C8304815',
+                      color: r.success ? '#4FA968' : '#C83048',
+                    }}
+                  >
+                    {r.roll}
+                  </div>
+                  {meta && (
+                    <span className="text-[9px] font-mono" style={{ color: meta.color }}>{attrKey}</span>
+                  )}
+                  <span className="text-[9px] text-faint font-mono">
+                    {r.diff > 0 ? `−${r.diff}` : '✓'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -190,9 +420,9 @@ function TalentCheckTab({ charId }: { charId: string }) {
   );
 }
 
-// ── Inventory ─────────────────────────────────────────────────────────────────
-function InventoryTab({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
+// ── Inventory tab ─────────────────────────────────────────────────────────────
+function InventarTab({ charId }: { charId: string }) {
+  const char           = useStore(s => s.characters.find(c => c.id === charId));
   const patchCharacter = useStore(s => s.patchCharacter);
   const [newName, setNewName] = useState('');
 
@@ -219,6 +449,7 @@ function InventoryTab({ charId }: { charId: string }) {
 
   return (
     <div className="p-4 space-y-3">
+      {/* Add item */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -226,21 +457,50 @@ function InventoryTab({ charId }: { charId: string }) {
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addItem()}
           placeholder="Gegenstand hinzufügen..."
-          className="flex-1 bg-raised border border-hairline rounded px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
+          className="flex-1 bg-raised border border-hairline rounded-lg px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted"
         />
-        <button onClick={addItem} className="px-3 py-2 bg-paper text-bg rounded text-sm font-medium hover:opacity-90">+</button>
+        <button
+          onClick={addItem}
+          className="px-4 py-2 bg-paper text-bg rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
+        >
+          +
+        </button>
       </div>
+
       {char.inventory.length === 0 ? (
-        <p className="text-faint text-sm text-center py-8">Kein Inventar vorhanden</p>
+        <div className="flex flex-col items-center justify-center py-12 text-faint">
+          <span className="text-3xl mb-2">🎒</span>
+          <p className="text-sm">Inventar leer</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {char.inventory.map(item => (
-            <div key={item.id} className="flex items-center gap-3 bg-surface border border-hairline rounded-lg px-3 py-2">
-              <span className="flex-1 text-sm text-primary">{item.name}</span>
-              <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-danger">−</button>
-              <span className="font-mono text-sm w-4 text-center">{item.qty}</span>
-              <button onClick={() => updateQty(item.id, +1)} className="w-6 h-6 text-xs border border-hairline rounded text-muted hover:text-success">+</button>
-              <button onClick={() => removeItem(item.id)} className="text-faint hover:text-danger text-xs ml-1">✕</button>
+            <div
+              key={item.id}
+              className="flex items-center gap-3 bg-surface border border-hairline rounded-xl px-4 py-2.5"
+            >
+              <span className="flex-1 text-sm text-primary font-medium">{item.name}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => updateQty(item.id, -1)}
+                  className="w-8 h-8 flex items-center justify-center border border-hairline rounded-lg text-muted hover:text-paper hover:border-muted transition-colors"
+                >
+                  −
+                </button>
+                <span className="font-mono text-sm text-paper w-6 text-center">{item.qty}</span>
+                <button
+                  onClick={() => updateQty(item.id, +1)}
+                  className="w-8 h-8 flex items-center justify-center border border-hairline rounded-lg text-muted hover:text-paper hover:border-muted transition-colors"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="ml-1 w-7 h-7 flex items-center justify-center text-faint hover:text-danger transition-colors text-sm rounded"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -249,9 +509,9 @@ function InventoryTab({ charId }: { charId: string }) {
   );
 }
 
-// ── Notes ─────────────────────────────────────────────────────────────────────
-function NotesTab({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
+// ── Notes tab ─────────────────────────────────────────────────────────────────
+function NotizenTab({ charId }: { charId: string }) {
+  const char           = useStore(s => s.characters.find(c => c.id === charId));
   const patchCharacter = useStore(s => s.patchCharacter);
   const [newText, setNewText] = useState('');
 
@@ -265,28 +525,57 @@ function NotesTab({ charId }: { charId: string }) {
     setNewText('');
   }
 
+  function removeNote(id: string) {
+    patchCharacter(charId, c => { c.notes = c.notes.filter(n => n.id !== id); });
+  }
+
   return (
     <div className="p-4 space-y-3">
       <div className="flex flex-col gap-2">
         <textarea
           value={newText}
           onChange={e => setNewText(e.target.value)}
-          placeholder="Neue Notiz..."
+          placeholder="Neue Notiz eingeben..."
           rows={3}
-          className="w-full bg-raised border border-hairline rounded px-3 py-2 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted resize-none"
+          className="w-full bg-raised border border-hairline rounded-xl px-3 py-2.5 text-primary text-sm placeholder:text-faint focus:outline-none focus:border-muted resize-none"
         />
-        <button onClick={addNote} className="self-end px-4 py-1.5 bg-paper text-bg rounded text-sm font-medium hover:opacity-90">
+        <button
+          onClick={addNote}
+          disabled={!newText.trim()}
+          className="self-end px-4 py-2 bg-paper text-bg rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-40 transition-opacity"
+        >
           Hinzufügen
         </button>
       </div>
-      <div className="space-y-2">
-        {[...char.notes].reverse().map(note => (
-          <div key={note.id} className="bg-surface border border-hairline rounded-lg p-3">
-            <p className="text-sm text-primary whitespace-pre-wrap">{note.text}</p>
-            <p className="text-xs text-faint mt-1">{new Date(note.timestamp).toLocaleString('de-DE')}</p>
-          </div>
-        ))}
-      </div>
+
+      {char.notes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-faint">
+          <span className="text-3xl mb-2">📝</span>
+          <p className="text-sm">Keine Notizen</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {[...char.notes].reverse().map(note => (
+            <div
+              key={note.id}
+              className="group relative bg-surface border border-hairline rounded-xl p-4"
+            >
+              <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">{note.text}</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10px] text-faint font-mono">
+                  {new Date(note.timestamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+                <button
+                  onClick={() => removeNote(note.id)}
+                  className="opacity-0 group-hover:opacity-100 text-faint hover:text-danger transition-all text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -294,43 +583,97 @@ function NotesTab({ charId }: { charId: string }) {
 // ── Main PlayScreen ────────────────────────────────────────────────────────────
 export function PlayScreen() {
   const activeId = useStore(s => s.activeId);
-  const char = useStore(s => s.characters.find(c => c.id === activeId));
+  const char     = useStore(s => s.characters.find(c => c.id === activeId));
+  const patchCharacter = useStore(s => s.patchCharacter);
   const { setScreen } = useStore();
   const [activeTab, setActiveTab] = useState<PlayTab>('probe');
 
   if (!char || !activeId) return null;
 
+  const prof   = char.profession ? PROFESSION_MAP[char.profession] : null;
+  const maxLE  = calcLE(char);
+  const maxGG  = calcGG(char);
+
+  function adjustLE(delta: number) {
+    patchCharacter(activeId!, c => {
+      c.currentLE = Math.max(0, Math.min(maxLE, c.currentLE + delta));
+    });
+  }
+  function adjustGG(delta: number) {
+    patchCharacter(activeId!, c => {
+      c.currentGG = Math.max(0, Math.min(maxGG, c.currentGG + delta));
+    });
+  }
+
+  const TAB_LABELS: Record<PlayTab, string> = {
+    probe:    'Probe',
+    inventar: 'Inventar',
+    notizen:  'Notizen',
+  };
+
   return (
     <div className="flex flex-col h-full bg-bg">
-      {/* Header */}
-      <header className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-hairline bg-surface">
-        <button onClick={() => setScreen('sheet')} className="text-muted hover:text-primary text-sm">←</button>
-        <span className="font-display text-base text-paper flex-1 truncate">{char.info.name}</span>
+
+      {/* ── Sticky header ── */}
+      <header className="shrink-0 sticky top-0 z-30 flex items-center gap-3 px-4 py-2.5 border-b border-hairline bg-surface">
+        <button
+          onClick={() => setScreen('sheet')}
+          className="text-muted hover:text-primary text-sm transition-colors shrink-0"
+        >
+          ← Dossier
+        </button>
+        <span className="flex-1 min-w-0 font-bold text-paper text-sm truncate">
+          {char.info.name || 'Unbenannt'}
+        </span>
+        {prof && (
+          <span className="text-[10px] font-mono shrink-0" style={{ color: prof.color }}>
+            {prof.labelSingular}
+          </span>
+        )}
       </header>
 
-      {/* Health bars */}
-      <HealthSection charId={activeId} />
+      {/* ── Sticky vitals section ── */}
+      <div className="shrink-0 sticky top-[41px] z-20 bg-surface border-b border-hairline px-4 pt-3 pb-3 space-y-3">
+        <VitalBar
+          label="LE"
+          icon="/icons/attr/le.png"
+          color={C.LE}
+          current={char.currentLE}
+          max={maxLE}
+          onAdjust={adjustLE}
+        />
+        <VitalBar
+          label="GG"
+          icon="/icons/attr/gg.png"
+          color={C.GG}
+          current={char.currentGG}
+          max={maxGG}
+          onAdjust={adjustGG}
+        />
+      </div>
 
-      {/* Tab bar */}
+      {/* ── Tab bar ── */}
       <div className="shrink-0 flex border-b border-hairline bg-surface">
         {(['probe', 'inventar', 'notizen'] as PlayTab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 text-sm capitalize transition-colors border-b-2 ${
-              activeTab === tab ? 'border-paper text-primary' : 'border-transparent text-muted hover:text-primary'
-            }`}
+            className="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
+            style={{
+              borderBottomColor: activeTab === tab ? '#E8E0D0' : 'transparent',
+              color: activeTab === tab ? '#E8E0D0' : '#6B6F7C',
+            }}
           >
-            {tab === 'probe' ? 'Probe' : tab === 'inventar' ? 'Inventar' : 'Notizen'}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto pb-20">
-        {activeTab === 'probe' && <TalentCheckTab charId={activeId} />}
-        {activeTab === 'inventar' && <InventoryTab charId={activeId} />}
-        {activeTab === 'notizen' && <NotesTab charId={activeId} />}
+        {activeTab === 'probe'    && <ProbeTab    charId={activeId} />}
+        {activeTab === 'inventar' && <InventarTab charId={activeId} />}
+        {activeTab === 'notizen'  && <NotizenTab  charId={activeId} />}
       </div>
     </div>
   );
