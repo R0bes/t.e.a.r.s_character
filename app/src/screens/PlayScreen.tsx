@@ -191,36 +191,29 @@ function ProbeTab({ charId }: { charId: string }) {
   if (!selectedTalent) {
     return (
       <div className="p-4 space-y-4">
-        {TALENT_CATEGORIES.map(cat => {
-          const learned = cat.talents.filter(t => {
-            const s = char.talents[t.name] ?? 0;
-            const b = talentFixedBonus(char, t.name);
-            return s > 0 || b > 0;
-          });
-          if (learned.length === 0) return null;
-          return (
-            <div key={cat.key}>
-              <div className="flex items-center gap-2 mb-2">
-                <CatIcon src={cat.icon} size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
-                  {cat.label}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                {learned.map(t => {
-                  const s = char.talents[t.name] ?? 0;
-                  const b = talentFixedBonus(char, t.name);
-                  const eff = s + b;
-                  const isCmbt = t.costMultiplier === 2;
-                  const av = t.attrs
-                    ? (t.attrs as AttributeKey[]).map(a => char.attributes[a])
-                    : null;
-                  const p = (!isCmbt && av && av.length === 3)
-                    ? calcSuccessProb(av, eff)
-                    : null;
-                  return (
+        {TALENT_CATEGORIES.map(cat => (
+          <div key={cat.key}>
+            <div className="flex items-center gap-2 mb-2">
+              <CatIcon src={cat.icon} size={16} />
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
+                {cat.label}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {cat.talents.map(t => {
+                const s = char.talents[t.name] ?? 0;
+                const b = talentFixedBonus(char, t.name);
+                const eff = s + b;
+                const isCmbt = t.costMultiplier === 2;
+                const av = t.attrs
+                  ? (t.attrs as AttributeKey[]).map(a => char.attributes[a])
+                  : null;
+                const p = (!isCmbt && av && av.length === 3)
+                  ? calcSuccessProb(av, eff)
+                  : null;
+                return (
+                  <div key={t.name} style={{ opacity: eff === 0 ? 0.4 : 1 }}>
                     <ProbeTalentTile
-                      key={t.name}
                       talentName={t.name}
                       catColor={cat.color}
                       effective={eff}
@@ -229,12 +222,12 @@ function ProbeTab({ charId }: { charId: string }) {
                       charId={charId}
                       onSelect={() => selectTalent(t.name)}
                     />
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   }

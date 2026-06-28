@@ -153,7 +153,6 @@ export function CharacterSheetScreen() {
   const containerRef    = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(300);
   const [chartExpanded, setChartExpanded]   = useState(false);
-  const [selectedCat,   setSelectedCat]     = useState(TALENT_CATEGORIES[0].key);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -205,14 +204,6 @@ export function CharacterSheetScreen() {
     char.info.weight ? `${char.info.weight} kg` : null,
     char.info.gender || null,
   ].filter((s): s is string => s !== null);
-
-  const activeCatMeta = TALENT_CATEGORIES.find(c => c.key === selectedCat)!;
-
-  const learnedTalents = activeCatMeta.talents.filter(t => {
-    const stored = char.talents[t.name] ?? 0;
-    const bonus  = talentFixedBonus(char, t.name);
-    return stored > 0 || bonus > 0;
-  });
 
   const chartH = Math.max(containerWidth, HEADER_H);
 
@@ -446,115 +437,94 @@ export function CharacterSheetScreen() {
             {/* ── Right column ── */}
             <div className="flex flex-col gap-3 p-4">
 
-              {/* Talent section */}
-              <div className="rounded-xl border border-hairline bg-surface overflow-hidden">
-                {/* Category tabs */}
-                <div className="flex border-b border-hairline">
-                  {TALENT_CATEGORIES.map(cat => {
-                    const count = cat.talents.filter(t =>
-                      (char.talents[t.name] ?? 0) > 0 || talentFixedBonus(char, t.name) > 0
-                    ).length;
-                    const isActive = selectedCat === cat.key;
-                    return (
-                      <button
-                        key={cat.key}
-                        onClick={() => { setSelectedCat(cat.key); setChartExpanded(false); }}
-                        className="flex-1 flex flex-col items-center gap-0.5 py-2 px-1 transition-colors border-b-2"
-                        style={{
-                          borderBottomColor: isActive ? cat.color : 'transparent',
-                          backgroundColor: isActive ? `${cat.color}10` : 'transparent',
-                        }}
-                      >
-                        <CatIcon src={cat.icon} size={18} />
-                        {count > 0 && (
-                          <span className="text-[9px] font-mono font-bold leading-none" style={{ color: cat.color }}>
-                            {count}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Talent section — alle Kategorien, alle Talente */}
+              <div className="flex flex-col gap-3">
+                {TALENT_CATEGORIES.map(cat => (
+                  <div key={cat.key} className="rounded-xl border border-hairline bg-surface overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-hairline">
+                      <CatIcon src={cat.icon} size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
+                        {cat.label}
+                      </span>
+                    </div>
+                    <div className="p-2 flex flex-col gap-1.5">
+                      {cat.talents.map(t => {
+                        const stored    = char.talents[t.name] ?? 0;
+                        const bonus     = talentFixedBonus(char, t.name);
+                        const effective = stored + bonus;
+                        const isEmpty   = effective === 0;
+                        const isCombat  = t.costMultiplier === 2;
+                        const attrVals  = t.attrs
+                          ? (t.attrs as readonly AttributeKey[]).map(a => char.attributes[a])
+                          : null;
+                        const prob = (!isCombat && attrVals && attrVals.length === 3)
+                          ? calcSuccessProb(attrVals, effective)
+                          : null;
+                        const probPct   = prob !== null ? Math.round(prob * 100) : null;
+                        const probColor = probPct === null ? '#888'
+                          : probPct >= 80 ? '#4FA968'
+                          : probPct >= 50 ? '#C89020'
+                          : '#C84820';
 
-                {/* Talent list */}
-                <div className="p-3 flex flex-col gap-2">
-                  {learnedTalents.length === 0 ? (
-                    <p className="text-faint text-xs text-center py-4">Keine Talente in dieser Kategorie</p>
-                  ) : (
-                    learnedTalents.map(t => {
-                      const stored    = char.talents[t.name] ?? 0;
-                      const bonus     = talentFixedBonus(char, t.name);
-                      const effective = stored + bonus;
-                      const isCombat  = t.costMultiplier === 2;
-                      const attrVals  = t.attrs
-                        ? (t.attrs as readonly AttributeKey[]).map(a => char.attributes[a])
-                        : null;
-                      const prob = (!isCombat && attrVals && attrVals.length === 3)
-                        ? calcSuccessProb(attrVals, effective)
-                        : null;
-                      const probPct = prob !== null ? Math.round(prob * 100) : null;
-                      const probColor = probPct === null ? '#888'
-                        : probPct >= 80 ? '#4FA968'
-                        : probPct >= 50 ? '#C89020'
-                        : '#C84820';
-
-                      return (
-                        <div
-                          key={t.name}
-                          className="rounded-lg border overflow-hidden"
-                          style={{
-                            borderColor: isCombat ? `${activeCatMeta.color}50` : `${activeCatMeta.color}28`,
-                            backgroundColor: isCombat ? `${activeCatMeta.color}12` : `${activeCatMeta.color}08`,
-                          }}
-                        >
-                          <div className="flex items-center gap-2 px-3 py-2">
-                            <span className="flex-1 text-sm font-semibold truncate" style={{ color: activeCatMeta.color }}>
-                              {t.name}
-                            </span>
-                            {isCombat && (
-                              <span className="text-[8px] font-bold uppercase tracking-wider text-faint border border-hairline rounded px-1 py-0.5">
-                                Kampf
+                        return (
+                          <div
+                            key={t.name}
+                            className="rounded-lg border overflow-hidden"
+                            style={{
+                              borderColor: isCombat ? `${cat.color}50` : `${cat.color}28`,
+                              backgroundColor: isCombat ? `${cat.color}12` : `${cat.color}08`,
+                              opacity: isEmpty ? 0.4 : 1,
+                            }}
+                          >
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <span className="flex-1 text-sm font-semibold truncate" style={{ color: cat.color }}>
+                                {t.name}
                               </span>
-                            )}
-                            {!isCombat && t.attrs && (
-                              <div className="flex items-center gap-0.5">
-                                {(t.attrs as readonly AttributeKey[]).map((a, ai) => {
-                                  const meta = ATTR_MAP[a];
-                                  return (
-                                    <div
-                                      key={ai}
-                                      className="rounded-full overflow-hidden"
-                                      style={{ width: 16, height: 16, border: `1px solid ${meta?.color ?? '#888'}55` }}
-                                      title={meta?.name}
-                                    >
-                                      <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            <span className="font-mono font-bold text-sm text-paper">{effective}</span>
-                          </div>
-                          {prob !== null && (
-                            <div className="px-3 pb-2">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{ width: `${(prob * 100).toFixed(1)}%`, backgroundColor: probColor }}
-                                  />
-                                </div>
-                                <span className="font-mono text-[10px] font-bold w-8 text-right" style={{ color: probColor }}>
-                                  {probPct}%
+                              {isCombat && (
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-faint border border-hairline rounded px-1 py-0.5">
+                                  Kampf
                                 </span>
-                              </div>
+                              )}
+                              {!isCombat && t.attrs && (
+                                <div className="flex items-center gap-0.5">
+                                  {(t.attrs as readonly AttributeKey[]).map((a, ai) => {
+                                    const meta = ATTR_MAP[a];
+                                    return (
+                                      <div
+                                        key={ai}
+                                        className="rounded-full overflow-hidden"
+                                        style={{ width: 16, height: 16, border: `1px solid ${meta?.color ?? '#888'}55` }}
+                                        title={meta?.name}
+                                      >
+                                        <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              <span className="font-mono font-bold text-sm text-paper">{effective}</span>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                            {prob !== null && !isEmpty && (
+                              <div className="px-3 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all"
+                                      style={{ width: `${(prob * 100).toFixed(1)}%`, backgroundColor: probColor }}
+                                    />
+                                  </div>
+                                  <span className="font-mono text-[10px] font-bold w-8 text-right" style={{ color: probColor }}>
+                                    {probPct}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Specs section */}
