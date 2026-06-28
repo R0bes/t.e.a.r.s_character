@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { Character, Screen } from '../types/character';
 import { freshAttributes } from '../data/attributes';
 import { calcLE, calcGG } from '../rules/derivedValues';
+import { clampAllCategories } from '../rules/talentBudget';
 
 interface ToastMessage {
   id: string;
@@ -88,6 +89,7 @@ export const useStore = create<AppState & AppActions>()(
             if (c.id !== id) return c;
             const copy = deepClone(c);
             updater(copy);
+            clampAllCategories(copy);
             copy.updatedAt = Date.now();
             // keep currentLE/GG in sync with attributes if never manually changed
             copy.currentLE = calcLE(copy);

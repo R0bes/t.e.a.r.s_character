@@ -1,4 +1,4 @@
-import type { Character, TalentCategory } from '../types/character';
+import type { Character, Specification, TalentCategory } from '../types/character';
 import { PROFESSION_MAP, VARIABLE_PTS } from '../data/professions';
 import { TALENT_CATEGORY_OF } from '../data/talents';
 import { ABILITY_MAP } from '../data/specialAbilities';
@@ -94,4 +94,48 @@ export function talentSpecBonusBreakdown(character: Character, cat: TalentCatego
   const job  = talentJobPts(character, cat);
   const spec = talentSpecBonus(character, cat);
   return { job, spec, total: BASE_TALENT_PTS + job + spec };
+}
+
+const ALL_CATS: TalentCategory[] = ['koerperlich', 'motorisch', 'geistig', 'sozial', 'kampf'];
+
+/**
+ * Reduce distributed talent points in a category until spent <= available.
+ * Subtracts 1 point at a time from each talent in the category (round-robin).
+ */
+function clampCategory(character: Character, cat: TalentCategory): void {
+  let overflow = talentSpent(character, cat) - talentAvailable(character, cat);
+  if (overflow <= 0) return;
+  while (overflow > 0) {
+    let anyReduced = false;
+    for (const [name, val] of Object.entries(character.talents)) {
+      if (overflow <= 0) break;
+      if ((val ?? 0) > 0 && getCategoryOf(character, name) === cat) {
+        character.talents[name] = (val ?? 0) - 1;
+        overflow -= getCostMultiplierOf(character, name);
+        anyReduced = true;
+      }
+    }
+    if (!anyReduced) break;
+  }
+}
+
+/** Call after any budget-affecting change (profession, spec) to keep distribution valid. */
+export function clampAllCategories(character: Character): void {
+  for (const cat of ALL_CATS) clampCategory(character, cat);
+}
+
+/**
+ * Returns false if adding `spec` (optionally replacing `replacing`) would make
+ * talentAvailable < 0 for the spec's category. Specs with modifier >= 0 are always fine.
+ */
+export function canAddSpec(
+  character: Character,
+  spec: Specification,
+  replacing: Specification | null = null,
+): boolean {
+  if (spec.modifier >= 0) return true;
+  // talentAvailable already includes replacing.modifier (it's in the character state).
+  // New available = current + (spec.modifier - replacing.modifier)
+  const delta = spec.modifier - (replacing?.modifier ?? 0);
+  return talentAvailable(character, spec.category) + delta >= 0;
 }

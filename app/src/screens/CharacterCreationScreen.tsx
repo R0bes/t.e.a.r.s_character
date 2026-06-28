@@ -1,22 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { TabGrundinfo }   from '../components/creation/TabGrundinfo';
 import { Tab3Attributes } from '../components/creation/Tab3Attributes';
-import { Tab4Talents }    from '../components/creation/Tab4Talents';
-import { Tab7FreeSpecs }  from '../components/creation/Tab7FreeSpecs';
 import { Tab9Overview }   from '../components/creation/Tab9Overview';
 
-// ── Mobile: 5 tabs ────────────────────────────────────────────────────────────
+// ── Mobile: 2 tabs ────────────────────────────────────────────────────────────
 const MOBILE_TABS = [
-  { label: 'Grundinfo' },
-  { label: 'Attribute' },
-  { label: 'Talente'   },
-  { label: 'Spezifika' },
+  { label: 'Charakter' },
   { label: 'Übersicht' },
 ];
-
-// ── Desktop: 4 always-visible panels (no overview) ───────────────────────────
-const DESKTOP_PANELS = ['Grundinfo', 'Attribute', 'Talente', 'Spezifika'] as const;
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(
@@ -38,7 +29,6 @@ function isTabComplete(
 ): boolean {
   switch (tabIndex) {
     case 0: return !!char.info.name && !!char.profession;
-    case 1: return Object.values(char.attributes).some(v => v > 8);
     default: return true;
   }
 }
@@ -50,6 +40,8 @@ export function CharacterCreationScreen() {
   const tab                   = useStore(s => s.creationTab);
   const { setCreationTab, setScreen } = useStore();
   const isDesktop             = useIsDesktop();
+  const [mode, setMode]       = useState<'edit' | 'fix'>('edit');
+  const toggleMode            = useCallback(() => setMode(m => m === 'edit' ? 'fix' : 'edit'), []);
 
   if (!char || !activeId) return null;
 
@@ -70,50 +62,11 @@ export function CharacterCreationScreen() {
       {/* ── Desktop: 4 panels side by side ── */}
       {isDesktop && (
         <>
-          {/* Header */}
-          <header className="shrink-0 flex items-center gap-4 px-4 py-3 bg-surface border-b border-hairline">
-            <button
-              onClick={() => setScreen('list')}
-              className="text-faint hover:text-muted transition-colors text-sm"
-            >
-              ← Liste
-            </button>
-            <span className="font-display text-base text-paper flex-1 truncate">
-              {char.info.name || 'Neuer Charakter'}
-            </span>
-            <button
-              onClick={() => setScreen('sheet')}
-              className="text-xs text-muted hover:text-primary transition-colors border border-hairline rounded px-3 py-1.5"
-            >
-              Charakterbogen →
-            </button>
-          </header>
 
-          {/* Panel column headers */}
-          <div className="shrink-0 flex border-b border-hairline bg-surface/60">
-            {DESKTOP_PANELS.map(label => (
-              <div
-                key={label}
-                className="flex-1 px-3 py-1.5 text-[10px] text-faint font-medium tracking-widest uppercase text-center border-r border-hairline last:border-r-0"
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-
-          {/* 4 panels */}
+          {/* Panel */}
           <div className="flex-1 flex overflow-hidden">
-            <div className="flex-1 min-w-0 overflow-y-auto border-r border-hairline">
-              <TabGrundinfo charId={activeId} />
-            </div>
-            <div className="flex-1 min-w-0 overflow-y-auto border-r border-hairline">
-              <Tab3Attributes charId={activeId} />
-            </div>
-            <div className="flex-1 min-w-0 overflow-y-auto border-r border-hairline">
-              <Tab4Talents charId={activeId} />
-            </div>
             <div className="flex-1 min-w-0 overflow-y-auto">
-              <Tab7FreeSpecs charId={activeId} />
+              <Tab3Attributes charId={activeId} mode={mode} />
             </div>
           </div>
         </>
@@ -171,11 +124,8 @@ export function CharacterCreationScreen() {
 
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto">
-            {tab === 0 && <TabGrundinfo charId={activeId} />}
-            {tab === 1 && <Tab3Attributes charId={activeId} />}
-            {tab === 2 && <Tab4Talents charId={activeId} />}
-            {tab === 3 && <Tab7FreeSpecs charId={activeId} />}
-            {tab === 4 && <Tab9Overview charId={activeId} />}
+            {tab === 0 && <Tab3Attributes charId={activeId} mode={mode} />}
+            {tab === 1 && <Tab9Overview charId={activeId} />}
           </div>
 
           {/* Footer navigation */}
@@ -195,6 +145,29 @@ export function CharacterCreationScreen() {
           </footer>
         </>
       )}
+
+      {/* ── Floating mode toggle — fixed, clears mobile footer ── */}
+      <button
+        onClick={toggleMode}
+        className="fixed bottom-20 right-4 lg:bottom-4 z-50 w-10 h-10 rounded-full flex items-center justify-center"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          border: `1.5px solid ${mode === 'fix' ? '#22c55e60' : '#8C8F9960'}`,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+          transition: 'border-color 0.3s ease',
+        }}
+        aria-label={mode === 'fix' ? 'Edit-Modus' : 'Fix-Modus'}
+      >
+        {mode === 'fix' ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C8F99" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+          </svg>
+        )}
+      </button>
     </div>
   );
 }

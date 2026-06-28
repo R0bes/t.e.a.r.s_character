@@ -6,7 +6,7 @@ import type { Specification, TalentCategory } from '../../types/character';
 import { CatIcon } from '../ui/CatIcon';
 
 // ── Custom spec form ──────────────────────────────────────────────────────────
-function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => void }) {
+export function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => void }) {
   const patch = useStore(s => s.patchCharacter);
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const [name, setName]       = useState('');
@@ -84,78 +84,61 @@ function CustomSpecForm({ charId, onClose }: { charId: string; onClose: () => vo
 }
 
 // ── Single spec tile ──────────────────────────────────────────────────────────
-function SpecTile({ spec, selectedAs, reservedAs, onToggle }: {
+export function SpecTile({ spec, selectedAs, reservedAs, onToggle, showIcon = true, mode = 'edit' }: {
   spec: Specification;
   selectedAs: 'frei +' | 'frei −' | null;
   reservedAs: 'beruf' | 'hobby' | null;
   onToggle: () => void;
+  showIcon?: boolean;
+  mode?: 'edit' | 'fix';
 }) {
   const catMeta  = TALENT_CAT_MAP[spec.category];
-  const color    = catMeta.color;
-  const isMalus  = spec.modifier < 0;
-  const modColor = isMalus ? '#E83050' : '#4FA968';
+  const catColor = catMeta.color;
 
-  const ribbonLabel = selectedAs
-    ?? (reservedAs === 'beruf' ? 'Beruf' : reservedAs === 'hobby' ? '1. Hobby' : null);
-  const ribbonColor = selectedAs === 'frei +' ? '#4FA968'
-    : selectedAs === 'frei −' ? '#E83050'
-    : color;
-  const isActive   = !!ribbonLabel;
+  // modifier < 0 = good for character (green), modifier > 0 = bad (red)
+  const tileColor = spec.modifier < 0 ? '#4FA968' : '#E83050';
+
+  const isActive = !!selectedAs || !!reservedAs;
   const isHobby    = reservedAs === 'hobby';
   const modIgnored = isHobby;
 
   return (
     <button
       onClick={onToggle}
-      disabled={!!reservedAs}
-      className={`relative text-left w-full p-3 pb-10 rounded-lg border transition-all overflow-hidden flex flex-col gap-2 ${
+      disabled={!!reservedAs || mode === 'fix'}
+      draggable={mode === 'edit'}
+      onDragStart={e => {
+        if (mode !== 'edit') return;
+        e.dataTransfer.setData('application/x-tears-spec', JSON.stringify(spec));
+        e.dataTransfer.setData(spec.modifier > 0 ? 'application/x-tears-spec-pos' : 'application/x-tears-spec-neg', '1');
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
+      className={`relative text-left w-full p-3 rounded-lg border transition-all overflow-hidden flex flex-col gap-2 ${
         reservedAs ? 'cursor-default' : 'hover:opacity-90'
       }`}
       style={{
-        backgroundColor: isActive ? `${color}20` : `${color}0C`,
-        borderColor:     isActive ? `${color}60` : `${color}28`,
+        backgroundColor: isActive ? `${tileColor}20` : `${tileColor}0C`,
+        borderColor:     isActive ? `${tileColor}60` : `${tileColor}28`,
       }}
     >
-      {/* Header: icon + name */}
+      {/* Header: icon + name + modifier on same line */}
       <div className="flex items-center gap-2">
-        <CatIcon src={catMeta.icon} size={26} className="shrink-0" />
-        <span className="text-base font-semibold leading-tight" style={{ color }}>
+        {showIcon && <CatIcon src={catMeta.icon} size={26} className="shrink-0" />}
+        <span className="text-sm font-semibold leading-tight" style={{ color: catColor }}>
           {spec.name}
+        </span>
+        <span className="ml-auto relative font-mono font-bold text-xl leading-none shrink-0" style={{ color: catColor, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.25s ease' }}>
+          {spec.modifier > 0 ? '+' : ''}{spec.modifier}
+          {modIgnored && (
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="44" stroke="#E83050" strokeWidth="10"/>
+              <line x1="18" y1="82" x2="82" y2="18" stroke="#E83050" strokeWidth="10" strokeLinecap="round"/>
+            </svg>
+          )}
         </span>
       </div>
       {/* Description */}
       <p className="text-[11px] text-faint leading-snug">{spec.description}</p>
-      {/* Modifier bottom-right */}
-      <span className="absolute bottom-2.5 right-3 flex items-center justify-center">
-        <span className="text-2xl font-mono font-bold" style={{ color: modColor }}>
-          {spec.modifier > 0 ? '+' : ''}{spec.modifier}
-        </span>
-        {modIgnored && (
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="50" r="44" stroke="#E83050" strokeWidth="10"/>
-            <line x1="18" y1="82" x2="82" y2="18" stroke="#E83050" strokeWidth="10" strokeLinecap="round"/>
-          </svg>
-        )}
-      </span>
-      {ribbonLabel && (
-        <span
-          className="absolute pointer-events-none"
-          style={{
-            bottom: 8, left: -22,
-            width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '2px 0',
-            backgroundColor: `${ribbonColor}CC`,
-            color: '#fff',
-            transform: 'rotate(45deg)',
-            transformOrigin: 'center',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {ribbonLabel}
-        </span>
-      )}
     </button>
   );
 }
@@ -246,7 +229,7 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
       </div>
 
       {/* ── Spec tiles for selected category ── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-1.5">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 grid grid-cols-2 gap-1.5 content-start">
         {visibleSpecs.map(spec => (
           <SpecTile
             key={spec.name}
@@ -260,13 +243,13 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
         {!showForm ? (
           <button
             onClick={() => setShowForm(true)}
-            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors mt-1"
+            className="col-span-2 w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors mt-1"
           >
             <span className="text-sm leading-none">+</span>
             <span className="text-xs">Neues Spezifikum</span>
           </button>
         ) : (
-          <div className="mt-1">
+          <div className="col-span-2 mt-1">
             <CustomSpecForm charId={charId} onClose={() => setShowForm(false)} />
           </div>
         )}

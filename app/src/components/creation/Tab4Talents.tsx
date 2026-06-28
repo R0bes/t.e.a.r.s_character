@@ -5,34 +5,24 @@ import { CatIcon } from '../ui/CatIcon';
 import {
   talentAvailable, talentSpent, talentCanIncrease,
   talentFixedBonus, talentSpecBonusBreakdown,
-  BASE_TALENT_PTS,
-  varPtsLeft,
+  BASE_TALENT_PTS, varPtsLeft, getCategoryOf,
 } from '../../rules/talentBudget';
 import { calcSuccessProb } from '../../rules/checks';
 import { SPECIAL_ABILITIES } from '../../data/specialAbilities';
 import { VARIABLE_PTS } from '../../data/professions';
 import { ATTR_MAP } from '../../data/attributes';
-import type { AttributeKey, TalentCategory } from '../../types/character';
+import type { AttributeKey, TalentCategory, Specification } from '../../types/character';
+import { SPECIFICATIONS } from '../../data/specifications';
+import { SpecTile, CustomSpecForm } from './Tab7FreeSpecs';
 
-// ── Smooth TP health bar ─────────────────────────────────────────────────────
-function TpBar({ left, total, color }: { left: number; total: number; color: string }) {
-  const pct  = total > 0 ? Math.max(0, Math.min(100, (left / total) * 100)) : 0;
-  const over = left < 0;
-  return (
-    <div className="h-2 w-full rounded-full overflow-hidden bg-raised">
-      <div
-        className="h-full rounded-full transition-all duration-200"
-        style={{ width: `${pct}%`, backgroundColor: over ? '#D1453B' : color }}
-      />
-    </div>
-  );
-}
+export type TabKey = TalentCategory | 'abilities';
+
 
 const ATTR_KEYS: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 
 
 // ── Custom Talent Form ────────────────────────────────────────────────────────
-function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
+export function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
   catKey?: TalentCategory | null; charId: string; onClose: () => void;
 }) {
   const patch = useStore(s => s.patchCharacter);
@@ -125,22 +115,26 @@ function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
   );
 }
 
-function qualityRibbon(effective: number): { label: string; color: string } | null {
-  if (effective === 0)  return null;
-  if (effective <= 4)   return { label: 'Anfänger', color: '#E08C3C' };
-  if (effective <= 9)   return { label: 'Geübt',    color: '#8C8F99' };
-  return                       { label: 'Profi',    color: '#4FA968' };
+export const QUALITY_TIERS = [
+  { min: 10, label: 'Q3', color: '#D4A830' }, // Gold
+  { min:  5, label: 'Q2', color: '#A8A9AD' }, // Silber
+  { min:  1, label: 'Q1', color: '#B87040' }, // Bronze
+  { min:  0, label: 'Q0', color: '#4A4D58' }, // Ungelernt
+] as const;
+
+function qualityLevel(effective: number): { label: string; color: string } {
+  return QUALITY_TIERS.find(t => effective >= t.min)!;
 }
 
 // ── Talent row ────────────────────────────────────────────────────────────────
-function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, catIcon }: {
+export function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, mode }: {
   charId: string;
   talentName: string;
   attrs: readonly AttributeKey[] | null;
   costMul: 1 | 2;
   isCustom: boolean;
   catColor: string;
-  catIcon: string;
+  mode: 'edit' | 'fix';
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
@@ -157,144 +151,226 @@ function TalentTile({ charId, talentName, attrs, costMul, isCustom, catColor, ca
   const isCombat   = costMul === 2;
   const canInc     = talentCanIncrease(char, talentName);
   const canDec     = stored > 0;
-  const qual       = qualityRibbon(effective);
+  const qual       = qualityLevel(effective);
 
   const isSpecial  = isHobby1 || isHobby2 || isProfTal;
   const isEmpty    = effective === 0;
   const tileBg     = isEmpty ? `${catColor}06` : `${catColor}10`;
   const tileBorder = isSpecial ? `${catColor}60` : isEmpty ? `${catColor}18` : `${catColor}28`;
-  const srcLabel   = isProfTal ? 'Beruf' : isHobby1 ? '1. Hobby' : isHobby2 ? '2. Hobby' : null;
 
-  const prob = (!isCombat && attrs && attrs.length === 3)
-    ? calcSuccessProb(attrs.map(a => char.attributes[a]), effective)
-    : null;
-  const probColor = prob === null ? catColor
-    : prob >= 0.75 ? '#4FA968'
-    : prob >= 0.5  ? '#C8A020'
-    : '#C83030';
 
   const attrVals = attrs ? attrs.map(a => char.attributes[a]) : null;
-  const deltaPlus  = (prob !== null && attrVals && canInc)
-    ? calcSuccessProb(attrVals, effective + 1) - prob
+  const prob = (!isCombat && attrVals && attrVals.length === 3)
+    ? calcSuccessProb(attrVals, effective)
     : null;
-  const deltaMinus = (prob !== null && attrVals && canDec)
-    ? prob - calcSuccessProb(attrVals, effective - 1)
+  const p1  = attrVals ? calcSuccessProb(attrVals, 1)  : null;
+  const p5  = attrVals ? calcSuccessProb(attrVals, 5)  : null;
+  const p10 = attrVals ? calcSuccessProb(attrVals, 10) : null;
+  const Q = { q3: QUALITY_TIERS[0].color, q2: QUALITY_TIERS[1].color, q1: QUALITY_TIERS[2].color, q0: QUALITY_TIERS[3].color };
+
+  const cat        = getCategoryOf(char, talentName);
+  const maxTickTP  = cat ? Math.max(effective, talentAvailable(char, cat)) : 14;
+  const tickProbs  = (attrVals && !isCombat)
+    ? Array.from({ length: maxTickTP + 1 }, (_, tp) => calcSuccessProb(attrVals, tp))
     : null;
+
 
   return (
     <div
-      className="relative flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border transition-colors overflow-hidden"
-      style={{ backgroundColor: tileBg, borderColor: tileBorder, opacity: isEmpty ? 0.55 : 1 }}
+      className="relative flex flex-col rounded-lg border transition-colors overflow-hidden"
+      style={{ backgroundColor: tileBg, borderColor: tileBorder, opacity: isEmpty && mode !== 'fix' ? 0.55 : 1 }}
+      draggable={mode === 'edit'}
+      onDragStart={e => {
+        if (mode !== 'edit') return;
+        e.dataTransfer.setData('application/x-tears-talent', talentName);
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
     >
-      {/* Titel */}
-      <div className="flex items-center gap-2 min-w-0">
-        <CatIcon src={catIcon} size={22} className="shrink-0" />
-        <span className="text-base font-semibold leading-tight truncate" style={{ color: catColor }}>
-          {talentName}
-        </span>
-        {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
+      {/* Invisible left-third tap zone → decrement */}
+      <button
+        onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
+        disabled={!canDec || mode === 'fix'}
+        aria-label="Reduzieren"
+        className="absolute inset-y-0 left-0 w-1/3 bg-transparent border-0 outline-none z-10"
+        style={{ WebkitTapHighlightColor: 'transparent' }}
+      />
+      {/* Invisible right-third tap zone → increment */}
+      <button
+        onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
+        disabled={!canInc || mode === 'fix'}
+        aria-label="Erhöhen"
+        className="absolute inset-y-0 right-0 w-1/3 bg-transparent border-0 outline-none z-10"
+        style={{ WebkitTapHighlightColor: 'transparent' }}
+      />
+      {/* Left edge: red gradient, visible only in top ~30% */}
+      <div className="absolute inset-y-0 left-0 w-[5%] pointer-events-none"
+        style={{
+          background: `linear-gradient(to right, rgba(239,68,68,${canDec ? 0.4 : 0.07}), transparent)`,
+          WebkitMaskImage: 'linear-gradient(to bottom, black 20%, transparent 50%)',
+          maskImage: 'linear-gradient(to bottom, black 20%, transparent 50%)',
+          opacity: mode === 'fix' ? 0 : 1,
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+      {/* Right edge: green gradient, visible only in top ~30% */}
+      <div className="absolute inset-y-0 right-0 w-[5%] pointer-events-none"
+        style={{
+          background: `linear-gradient(to left, rgba(34,197,94,${canInc ? 0.4 : 0.07}), transparent)`,
+          WebkitMaskImage: 'linear-gradient(to bottom, black 20%, transparent 50%)',
+          maskImage: 'linear-gradient(to bottom, black 20%, transparent 50%)',
+          opacity: mode === 'fix' ? 0 : 1,
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+      {/* Top-left corner stripe(s) — dec indicator */}
+      {isCombat ? <>
+        <div className="absolute pointer-events-none" style={{ top: 1, left: -11, width: 30, height: 3, borderRadius: 2, transform: 'rotate(-45deg)', transformOrigin: 'center', backgroundColor: `rgba(239,68,68,${canDec ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+        <div className="absolute pointer-events-none" style={{ top: 6, left: -6,  width: 30, height: 3, borderRadius: 2, transform: 'rotate(-45deg)', transformOrigin: 'center', backgroundColor: `rgba(239,68,68,${canDec ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+      </> : (
+        <div className="absolute pointer-events-none" style={{ top: 3, left: -9,  width: 30, height: 3, borderRadius: 2, transform: 'rotate(-45deg)', transformOrigin: 'center', backgroundColor: `rgba(239,68,68,${canDec ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+      )}
+      {/* Top-right corner stripe(s) — inc indicator */}
+      {isCombat ? <>
+        <div className="absolute pointer-events-none" style={{ top: 1, right: -11, width: 30, height: 3, borderRadius: 2, transform: 'rotate(45deg)', transformOrigin: 'center', backgroundColor: `rgba(34,197,94,${canInc ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+        <div className="absolute pointer-events-none" style={{ top: 6, right: -6,  width: 30, height: 3, borderRadius: 2, transform: 'rotate(45deg)', transformOrigin: 'center', backgroundColor: `rgba(34,197,94,${canInc ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+      </> : (
+        <div className="absolute pointer-events-none" style={{ top: 3, right: -9,  width: 30, height: 3, borderRadius: 2, transform: 'rotate(45deg)', transformOrigin: 'center', backgroundColor: `rgba(34,197,94,${canInc ? 0.75 : 0.18})`, zIndex: 2, opacity: mode === 'fix' ? 0 : 1, transition: 'opacity 0.3s ease' }} />
+      )}
+
+      {/* Content row */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {/* Talent name */}
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+          <span className="text-sm font-semibold leading-tight truncate" style={{ color: catColor }}>
+            {talentName}
+          </span>
+          {isCustom && <span className="text-[7px] text-warn shrink-0">SL</span>}
+        </div>
+
+        {/* Right side: badge (fix) + attr icons (edit) — wrapped so parent gap doesn't misalign combat vs non-combat */}
+        <div className="flex items-center shrink-0">
+          {/* Fix-mode quality badge */}
+          <div style={{
+            overflow: 'hidden',
+            maxWidth: mode === 'fix' ? 100 : 0,
+            opacity: mode === 'fix' ? 1 : 0,
+            transition: 'max-width 0.35s ease, opacity 0.3s ease',
+            flexShrink: 0,
+          }}>
+            <div className="flex items-center justify-center px-2 py-1 rounded-full whitespace-nowrap"
+              style={{ backgroundColor: qual.color, boxShadow: `0 1px 4px rgba(0,0,0,0.4)` }}>
+              <span className="text-[10px] font-mono font-bold leading-none" style={{ color: '#fff' }}>
+                {prob !== null
+                  ? `${Math.round(prob * 100)}%`
+                  : `${effective}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Attr icons — non-combat only */}
+          {!isCombat && attrs && (
+            <div className="flex items-center gap-0.5"
+              style={{
+                maxWidth: mode === 'fix' ? 0 : 60,
+                opacity: mode === 'fix' ? 0 : 1,
+                overflow: 'hidden',
+                transition: 'max-width 0.3s ease, opacity 0.25s ease',
+              }}
+            >
+              {attrs.map((a, i) => {
+                const meta = ATTR_MAP[a as AttributeKey];
+                return (
+                  <div key={i} className="relative"
+                    onMouseEnter={() => setHoveredAttr(i)}
+                    onMouseLeave={() => setHoveredAttr(null)}
+                  >
+                    <CatIcon src={meta?.icon ?? ''} size={18} />
+                    {hoveredAttr === i && (
+                      <span className="absolute z-30 top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none"
+                        style={{ color: meta?.color }}>
+                        {meta?.name}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Attribute + Wert + Pfeile */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {!isCombat && attrs?.map((a, i) => {
-            const meta = ATTR_MAP[a as AttributeKey];
+      {/* Bottom bar — fades into tile via mask-image, collapses in fix mode */}
+      {prob !== null && p1 !== null && p5 !== null && p10 !== null && tickProbs && (
+        <div style={{
+          maxHeight: mode === 'fix' ? 0 : 32,
+          opacity: mode === 'fix' ? 0 : 1,
+          overflow: 'hidden',
+          transition: 'max-height 0.35s ease, opacity 0.25s ease',
+        }}>
+        <div className="relative overflow-hidden" style={{
+          height: 32,
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 50%)',
+          maskImage: 'linear-gradient(to bottom, transparent, black 50%)',
+        }}>
+          {/* Color zones */}
+          <div className="absolute inset-0 flex">
+            <div style={{ width: `${p1  * 100}%`,          backgroundColor: `${Q.q0}28` }} />
+            <div style={{ width: `${(p5  - p1)  * 100}%`, backgroundColor: `${Q.q1}30` }} />
+            <div style={{ width: `${(p10 - p5)  * 100}%`, backgroundColor: `${Q.q2}30` }} />
+            <div style={{ flex: 1,                         backgroundColor: `${Q.q3}30` }} />
+          </div>
+          {/* Ticks + labels */}
+          {tickProbs.map((p, tp) => {
+            if (tp === effective) return null;
+            const tickColor = QUALITY_TIERS.find(t => tp >= t.min)!.color;
             return (
-              <div key={i} className="relative"
-                onMouseEnter={() => setHoveredAttr(i)}
-                onMouseLeave={() => setHoveredAttr(null)}
+              <div key={tp} className="absolute bottom-0 flex flex-col items-center"
+                style={{ left: `${p * 100}%`, transform: 'translateX(-50%)' }}
               >
-                <CatIcon src={meta?.icon ?? ''} size={24} />
-                {hoveredAttr === i && (
-                  <span className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-raised border border-hairline text-[9px] font-mono whitespace-nowrap shadow-xl pointer-events-none"
-                    style={{ color: meta?.color }}>
-                    {meta?.name}
-                  </span>
-                )}
+                <span style={{ fontSize: 5, lineHeight: 1, color: `${tickColor}cc`, whiteSpace: 'nowrap', marginBottom: 2 }}>
+                  {Math.round(p * 100)}%
+                </span>
+                <div style={{ width: 1, height: 8, backgroundColor: `${tickColor}88` }} />
               </div>
             );
           })}
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-2xl font-mono font-bold text-primary leading-none">{effective}</span>
-          <div className="flex flex-col gap-px">
-            <div className="flex items-center gap-1">
-              {deltaPlus !== null && (
-                <span className="text-[8px] font-mono font-bold w-7 text-right leading-none" style={{ color: '#4FA968' }}>
-                  +{Math.round(deltaPlus * 100)}%
-                </span>
-              )}
-              <button
-                onClick={() => patch(charId, c => { c.talents[talentName] = stored + 1; })}
-                disabled={!canInc}
-                className="w-7 h-5 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
-              >
-                <img src={isCombat ? '/icons/attr/arrow_up2.png' : '/icons/attr/arrow_up.png'} className="w-6 h-5 object-contain" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              {deltaMinus !== null && (
-                <span className="text-[8px] font-mono font-bold w-7 text-right leading-none" style={{ color: '#C83030' }}>
-                  −{Math.round(deltaMinus * 100)}%
-                </span>
-              )}
-              <button
-                onClick={() => patch(charId, c => { c.talents[talentName] = Math.max(0, stored - 1); })}
-                disabled={!canDec}
-                className="w-7 h-5 flex items-center justify-center rounded border border-hairline hover:opacity-80 disabled:opacity-20 transition-opacity"
-              >
-                <img src={isCombat ? '/icons/attr/arrow_down2.png' : '/icons/attr/arrow_down.png'} className="w-6 h-5 object-contain" />
-              </button>
+          {/* Badge thumb */}
+          <div className="absolute" style={{
+            left: `${prob * 100}%`,
+            bottom: 3,
+            transform: 'translateX(-50%)',
+            zIndex: 5,
+            transition: 'left 0.2s',
+          }}>
+            <div className="w-4 h-4 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: qual.color,
+                boxShadow: `0 1px 4px rgba(0,0,0,0.5), 0 0 0 1.5px ${qual.color}88`,
+              }}>
+              <span className="text-[6px] font-mono font-bold leading-none" style={{ color: '#fff' }}>
+                {effective}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Success probability bar */}
-      {prob !== null && (
-        <div className="flex items-center gap-1.5">
-          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: `${probColor}22` }}>
-            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${prob * 100}%`, backgroundColor: probColor }} />
-          </div>
-          <span className="text-[9px] font-mono font-bold shrink-0 w-7 text-right" style={{ color: probColor }}>
-            {Math.round(prob * 100)}%
-          </span>
         </div>
       )}
 
-      {/* Source ribbon — bottom-left */}
-      {srcLabel && (
-        <span className="absolute pointer-events-none"
-          style={{
-            bottom: 8, left: -22, width: 80, textAlign: 'center',
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '2px 0', backgroundColor: `${catColor}CC`, color: '#fff',
-            transform: 'rotate(45deg)', transformOrigin: 'center', whiteSpace: 'nowrap',
-          }}
-        >{srcLabel}</span>
-      )}
-
-      {/* Quality badge — top-right */}
-      {qual && (
-        <span
-          className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide pointer-events-none"
-          style={{ backgroundColor: `${qual.color}30`, color: qual.color }}
-        >{qual.label}</span>
-      )}
     </div>
   );
 }
 
 
 // ── Special abilities section ─────────────────────────────────────────────────
-function SpecialAbilitiesSection({ charId }: { charId: string }) {
+const ABILITY_COLOR = '#C8A020';
+
+export function SpecialAbilitiesSection({ charId }: { charId: string }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const patch = useStore(s => s.patchCharacter);
 
   if (!char) return null;
 
-  const left  = varPtsLeft(char);
+  const left = varPtsLeft(char);
 
   function toggle(id: string) {
     const ability = SPECIAL_ABILITIES.find(a => a.id === id)!;
@@ -308,21 +384,6 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
 
   return (
     <>
-      {/* Header row */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border mt-2 border-paper/20 bg-paper/5">
-        <span className="text-base leading-none shrink-0">✨</span>
-        <span className="text-xs font-bold tracking-wider uppercase flex-1 text-paper/70">
-          Besondere Fähigkeiten
-        </span>
-        <div className="w-20 shrink-0">
-          <TpBar left={left} total={VARIABLE_PTS} color="#E8E1CF" />
-        </div>
-        <span className={`font-mono text-sm font-bold shrink-0 ${left < 0 ? 'text-danger' : 'text-paper'}`}>
-          {left}/{VARIABLE_PTS}
-        </span>
-      </div>
-
-      {/* Ability rows */}
       {SPECIAL_ABILITIES.map(ability => {
         const active    = char.specialAbilities.includes(ability.id);
         const canAfford = left >= ability.cost;
@@ -331,17 +392,18 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
             key={ability.id}
             onClick={() => toggle(ability.id)}
             disabled={!active && !canAfford}
-            className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border text-left transition-colors ${
+            className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border text-left transition-colors ${
               active
-                ? 'border-paper/40 bg-paper/10'
+                ? 'bg-paper/10'
                 : canAfford
                   ? 'border-hairline hover:bg-raised/30'
                   : 'border-hairline/30 opacity-40 cursor-not-allowed'
             }`}
+            style={{ borderColor: active ? `${ABILITY_COLOR}60` : undefined }}
           >
-            <span className="text-[10px] font-medium text-primary flex-1 min-w-0 truncate">{ability.name}</span>
-            <span className="text-[8px] font-mono text-faint shrink-0">{ability.cost}P</span>
-            {active && <span className="text-[9px] text-paper font-bold shrink-0">✓</span>}
+            <span className="text-sm font-medium text-primary flex-1 min-w-0 truncate">{ability.name}</span>
+            <span className="text-[9px] font-mono shrink-0" style={{ color: ABILITY_COLOR }}>{ability.cost}P</span>
+            {active && <span className="text-[10px] font-bold shrink-0" style={{ color: ABILITY_COLOR }}>✓</span>}
           </button>
         );
       })}
@@ -349,14 +411,67 @@ function SpecialAbilitiesSection({ charId }: { charId: string }) {
   );
 }
 
+// ── Abilities tab button ──────────────────────────────────────────────────────
+export function AbilityTab({ charId, isActive, onClick }: {
+  charId: string; isActive: boolean; onClick: () => void;
+}) {
+  const char = useStore(s => s.characters.find(c => c.id === charId));
+  const [open, setOpen] = useState(false);
+  if (!char) return null;
+
+  const left  = varPtsLeft(char);
+  const spent = VARIABLE_PTS - left;
+  const over  = left < 0;
+
+  return (
+    <button
+      onClick={onClick}
+      className="relative flex-1 flex items-center justify-center gap-1 px-1 py-1.5 rounded-lg border transition-colors"
+      style={{
+        borderColor:     isActive ? `${ABILITY_COLOR}90` : `${ABILITY_COLOR}30`,
+        backgroundColor: isActive ? `${ABILITY_COLOR}20` : `${ABILITY_COLOR}08`,
+        boxShadow:       isActive ? `inset 0 -2px 0 ${ABILITY_COLOR}` : 'none',
+      }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <span className="text-base leading-none">✨</span>
+      <span className="text-[10px] font-mono font-bold leading-none" style={{ color: over ? '#C83030' : ABILITY_COLOR }}>
+        {spent}/{VARIABLE_PTS}
+      </span>
+
+      {open && (
+        <div className="absolute top-full mt-2 z-40 w-36 rounded-lg border border-hairline bg-raised shadow-xl px-3 py-2.5 pointer-events-none"
+          style={{ right: 0 }}>
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: ABILITY_COLOR }}>
+            Bes. Fähigkeiten
+          </p>
+          <div className="space-y-1 text-[9px] font-mono">
+            <div className="flex justify-between font-bold text-paper">
+              <span>Gesamt</span><span>{VARIABLE_PTS}</span>
+            </div>
+            <div className="flex justify-between" style={{ color: over ? '#C83030' : '#4FA968' }}>
+              <span>Verbraucht</span><span>{spent}</span>
+            </div>
+            <div className="flex justify-between font-bold" style={{ color: over ? '#C83030' : ABILITY_COLOR }}>
+              <span>Verbleibend</span><span>{left}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
+
 // ── Category TP summary tile with tooltip ────────────────────────────────────
-function CatSummaryTile({ charId, cat, index, total, isActive, onClick }: {
+export function CatSummaryTile({ charId, cat, index, total, isActive, onClick, mode }: {
   charId: string;
   cat: { key: TalentCategory; color: string; icon: string; label: string };
   index: number;
   total: number;
   isActive: boolean;
   onClick: () => void;
+  mode: 'edit' | 'fix';
 }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
   const [open, setOpen] = useState(false);
@@ -371,22 +486,33 @@ function CatSummaryTile({ charId, cat, index, total, isActive, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="relative flex-1 flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg border transition-colors"
-      style={{
-        borderColor:     isActive ? `${cat.color}90` : `${cat.color}30`,
-        backgroundColor: isActive ? `${cat.color}20` : `${cat.color}08`,
-        boxShadow:       isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
-      }}
+      className="relative flex-1 flex items-center justify-center gap-1 px-1 py-1.5 rounded-lg border transition-colors"
+      style={(() => {
+        const hasTP = mode === 'fix' && available - spent > 0;
+        return {
+          borderColor:     hasTP ? '#E8305060' : isActive ? `${cat.color}90` : `${cat.color}30`,
+          backgroundColor: isActive ? `${cat.color}20` : `${cat.color}08`,
+          boxShadow:       hasTP ? '0 0 8px #E8305030' : isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
+        };
+      })()}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
       <CatIcon src={cat.icon} size={20} />
-      <span
-        className="text-[10px] font-mono font-bold leading-none"
-        style={{ color: over ? '#C83030' : cat.color }}
-      >
-        {spent}/{available}
-      </span>
+      {mode === 'fix' ? (
+        available - spent > 0 && (
+          <span className="text-[10px] font-mono font-bold leading-none" style={{ color: cat.color }}>
+            {available - spent} TP
+          </span>
+        )
+      ) : (
+        <span
+          className="text-[10px] font-mono font-bold leading-none"
+          style={{ color: over ? '#C83030' : cat.color }}
+        >
+          {spent}/{available}
+        </span>
+      )}
 
       {open && (
         <div
@@ -437,18 +563,60 @@ function CatSummaryTile({ charId, cat, index, total, isActive, onClick }: {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export function Tab4Talents({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
-  const [selectedCat, setSelectedCat] = useState<TalentCategory>(TALENT_CATEGORIES[0].key);
+export function Tab4Talents({ charId, mode }: { charId: string; mode: 'edit' | 'fix' }) {
+  const char  = useStore(s => s.characters.find(c => c.id === charId));
+  const patch = useStore(s => s.patchCharacter);
+  const [selectedTab, setSelectedTab] = useState<TabKey>(TALENT_CATEGORIES[0].key);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [showSpecForm, setShowSpecForm]     = useState(false);
 
   if (!char) return null;
 
-  const activeCat = TALENT_CATEGORIES.find(c => c.key === selectedCat)!;
-  const customInCat = char.customTalents.filter(t => t.category === selectedCat);
+  const isAbilities = selectedTab === 'abilities';
+  const activeCat   = isAbilities ? null : TALENT_CATEGORIES.find(c => c.key === selectedTab)!;
+
+  const assignedTalentNames = new Set(
+    [char.professionTalent, char.hobby1Talent, char.hobby2Talent].filter(Boolean) as string[]
+  );
+  const assignedSpecNames = new Set(
+    [char.specProfession?.name, char.specFreePositive?.name, char.specFreeNegative?.name, char.specHobby1?.name].filter(Boolean) as string[]
+  );
+
+  const customInCat = activeCat
+    ? char.customTalents.filter(t => t.category === selectedTab && !assignedTalentNames.has(t.name))
+    : [];
+
+  const visibleSpecs: Specification[] = isAbilities ? [] : [
+    ...SPECIFICATIONS.filter(s => s.category === (selectedTab as TalentCategory) && !assignedSpecNames.has(s.name)),
+    ...char.customSpecifications.filter(s => s.category === (selectedTab as TalentCategory) && !assignedSpecNames.has(s.name)),
+  ];
+
+  function selectedAsSpec(name: string): 'frei +' | 'frei −' | null {
+    if (char!.specFreePositive?.name === name)  return 'frei +';
+    if (char!.specFreeNegative?.name === name)  return 'frei −';
+    return null;
+  }
+
+  function reservedAsSpec(name: string): 'beruf' | 'hobby' | null {
+    if (char!.specProfession?.name === name) return 'beruf';
+    if (char!.specHobby1?.name === name)     return 'hobby';
+    return null;
+  }
+
+  function toggleSpec(spec: Specification) {
+    const isMalus = spec.modifier < 0;
+    const alreadySelected = !!selectedAsSpec(spec.name);
+    patch(charId, c => {
+      if (isMalus) {
+        c.specFreeNegative = alreadySelected ? null : spec;
+      } else {
+        c.specFreePositive = alreadySelected ? null : spec;
+      }
+    });
+  }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full">
 
       {/* ── Category tabs ── */}
       <div className="flex gap-1.5 px-4 pt-4 pb-2 shrink-0">
@@ -458,39 +626,90 @@ export function Tab4Talents({ charId }: { charId: string }) {
             charId={charId}
             cat={cat}
             index={i}
-            total={TALENT_CATEGORIES.length}
-            isActive={selectedCat === cat.key}
-            onClick={() => { setSelectedCat(cat.key); setShowCustomForm(false); }}
+            total={TALENT_CATEGORIES.length + 1}
+            isActive={selectedTab === cat.key}
+            onClick={() => { setSelectedTab(cat.key); setShowCustomForm(false); }}
+            mode={mode}
           />
         ))}
+        <AbilityTab
+          charId={charId}
+          isActive={isAbilities}
+          onClick={() => { setSelectedTab('abilities'); setShowCustomForm(false); }}
+        />
       </div>
 
-      {/* ── Talent cards for selected category ── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-1.5">
-        {activeCat.talents.map(t => (
-          <TalentTile key={t.name} charId={charId} talentName={t.name}
-            attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
-            catColor={activeCat.color} catIcon={activeCat.icon} />
-        ))}
-        {customInCat.map(ct => (
-          <TalentTile key={ct.name} charId={charId} talentName={ct.name}
-            attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
-            catColor={activeCat.color} catIcon={activeCat.icon} />
-        ))}
-
-        {showCustomForm ? (
-          <CustomTalentForm catKey={selectedCat} charId={charId} onClose={() => setShowCustomForm(false)} />
+      {/* ── Content for selected tab ── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        {isAbilities ? (
+          <div className="flex flex-col gap-1.5">
+            <SpecialAbilitiesSection charId={charId} />
+          </div>
         ) : (
-          <button
-            onClick={() => setShowCustomForm(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-hairline text-faint hover:text-muted hover:border-muted transition-colors"
-          >
-            <span className="text-xs">+ Talent anlegen</span>
-          </button>
-        )}
+          <div className="grid grid-cols-2 gap-1.5">
+            {activeCat!.talents.filter(t => !assignedTalentNames.has(t.name)).map(t => (
+              <TalentTile key={t.name} charId={charId} talentName={t.name}
+                attrs={t.attrs} costMul={t.costMultiplier} isCustom={false}
+                catColor={activeCat!.color} mode={mode} />
+            ))}
+            {customInCat.map(ct => (
+              <TalentTile key={ct.name} charId={charId} talentName={ct.name}
+                attrs={ct.attrs} costMul={ct.costMultiplier} isCustom
+                catColor={activeCat!.color} mode={mode} />
+            ))}
 
-        <SpecialAbilitiesSection charId={charId} />
+            {showCustomForm ? (
+              <div className="col-span-2">
+                <CustomTalentForm catKey={selectedTab as TalentCategory} charId={charId} onClose={() => setShowCustomForm(false)} />
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCustomForm(true)}
+                className="relative flex items-center justify-center rounded-lg border border-dashed transition-colors hover:opacity-80"
+                style={{ borderColor: `${activeCat!.color}40`, backgroundColor: `${activeCat!.color}06`, minHeight: 40 }}
+              >
+                <span className="text-xl leading-none" style={{ color: `${activeCat!.color}60` }}>+</span>
+              </button>
+            )}
+
+            {/* ── Spezifika for this category ── */}
+            {visibleSpecs.length > 0 && (
+              <>
+                <div className="col-span-2 flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-px" style={{ backgroundColor: `${activeCat!.color}30` }} />
+                  <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: `${activeCat!.color}80` }}>Spezifika</span>
+                  <div className="flex-1 h-px" style={{ backgroundColor: `${activeCat!.color}30` }} />
+                </div>
+                {visibleSpecs.map(spec => (
+                  <SpecTile
+                    key={spec.name}
+                    spec={spec}
+                    selectedAs={selectedAsSpec(spec.name)}
+                    reservedAs={reservedAsSpec(spec.name)}
+                    onToggle={() => toggleSpec(spec)}
+                    showIcon={false}
+                    mode={mode}
+                  />
+                ))}
+                {showSpecForm ? (
+                  <div className="col-span-2">
+                    <CustomSpecForm charId={charId} onClose={() => setShowSpecForm(false)} />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowSpecForm(true)}
+                    className="relative flex items-center justify-center rounded-lg border border-dashed transition-colors hover:opacity-80"
+                    style={{ borderColor: `${activeCat!.color}40`, backgroundColor: `${activeCat!.color}06`, minHeight: 40 }}
+                  >
+                    <span className="text-xl leading-none" style={{ color: `${activeCat!.color}60` }}>+</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
+
     </div>
   );
 }
