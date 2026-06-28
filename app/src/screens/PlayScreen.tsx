@@ -4,8 +4,10 @@ import { TALENT_CATEGORIES, TALENT_MAP } from '../data/talents';
 import { ATTR_MAP } from '../data/attributes';
 import { PROFESSION_MAP } from '../data/professions';
 import { calcSuccessProb, resolveCheck, randomD20 } from '../rules/checks';
-import { calcLE, calcGG } from '../rules/derivedValues';
+import { calcDerived, calcATN, calcPA, calcATD, calcINI, calcLE, calcGG } from '../rules/derivedValues';
 import { talentFixedBonus } from '../rules/talentBudget';
+import { SpiderChart } from '../components/ui/SpiderChart';
+import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
 import { CatIcon } from '../components/ui/CatIcon';
 import type { AttributeKey } from '../types/character';
 
@@ -15,6 +17,35 @@ const C = {
   LE: '#208838',
   GG: '#1898A0',
 } as const;
+
+const RADAR_AXES = [
+  { key: 'KK',  color: '#D1453B', maxValue: 20  },
+  { key: 'ATN', color: '#C4881C', maxValue: 20  },
+  { key: 'GE',  color: '#3E7FCE', maxValue: 20  },
+  { key: 'PA',  color: '#2DB38C', maxValue: 20  },
+  { key: 'AU',  color: '#4FA968', maxValue: 20  },
+  { key: 'LE',  color: '#208838', maxValue: 180 },
+  { key: 'IN',  color: '#8C5FC4', maxValue: 20  },
+  { key: 'GG',  color: '#1898A0', maxValue: 240 },
+  { key: 'MB',  color: '#7030B0', maxValue: 20  },
+  { key: 'ATD', color: '#4CAED8', maxValue: 20  },
+  { key: 'CH',  color: '#D45C95', maxValue: 20  },
+  { key: 'INI', color: '#88C040', maxValue: 20  },
+] as const;
+
+const COLOR_ZONES: ColorZone[] = [
+  { from: 0,  to: 5,  color: '#5878A0', opacity: 0.07 },
+  { from: 5,  to: 14, color: '#8898A8', opacity: 0.05 },
+  { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
+  { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
+];
+
+function probColor(pct: number | null): string {
+  if (pct === null) return '#888';
+  if (pct >= 80) return '#4FA968';
+  if (pct >= 50) return '#C89020';
+  return '#C84820';
+}
 
 // ── Vital bar with +/- controls ───────────────────────────────────────────────
 function VitalBar({ label, icon, color, current, max, onAdjust }: {
@@ -80,57 +111,32 @@ function VitalBar({ label, icon, color, current, max, onAdjust }: {
   );
 }
 
-// ── Talent tile for Probe tab ─────────────────────────────────────────────────
-function ProbeTalentTile({ talentName, catColor, effective, prob, attrs, charId, onSelect }: {
+// ── Compact talent tile (name + %) ───────────────────────────────────────────
+function TalentTile({ talentName, catColor, effective, pct, isCombat, onSelect }: {
   talentName: string;
   catColor: string;
   effective: number;
-  prob: number | null;
-  attrs: readonly AttributeKey[] | null;
-  charId: string;
+  pct: number | null;
+  isCombat: boolean;
   onSelect: () => void;
 }) {
-  const char   = useStore(s => s.characters.find(c => c.id === charId));
-  const probPct = prob !== null ? Math.round(prob * 100) : null;
-  const probColor = probPct === null ? '#888'
-    : probPct >= 80 ? '#4FA968'
-    : probPct >= 50 ? '#C89020'
-    : '#C84820';
-
+  const vc = isCombat ? catColor : probColor(pct);
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-lg border transition-colors hover:opacity-90 overflow-hidden"
-      style={{ borderColor: `${catColor}30`, backgroundColor: `${catColor}08` }}
+      className="rounded-lg border p-2 flex flex-col gap-0.5 text-left hover:opacity-80 active:scale-95 transition-all"
+      style={{
+        borderColor: `${catColor}30`,
+        backgroundColor: `${catColor}08`,
+        opacity: effective === 0 ? 0.38 : 1,
+      }}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <span className="flex-1 text-sm font-semibold truncate" style={{ color: catColor }}>
-          {talentName}
-        </span>
-        {attrs && char && (
-          <div className="flex items-center gap-0.5 shrink-0">
-            {attrs.map((a, i) => {
-              const meta = ATTR_MAP[a];
-              return (
-                <div
-                  key={i}
-                  className="rounded-full overflow-hidden"
-                  style={{ width: 14, height: 14, border: `1px solid ${meta?.color ?? '#888'}55` }}
-                  title={`${a}: ${char.attributes[a]}`}
-                >
-                  <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <span className="font-mono font-bold text-xs text-paper shrink-0">{effective}</span>
-        {probPct !== null && (
-          <span className="font-mono text-xs font-bold shrink-0 w-8 text-right" style={{ color: probColor }}>
-            {probPct}%
-          </span>
-        )}
-      </div>
+      <span className="text-[10px] leading-tight line-clamp-2" style={{ color: catColor }}>
+        {talentName}
+      </span>
+      <span className="font-mono font-bold text-base leading-none" style={{ color: vc }}>
+        {pct !== null ? `${pct}%` : `TP ${effective}`}
+      </span>
     </button>
   );
 }
@@ -155,25 +161,18 @@ function ProbeTab({ charId }: { charId: string }) {
   const prob = (!isCombat && talentMeta?.attrs && attrVals.length === 3)
     ? calcSuccessProb(attrVals, effective)
     : null;
-  const probPct = prob !== null ? Math.round(prob * 100) : null;
-  const probColor = probPct === null ? '#888'
-    : probPct >= 80 ? '#4FA968'
-    : probPct >= 50 ? '#C89020'
-    : '#C84820';
+  const probPct   = prob !== null ? Math.round(prob * 100) : null;
+  const pColor    = probColor(probPct);
 
   function rollAuto() {
     const r = [randomD20(), randomD20(), randomD20()];
     setRolls(r);
-    if (talentMeta) {
-      setResult(resolveCheck(r, attrVals, effective));
-    }
+    if (talentMeta) setResult(resolveCheck(r, attrVals, effective));
   }
 
   function rollManual() {
     const r = rolls.map(v => (v === '' ? 0 : Number(v)));
-    if (talentMeta) {
-      setResult(resolveCheck(r, attrVals, effective));
-    }
+    if (talentMeta) setResult(resolveCheck(r, attrVals, effective));
   }
 
   function deselect() {
@@ -188,41 +187,68 @@ function ProbeTab({ charId }: { charId: string }) {
     setResult(null);
   }
 
+  // Radar axes
+  const derived = calcDerived(char);
+  const attrValues: Record<string, number> = {
+    KK: char.attributes.KK, GE: char.attributes.GE,
+    AU: char.attributes.AU, CH: char.attributes.CH,
+    IN: char.attributes.IN, MB: char.attributes.MB,
+    ATN: calcATN(char), PA: calcPA(char),
+    ATD: calcATD(char), INI: calcINI(char),
+    LE: derived.LE, GG: derived.GG,
+  };
+  const radarAxes: SpiderAxis[] = RADAR_AXES.map(e => ({
+    key: e.key,
+    value: attrValues[e.key] ?? 0,
+    maxValue: e.maxValue,
+    color: e.color,
+  }));
+
   if (!selectedTalent) {
     return (
       <div className="p-4 space-y-4">
+        {/* Spider chart */}
+        <div className="rounded-xl border border-hairline bg-surface p-4">
+          <SpiderChart
+            axes={radarAxes}
+            size={140}
+            gridValues={[5, 10, 14, 18]}
+            showGridLabels
+            showValueLabels
+            chartId="play"
+            className="w-full aspect-square"
+            colorZones={COLOR_ZONES}
+          />
+        </div>
+
+        {/* Talent tile grid per category */}
         {TALENT_CATEGORIES.map(cat => (
           <div key={cat.key}>
-            <div className="flex items-center gap-2 mb-2">
-              <CatIcon src={cat.icon} size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <CatIcon src={cat.icon} size={13} />
+              <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
                 {cat.label}
               </span>
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {cat.talents.map(t => {
-                const s = char.talents[t.name] ?? 0;
-                const b = talentFixedBonus(char, t.name);
+                const s   = char.talents[t.name] ?? 0;
+                const b   = talentFixedBonus(char, t.name);
                 const eff = s + b;
-                const isCmbt = t.costMultiplier === 2;
-                const av = t.attrs
-                  ? (t.attrs as AttributeKey[]).map(a => char.attributes[a])
-                  : null;
-                const p = (!isCmbt && av && av.length === 3)
-                  ? calcSuccessProb(av, eff)
-                  : null;
+                const cmbt = t.costMultiplier === 2;
+                const av  = t.attrs ? (t.attrs as AttributeKey[]).map(a => char.attributes[a]) : null;
+                const p   = (!cmbt && av && av.length === 3) ? calcSuccessProb(av, eff) : null;
+                const pct = p !== null ? Math.round(p * 100) : null;
                 return (
-                  <div key={t.name} style={{ opacity: eff === 0 ? 0.4 : 1 }}>
-                    <ProbeTalentTile
-                      talentName={t.name}
-                      catColor={cat.color}
-                      effective={eff}
-                      prob={p}
-                      attrs={t.attrs}
-                      charId={charId}
-                      onSelect={() => selectTalent(t.name)}
-                    />
-                  </div>
+                  <TalentTile
+                    key={t.name}
+                    talentName={t.name}
+                    catColor={cat.color}
+                    effective={eff}
+                    pct={pct}
+                    isCombat={cmbt}
+                    onSelect={() => selectTalent(t.name)}
+                  />
                 );
               })}
             </div>
