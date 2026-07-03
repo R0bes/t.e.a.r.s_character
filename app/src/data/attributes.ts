@@ -1,4 +1,5 @@
 import type { AttributeKey } from '../types/character';
+import { RADAR_COLORS } from './radarConfig';
 
 export const ATTR_BASE = 8;
 export const ATTR_MAX = 19;
@@ -14,12 +15,12 @@ export interface AttributeMeta {
 }
 
 export const ATTRIBUTES: AttributeMeta[] = [
-  { key: 'KK', name: 'Körperkraft',          shortName: 'KK', color: '#CC2828', tailwindColor: 'kk', icon: '/icons/attr/kk.png' },
-  { key: 'GE', name: 'Geschicklichkeit',      shortName: 'GE', color: '#C89A10', tailwindColor: 'ge', icon: '/icons/attr/ge.png' },
-  { key: 'AU', name: 'Ausdauer',              shortName: 'AU', color: '#D05020', tailwindColor: 'au', icon: '/icons/attr/au.png' },
-  { key: 'CH', name: 'Charme',                shortName: 'CH', color: '#CC2888', tailwindColor: 'ch', icon: '/icons/attr/ch.png' },
-  { key: 'IN', name: 'Intelligenz',           shortName: 'IN', color: '#1E58C8', tailwindColor: 'in', icon: '/icons/attr/in.png' },
-  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: '#7030B0', tailwindColor: 'mb', icon: '/icons/attr/mb.png' },
+  { key: 'KK', name: 'Körperkraft',          shortName: 'KK', color: RADAR_COLORS.KK, tailwindColor: 'kk', icon: '/icons/attr/kk.png' },
+  { key: 'GE', name: 'Geschicklichkeit',      shortName: 'GE', color: RADAR_COLORS.GE, tailwindColor: 'ge', icon: '/icons/attr/ge.png' },
+  { key: 'AU', name: 'Ausdauer',              shortName: 'AU', color: RADAR_COLORS.AU, tailwindColor: 'au', icon: '/icons/attr/au.png' },
+  { key: 'CH', name: 'Charme',                shortName: 'CH', color: RADAR_COLORS.CH, tailwindColor: 'ch', icon: '/icons/attr/ch.png' },
+  { key: 'IN', name: 'Intelligenz',           shortName: 'IN', color: RADAR_COLORS.IN, tailwindColor: 'in', icon: '/icons/attr/in.png' },
+  { key: 'MB', name: 'Ment. Belastbarkeit',   shortName: 'MB', color: RADAR_COLORS.MB, tailwindColor: 'mb', icon: '/icons/attr/mb.png' },
 ];
 
 export const ATTR_MAP = Object.fromEntries(

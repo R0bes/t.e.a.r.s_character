@@ -16,26 +16,7 @@ import { SpecTile, CustomSpecForm } from './Tab7FreeSpecs';
 import { SPECIFICATIONS } from '../../data/specifications';
 import { CharacterInfoSection } from './CharacterInfoSection';
 import { ProfessionSection } from './ProfessionSection';
-
-
-// ── 12 colors — rainbow spectrum, strict primary/combat alternation ──────────
-// Even positions (0,2,4,6,8,10) = primary; odd (1,3,5,7,9,11) = combat
-// GG sits at 210° between IN and MB — both in its formula AU+IN+MB×2 ✓✓
-// ATD at 270° is the unavoidable "orphan" slot (no formula links MB+CH)
-const C = {
-  KK:  '#E03838',  // 0°   warm red    – Körperkraft (Stärke, Kraft)
-  INI: '#E06828',  // 30°  orange      – Initiative (Reaktion, Schnelligkeit)
-  GE:  '#D4A820',  // 60°  amber       – Geschicklichkeit (Präzision, Gold)
-  PA:  '#98C818',  // 90°  chartreuse  – Parade (defensiv, Alert)
-  AU:  '#28B040',  // 120° green       – Ausdauer (Vitalität, Natur)
-  LE:  '#18A868',  // 150° sea-green   – Lebensenergie (Heilung, Leben)
-  IN:  '#10A8D0',  // 180° cyan        – Intelligenz (Verstand, Klarheit)
-  GG:  '#2870D8',  // 210° blue        – Geist. Gesundheit (Psyche, Tiefe)
-  MB:  '#5040C8',  // 240° indigo      – Ment. Belastbarkeit (Willenskraft)
-  ATD: '#8828C0',  // 270° violet      – Attacke Distanz (Weite, Kraft)
-  CH:  '#C82888',  // 300° magenta     – Charme (sozial, Persönlichkeit)
-  ATN: '#B82030',  // 330° deep garnet – Attacke Nahkampf (dunkel, intensiv)
-} as const;
+import { RADAR_COLORS as C } from '../../data/radarConfig';
 
 
 // ── Primary attr layout ───────────────────────────────────────────────────────

@@ -1,10 +1,21 @@
 import type { ColorZone } from '../components/ui/SpiderChart';
 
+// 12 colors — rainbow spectrum, strict primary/combat alternation.
+// Even positions (0,2,4,6,8,10) = primary; odd (1,3,5,7,9,11) = combat.
+// Canonical palette for all 12 attribute/derived values — used app-wide.
 export const RADAR_COLORS = {
-  KK:  '#D1453B', GE:  '#3E7FCE', AU:  '#4FA968',
-  CH:  '#D45C95', IN:  '#8C5FC4', MB:  '#7030B0',
-  ATN: '#C4881C', PA:  '#2DB38C', ATD: '#4CAED8', INI: '#88C040',
-  LE:  '#208838', GG:  '#1898A0',
+  KK:  '#E03838',  // 0°   warm red    – Körperkraft (Stärke, Kraft)
+  INI: '#E06828',  // 30°  orange      – Initiative (Reaktion, Schnelligkeit)
+  GE:  '#D4A820',  // 60°  amber       – Geschicklichkeit (Präzision, Gold)
+  PA:  '#98C818',  // 90°  chartreuse  – Parade (defensiv, Alert)
+  AU:  '#28B040',  // 120° green       – Ausdauer (Vitalität, Natur)
+  LE:  '#18A868',  // 150° sea-green   – Lebensenergie (Heilung, Leben)
+  IN:  '#10A8D0',  // 180° cyan        – Intelligenz (Verstand, Klarheit)
+  GG:  '#2870D8',  // 210° blue        – Geist. Gesundheit (Psyche, Tiefe)
+  MB:  '#5040C8',  // 240° indigo      – Ment. Belastbarkeit (Willenskraft)
+  ATD: '#8828C0',  // 270° violet      – Attacke Distanz (Weite, Kraft)
+  CH:  '#C82888',  // 300° magenta     – Charme (sozial, Persönlichkeit)
+  ATN: '#B82030',  // 330° deep garnet – Attacke Nahkampf (dunkel, intensiv)
 } as const;
 
 export const RADAR_AXES = [
