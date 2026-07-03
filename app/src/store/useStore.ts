@@ -60,6 +60,7 @@ function freshCharacter(id: string): Character {
     currentGG: (attrs.AU + attrs.IN + attrs.MB * 2) * 3,
     inventory: [],
     notes: [],
+    probeHistory: [],
   };
 }
 
@@ -83,17 +84,32 @@ export const useStore = create<AppState & AppActions>()(
         return id;
       },
 
-      patchCharacter: (id, updater) => {
+      patchCharacter: (id, updater, _opts) => {
         set(s => ({
           characters: s.characters.map(c => {
             if (c.id !== id) return c;
+            const prevLE = calcLE(c);
+            const prevGG = calcGG(c);
             const copy = deepClone(c);
             updater(copy);
-            clampAllCategories(copy);
+            // Only clamp when talent budget can have changed (profession, specs, hobby assignments)
+            const budgetChanged =
+              copy.profession      !== c.profession      ||
+              copy.professionTalent !== c.professionTalent ||
+              copy.hobby1Talent    !== c.hobby1Talent    ||
+              copy.hobby2Talent    !== c.hobby2Talent    ||
+              copy.specProfession?.name  !== c.specProfession?.name  ||
+              copy.specHobby1?.name      !== c.specHobby1?.name      ||
+              copy.specFreePositive?.name !== c.specFreePositive?.name ||
+              copy.specFreeNegative?.name !== c.specFreeNegative?.name ||
+              copy.customTalents.length  !== c.customTalents.length;
+            if (budgetChanged) clampAllCategories(copy);
             copy.updatedAt = Date.now();
-            // keep currentLE/GG in sync with attributes if never manually changed
-            copy.currentLE = calcLE(copy);
-            copy.currentGG = calcGG(copy);
+            // Sync LE/GG when attributes changed, but clamp rather than reset when manually adjusted
+            const newLE = calcLE(copy);
+            const newGG = calcGG(copy);
+            copy.currentLE = copy.currentLE === prevLE ? newLE : Math.min(copy.currentLE, newLE);
+            copy.currentGG = copy.currentGG === prevGG ? newGG : Math.min(copy.currentGG, newGG);
             return copy;
           }),
         }));
@@ -141,11 +157,21 @@ export const useStore = create<AppState & AppActions>()(
 
       importCharacter: (json) => {
         try {
-          const char = JSON.parse(json) as Character;
-          if (!char.id || !char.attributes) throw new Error('Ungültiges Format');
-          char.id = crypto.randomUUID();
-          char.createdAt = Date.now();
-          char.updatedAt = Date.now();
+          const raw = JSON.parse(json) as Character;
+          if (!raw.id || !raw.attributes) throw new Error('Ungültiges Format');
+          // Migrate fields that may be missing in older exports
+          const char: Character = {
+            ...raw,
+            id: crypto.randomUUID(),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            inventory:          raw.inventory          ?? [],
+            notes:              raw.notes              ?? [],
+            customTalents:      raw.customTalents      ?? [],
+            customSpecifications: raw.customSpecifications ?? [],
+            specialAbilities:   raw.specialAbilities   ?? [],
+            probeHistory:       raw.probeHistory       ?? [],
+          };
           set(s => ({ characters: [...s.characters, char] }));
           get().showToast('Charakter importiert', 'ok');
           return true;

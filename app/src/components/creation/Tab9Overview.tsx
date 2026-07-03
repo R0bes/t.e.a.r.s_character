@@ -98,7 +98,7 @@ export function Tab9Overview({ charId }: { charId: string }) {
               if (!s) return null;
               const catMeta  = TALENT_CAT_MAP[s.category];
               const color    = catMeta.color;
-              const modColor = s.modifier < 0 ? '#E83050' : '#4FA968';
+              const modColor = s.modifier < 0 ? '#4FA968' : '#E83050';
               return (
                 <div
                   key={i}

@@ -7,38 +7,10 @@ import { calcDerived, calcATN, calcPA, calcATD, calcINI, calcLE, calcGG } from '
 import { calcSuccessProb } from '../rules/checks';
 import { talentFixedBonus } from '../rules/talentBudget';
 import { SpiderChart } from '../components/ui/SpiderChart';
-import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
+import type { SpiderAxis } from '../components/ui/SpiderChart';
 import { CatIcon } from '../components/ui/CatIcon';
 import type { AttributeKey } from '../types/character';
-
-const C = {
-  KK:  '#D1453B', GE:  '#3E7FCE', AU:  '#4FA968',
-  CH:  '#D45C95', IN:  '#8C5FC4', MB:  '#7030B0',
-  ATN: '#C4881C', PA:  '#2DB38C', ATD: '#4CAED8', INI: '#88C040',
-  LE:  '#208838', GG:  '#1898A0',
-} as const;
-
-const RADAR_AXES = [
-  { key: 'KK',  color: C.KK,  maxValue: 20  },
-  { key: 'ATN', color: C.ATN, maxValue: 20  },
-  { key: 'GE',  color: C.GE,  maxValue: 20  },
-  { key: 'PA',  color: C.PA,  maxValue: 20  },
-  { key: 'AU',  color: C.AU,  maxValue: 20  },
-  { key: 'LE',  color: C.LE,  maxValue: 180 },
-  { key: 'IN',  color: C.IN,  maxValue: 20  },
-  { key: 'GG',  color: C.GG,  maxValue: 240 },
-  { key: 'MB',  color: C.MB,  maxValue: 20  },
-  { key: 'ATD', color: C.ATD, maxValue: 20  },
-  { key: 'CH',  color: C.CH,  maxValue: 20  },
-  { key: 'INI', color: C.INI, maxValue: 20  },
-] as const;
-
-const COLOR_ZONES: ColorZone[] = [
-  { from: 0,  to: 5,  color: '#5878A0', opacity: 0.07 },
-  { from: 5,  to: 14, color: '#8898A8', opacity: 0.05 },
-  { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
-  { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
-];
+import { RADAR_AXES, COLOR_ZONES, RADAR_COLORS as C, probColor } from '../data/radarConfig';
 
 function ResourceBar({ label, icon, color, current, max }: {
   label: string; icon: string; color: string; current: number; max: number;
@@ -88,13 +60,6 @@ function CombatChip({ label, icon, color, value }: {
       )}
     </div>
   );
-}
-
-function probColor(pct: number | null): string {
-  if (pct === null) return '#888';
-  if (pct >= 80) return '#4FA968';
-  if (pct >= 50) return '#C89020';
-  return '#C84820';
 }
 
 export function CharacterSheetScreen() {

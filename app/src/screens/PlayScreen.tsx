@@ -7,57 +7,34 @@ import { calcSuccessProb, resolveCheck, randomD20 } from '../rules/checks';
 import { calcDerived, calcATN, calcPA, calcATD, calcINI, calcLE, calcGG } from '../rules/derivedValues';
 import { talentFixedBonus } from '../rules/talentBudget';
 import { SpiderChart } from '../components/ui/SpiderChart';
-import type { SpiderAxis, ColorZone } from '../components/ui/SpiderChart';
+import type { SpiderAxis } from '../components/ui/SpiderChart';
 import { CatIcon } from '../components/ui/CatIcon';
-import type { AttributeKey } from '../types/character';
+import type { AttributeKey, ProbeEntry } from '../types/character';
+import { RADAR_AXES, COLOR_ZONES, RADAR_COLORS as C, probColor } from '../data/radarConfig';
 
 type PlayTab = 'probe' | 'inventar' | 'notizen';
 
-const C = {
-  LE: '#208838',
-  GG: '#1898A0',
-} as const;
-
-const RADAR_AXES = [
-  { key: 'KK',  color: '#D1453B', maxValue: 20  },
-  { key: 'ATN', color: '#C4881C', maxValue: 20  },
-  { key: 'GE',  color: '#3E7FCE', maxValue: 20  },
-  { key: 'PA',  color: '#2DB38C', maxValue: 20  },
-  { key: 'AU',  color: '#4FA968', maxValue: 20  },
-  { key: 'LE',  color: '#208838', maxValue: 180 },
-  { key: 'IN',  color: '#8C5FC4', maxValue: 20  },
-  { key: 'GG',  color: '#1898A0', maxValue: 240 },
-  { key: 'MB',  color: '#7030B0', maxValue: 20  },
-  { key: 'ATD', color: '#4CAED8', maxValue: 20  },
-  { key: 'CH',  color: '#D45C95', maxValue: 20  },
-  { key: 'INI', color: '#88C040', maxValue: 20  },
-] as const;
-
-const COLOR_ZONES: ColorZone[] = [
-  { from: 0,  to: 5,  color: '#5878A0', opacity: 0.07 },
-  { from: 5,  to: 14, color: '#8898A8', opacity: 0.05 },
-  { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
-  { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
-];
-
-function probColor(pct: number | null): string {
-  if (pct === null) return '#888';
-  if (pct >= 80) return '#4FA968';
-  if (pct >= 50) return '#C89020';
-  return '#C84820';
-}
-
 // ── Vital bar with +/- controls ───────────────────────────────────────────────
-function VitalBar({ label, icon, color, current, max, onAdjust }: {
+function VitalBar({ label, icon, color, current, max, onAdjust, onSet }: {
   label: string;
   icon: string;
   color: string;
   current: number;
   max: number;
   onAdjust: (delta: number) => void;
+  onSet: (value: number) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [inputVal, setInputVal] = useState('');
+
   const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
   const isLow = pct < 30;
+
+  function commitEdit() {
+    const n = parseInt(inputVal, 10);
+    if (!isNaN(n)) onSet(n);
+    setEditing(false);
+  }
 
   return (
     <div className="flex items-center gap-3">
@@ -70,10 +47,29 @@ function VitalBar({ label, icon, color, current, max, onAdjust }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between mb-1.5">
           <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>{label}</span>
-          <span className="font-mono text-sm font-bold text-paper">
-            {current}
-            <span className="text-faint font-normal text-xs"> / {max}</span>
-          </span>
+          {editing ? (
+            <input
+              type="number"
+              autoFocus
+              value={inputVal}
+              min={0}
+              max={max}
+              onChange={e => setInputVal(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false); }}
+              className="font-mono text-sm font-bold bg-raised border border-hairline rounded px-1 w-16 text-right text-paper"
+              style={{ borderColor: `${color}60` }}
+            />
+          ) : (
+            <button
+              onClick={() => { setInputVal(String(current)); setEditing(true); }}
+              className="font-mono text-sm font-bold text-paper hover:opacity-70 transition-opacity"
+              title="Wert direkt eingeben"
+            >
+              {current}
+              <span className="text-faint font-normal text-xs"> / {max}</span>
+            </button>
+          )}
         </div>
         <div className="h-3 rounded-full overflow-hidden bg-raised border border-hairline">
           <div
@@ -94,19 +90,26 @@ function VitalBar({ label, icon, color, current, max, onAdjust }: {
       >
         −
       </button>
-      <button
-        onClick={() => onAdjust(+1)}
-        className="shrink-0 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors"
-        style={{
-          width: 40, height: 40,
-          borderColor: `${color}60`,
-          color,
-          backgroundColor: `${color}10`,
-        }}
-        aria-label={`${label} erhöhen`}
-      >
-        +
-      </button>
+      {current < max ? (
+        <button
+          onClick={() => onSet(max)}
+          className="shrink-0 flex items-center justify-center rounded-lg border text-[10px] font-bold tracking-wide transition-colors"
+          style={{ width: 40, height: 40, borderColor: `${color}60`, color, backgroundColor: `${color}10` }}
+          aria-label={`${label} auf Maximum setzen`}
+          title="Auf Max heilen"
+        >
+          MAX
+        </button>
+      ) : (
+        <button
+          onClick={() => onAdjust(+1)}
+          className="shrink-0 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors"
+          style={{ width: 40, height: 40, borderColor: `${color}60`, color, backgroundColor: `${color}10` }}
+          aria-label={`${label} erhöhen`}
+        >
+          +
+        </button>
+      )}
     </div>
   );
 }
@@ -143,7 +146,8 @@ function TalentTile({ talentName, catColor, effective, pct, isCombat, onSelect }
 
 // ── Probe tab ─────────────────────────────────────────────────────────────────
 function ProbeTab({ charId }: { charId: string }) {
-  const char = useStore(s => s.characters.find(c => c.id === charId));
+  const char           = useStore(s => s.characters.find(c => c.id === charId));
+  const patchCharacter = useStore(s => s.patchCharacter);
   const [selectedTalent, setSelectedTalent] = useState<string | null>(null);
   const [rolls, setRolls]   = useState<(number | '')[]>(['', '', '']);
   const [result, setResult] = useState<ReturnType<typeof resolveCheck> | null>(null);
@@ -164,15 +168,41 @@ function ProbeTab({ charId }: { charId: string }) {
   const probPct   = prob !== null ? Math.round(prob * 100) : null;
   const pColor    = probColor(probPct);
 
+  function saveToHistory(r: ReturnType<typeof resolveCheck>, rollValues: number[]) {
+    if (!selectedTalent) return;
+    const entry: ProbeEntry = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      talentName: selectedTalent,
+      effective,
+      attrValues: attrVals,
+      rolls: rollValues,
+      totalDiff: r.totalDiff,
+      success: r.success,
+      remaining: r.remaining,
+    };
+    patchCharacter(charId, c => {
+      c.probeHistory = [entry, ...(c.probeHistory ?? [])].slice(0, 20);
+    });
+  }
+
   function rollAuto() {
     const r = [randomD20(), randomD20(), randomD20()];
     setRolls(r);
-    if (talentMeta) setResult(resolveCheck(r, attrVals, effective));
+    if (talentMeta) {
+      const res = resolveCheck(r, attrVals, effective);
+      setResult(res);
+      saveToHistory(res, r);
+    }
   }
 
   function rollManual() {
     const r = rolls.map(v => (v === '' ? 0 : Number(v)));
-    if (talentMeta) setResult(resolveCheck(r, attrVals, effective));
+    if (talentMeta) {
+      const res = resolveCheck(r, attrVals, effective);
+      setResult(res);
+      saveToHistory(res, r);
+    }
   }
 
   function deselect() {
@@ -220,6 +250,38 @@ function ProbeTab({ charId }: { charId: string }) {
             colorZones={COLOR_ZONES}
           />
         </div>
+
+        {/* Würfelhistorie */}
+        {(char.probeHistory?.length ?? 0) > 0 && (
+          <div className="rounded-xl border border-hairline bg-surface p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-muted">Verlauf</span>
+              <button
+                onClick={() => patchCharacter(charId, c => { c.probeHistory = []; })}
+                className="text-[9px] text-faint hover:text-danger transition-colors"
+              >
+                Löschen
+              </button>
+            </div>
+            <div className="space-y-1">
+              {(char.probeHistory ?? []).map(e => {
+                const ts = new Date(e.timestamp);
+                const time = `${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}`;
+                const col = e.success ? '#4FA968' : '#C83048';
+                return (
+                  <div key={e.id} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-raised text-[11px]">
+                    <span className="font-bold shrink-0 w-3" style={{ color: col }}>{e.success ? '✓' : '✗'}</span>
+                    <span className="flex-1 truncate text-paper">{e.talentName}</span>
+                    <span className="font-mono shrink-0" style={{ color: col }}>
+                      {e.success ? `+${e.remaining}` : `−${Math.abs(e.remaining)}`}
+                    </span>
+                    <span className="font-mono text-faint shrink-0">{time}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Talent tile grid per category */}
         {TALENT_CATEGORIES.map(cat => (
@@ -295,12 +357,12 @@ function ProbeTab({ charId }: { charId: string }) {
         <div className="rounded-xl border border-hairline bg-surface p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Erfolgswahrscheinlichkeit</span>
-            <span className="font-mono font-bold text-lg" style={{ color: probColor }}>{probPct}%</span>
+            <span className="font-mono font-bold text-lg" style={{ color: pColor }}>{probPct}%</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden bg-raised">
             <div
               className="h-full rounded-full transition-all"
-              style={{ width: `${(prob * 100).toFixed(1)}%`, backgroundColor: probColor, boxShadow: `0 0 6px ${probColor}88` }}
+              style={{ width: `${(prob * 100).toFixed(1)}%`, backgroundColor: pColor, boxShadow: `0 0 6px ${pColor}88` }}
             />
           </div>
         </div>
@@ -532,7 +594,9 @@ function InventarTab({ charId }: { charId: string }) {
 function NotizenTab({ charId }: { charId: string }) {
   const char           = useStore(s => s.characters.find(c => c.id === charId));
   const patchCharacter = useStore(s => s.patchCharacter);
-  const [newText, setNewText] = useState('');
+  const [newText, setNewText]     = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText]   = useState('');
 
   if (!char) return null;
 
@@ -546,6 +610,20 @@ function NotizenTab({ charId }: { charId: string }) {
 
   function removeNote(id: string) {
     patchCharacter(charId, c => { c.notes = c.notes.filter(n => n.id !== id); });
+  }
+
+  function startEdit(id: string, text: string) {
+    setEditingId(id);
+    setEditText(text);
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    patchCharacter(charId, c => {
+      const note = c.notes.find(n => n.id === editingId);
+      if (note) note.text = editText.trim();
+    });
+    setEditingId(null);
   }
 
   return (
@@ -579,18 +657,52 @@ function NotizenTab({ charId }: { charId: string }) {
               key={note.id}
               className="group relative bg-surface border border-hairline rounded-xl p-4"
             >
-              <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">{note.text}</p>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-[10px] text-faint font-mono">
-                  {new Date(note.timestamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
-                </p>
-                <button
-                  onClick={() => removeNote(note.id)}
-                  className="opacity-0 group-hover:opacity-100 text-faint hover:text-danger transition-all text-xs"
-                >
-                  ✕
-                </button>
-              </div>
+              {editingId === note.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    rows={4}
+                    autoFocus
+                    className="w-full bg-raised border border-muted rounded-lg px-3 py-2 text-primary text-sm focus:outline-none resize-none"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="px-3 py-1.5 text-xs text-muted hover:text-primary border border-hairline rounded-lg transition-colors"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      onClick={saveEdit}
+                      disabled={!editText.trim()}
+                      className="px-3 py-1.5 text-xs bg-paper text-bg rounded-lg font-bold hover:opacity-90 disabled:opacity-40 transition-opacity"
+                    >
+                      Speichern
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p
+                    className="text-sm text-primary whitespace-pre-wrap leading-relaxed cursor-text"
+                    onClick={() => startEdit(note.id, note.text)}
+                  >
+                    {note.text}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[10px] text-faint font-mono">
+                      {new Date(note.timestamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
+                    </p>
+                    <button
+                      onClick={() => removeNote(note.id)}
+                      className="opacity-0 group-hover:opacity-100 text-faint hover:text-danger transition-all text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -618,9 +730,19 @@ export function PlayScreen() {
       c.currentLE = Math.max(0, Math.min(maxLE, c.currentLE + delta));
     });
   }
+  function setLE(value: number) {
+    patchCharacter(activeId!, c => {
+      c.currentLE = Math.max(0, Math.min(maxLE, value));
+    });
+  }
   function adjustGG(delta: number) {
     patchCharacter(activeId!, c => {
       c.currentGG = Math.max(0, Math.min(maxGG, c.currentGG + delta));
+    });
+  }
+  function setGG(value: number) {
+    patchCharacter(activeId!, c => {
+      c.currentGG = Math.max(0, Math.min(maxGG, value));
     });
   }
 
@@ -660,6 +782,7 @@ export function PlayScreen() {
           current={char.currentLE}
           max={maxLE}
           onAdjust={adjustLE}
+          onSet={setLE}
         />
         <VitalBar
           label="GG"
@@ -668,6 +791,7 @@ export function PlayScreen() {
           current={char.currentGG}
           max={maxGG}
           onAdjust={adjustGG}
+          onSet={setGG}
         />
       </div>
 

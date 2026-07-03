@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { useState, useRef, useLayoutEffect, type ReactNode } from 'react';
 import { useStore } from '../../store/useStore';
 import { ATTRIBUTES, ATTR_MAX } from '../../data/attributes';
-import { PROFESSIONS, PROFESSION_MAP } from '../../data/professions';
+import { PROFESSIONS } from '../../data/professions';
 import { TALENT_CATEGORIES, TALENT_CAT_MAP } from '../../data/talents';
 import { attrPointsLeft, attrJobMin, stepCost } from '../../rules/attributeCost';
 import { getCategoryOf, canAddSpec, talentFixedBonus } from '../../rules/talentBudget';
@@ -14,60 +14,9 @@ import type { SpiderAxis, ColorZone } from '../ui/SpiderChart';
 import { TalentTile, CatSummaryTile, AbilityTab, SpecialAbilitiesSection, CustomTalentForm, type TabKey } from './Tab4Talents';
 import { SpecTile, CustomSpecForm } from './Tab7FreeSpecs';
 import { SPECIFICATIONS } from '../../data/specifications';
+import { CharacterInfoSection } from './CharacterInfoSection';
+import { ProfessionSection } from './ProfessionSection';
 
-
-// ── Gender options ────────────────────────────────────────────────────────────
-const GENDER_OPTIONS = [
-  { key: 'männlich',    label: 'Männlich',    icon: '/icons/attr/id_maennlich.png' },
-  { key: 'weiblich',   label: 'Weiblich',    icon: '/icons/attr/id_weiblich.png' },
-  { key: 'divers',     label: 'Divers',      icon: '/icons/attr/id_divers.png' },
-  { key: 'nonbinär',  label: 'Nonbinär',    icon: '/icons/attr/id_nonbinaer.png' },
-  { key: 'agender',    label: 'Agender',     icon: '/icons/attr/id_agender.png' },
-  { key: 'genderfluid',label: 'Genderfluid', icon: '/icons/attr/id_genderfluid.png' },
-  { key: 'asexuell',   label: 'Asexuell',   icon: '/icons/attr/id_asexuell.png' },
-  { key: 'unbekannt',  label: 'Unbekannt',  icon: '/icons/attr/id_unknown.png' },
-];
-
-function GenderOverlay({ value, onSelect, onClose, anchorRect }: {
-  value: string;
-  onSelect: (key: string) => void;
-  onClose: () => void;
-  anchorRect: DOMRect | null;
-}) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  function handleClose() { setVisible(false); setTimeout(onClose, 140); }
-  const cardStyle = anchorRect ? {
-    position: 'fixed' as const,
-    top: anchorRect.top, left: anchorRect.left,
-    transformOrigin: 'top left',
-    transform: visible ? 'scale(1)' : 'scale(0)',
-    opacity: visible ? 1 : 0,
-    transition: 'transform 140ms cubic-bezier(0.2,0,0,1), opacity 140ms ease',
-  } : {};
-  return (
-    <>
-      <div className="fixed inset-0 z-50" onClick={handleClose} />
-      <div className="fixed z-50 bg-surface border border-hairline rounded-xl shadow-2xl p-3" style={cardStyle} onClick={e => e.stopPropagation()}>
-        <div className="grid grid-cols-4 gap-2">
-          {GENDER_OPTIONS.map(g => {
-            const selected = value === g.key;
-            return (
-              <button key={g.key} onClick={() => { onSelect(g.key); handleClose(); }}
-                className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
-                style={{ backgroundColor: selected ? '#B8B8C028' : '#B8B8C00A', borderColor: selected ? '#B8B8C090' : '#2D303A', boxShadow: selected ? 'inset 0 0 0 1px #B8B8C040' : 'none' }}>
-                <CatIcon src={g.icon} size={57} className="shrink-0" />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </>
-  );
-}
 
 // ── 12 colors — rainbow spectrum, strict primary/combat alternation ──────────
 // Even positions (0,2,4,6,8,10) = primary; odd (1,3,5,7,9,11) = combat
@@ -440,7 +389,6 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
   const patchCharacter = useStore(s => s.patchCharacter);
 
   const containerRef  = useRef<HTMLDivElement>(null);
-  const genderBtnRef  = useRef<HTMLButtonElement>(null);
   const [containerWidth, setContainerWidth] = useState(300);
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -457,26 +405,6 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
     return () => ro.disconnect();
   }, [mode]);
 
-  if (!char) return null;
-
-  const [genderOverlay, setGenderOverlay] = useState(false);
-  const [genderAnchor,  setGenderAnchor]  = useState<DOMRect | null>(null);
-
-  const selectedGender = GENDER_OPTIONS.find(g => g.key === char.info.gender);
-
-  function patchInfo(key: string, value: string) {
-    patchCharacter(charId, c => { (c.info as Record<string, string>)[key] = value; });
-  }
-
-  const pointsLeft = attrPointsLeft(char);
-  const derived    = calcDerived(char);
-
-  function setAttr(key: AttributeKey, val: number) {
-    patchCharacter(charId, c => { c.attributes[key] = val; });
-  }
-
-  const activeProfMeta  = PROFESSIONS.find(p => p.key === char.profession);
-  const profColor       = activeProfMeta?.color ?? '#8C8F99';
   const [talentDragOver,  setTalentDragOver]  = useState(false);
   const [specDragOver,    setSpecDragOver]    = useState(false);
   const [specPosDragOver, setSpecPosDragOver] = useState(false);
@@ -488,6 +416,18 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
   const [selectedTab,     setSelectedTab]     = useState<TabKey>(TALENT_CATEGORIES[0].key);
   const [showCustomForm,  setShowCustomForm]  = useState(false);
   const [showSpecForm,    setShowSpecForm]    = useState(false);
+
+  if (!char) return null;
+
+  const pointsLeft = attrPointsLeft(char);
+  const derived    = calcDerived(char);
+
+  function setAttr(key: AttributeKey, val: number) {
+    patchCharacter(charId, c => { c.attributes[key] = val; });
+  }
+
+  const activeProfMeta  = PROFESSIONS.find(p => p.key === char.profession);
+  const profColor       = activeProfMeta?.color ?? '#8C8F99';
 
   const isAbilities = selectedTab === 'abilities';
   const activeCat   = isAbilities ? null : TALENT_CATEGORIES.find(c => c.key === selectedTab)!;
@@ -658,155 +598,11 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
 
       {/* ── Identity + Berufsklassen — nebeneinander ── */}
       <div className={mode === 'fix' ? 'flex gap-2 items-start' : 'flex gap-2 items-stretch'}>
-
-        {/* Left: Identität — kompakter Block mit Bild rechts */}
-        {(() => {
-          const infoIncomplete = mode === 'fix' && (!char.info.name || !char.info.gender || !char.info.age || !char.info.height || !char.info.weight);
-          return (
-        <div className="shrink-0 w-48 rounded-lg border overflow-hidden flex flex-col" style={{ borderColor: infoIncomplete ? '#E8305060' : '#FFFFFF0C', boxShadow: infoIncomplete ? '0 0 8px #E8305030' : 'none' }}>
-          {/* Name — volle Breite */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-raised/60 border-b border-hairline shrink-0">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted shrink-0">Name</span>
-            <span className="w-px h-3 bg-hairline shrink-0" />
-            <input
-              type="text"
-              value={char.info.name}
-              onChange={e => patchInfo('name', e.target.value)}
-              placeholder="Charaktername"
-              className="flex-1 bg-transparent text-primary text-xs placeholder:text-faint focus:outline-none min-w-0"
-            />
-          </div>
-          {/* Body: schmale Felder links + Bild rechts */}
-          <div className="p-2 flex gap-2 flex-1">
-            {/* Schmale Felder-Spalte */}
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
-              {([
-                { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'J'  },
-                { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm' },
-                { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg' },
-              ] as const).map(f => {
-                const val = (char.info as Record<string, string>)[f.key] ?? '';
-                return (
-                  <div key={f.key} className="flex items-center gap-1 px-1.5 py-0.5 bg-raised border border-hairline rounded">
-                    <CatIcon src={f.icon} size={14} className="shrink-0" />
-                    <input
-                      type="text"
-                      value={val}
-                      onChange={e => patchInfo(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      className="flex-1 bg-transparent text-primary text-[11px] font-mono placeholder:text-faint focus:outline-none min-w-0 w-0"
-                    />
-                    {val && <span className="text-[9px] text-faint shrink-0">{f.suffix}</span>}
-                  </div>
-                );
-              })}
-              <button
-                ref={genderBtnRef}
-                onClick={() => { setGenderAnchor(genderBtnRef.current?.getBoundingClientRect() ?? null); setGenderOverlay(true); }}
-                className={`flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors ${
-                  selectedGender ? 'bg-raised border-hairline hover:border-muted' : 'border-dashed border-hairline text-faint hover:border-muted hover:text-muted'
-                }`}
-              >
-                {selectedGender
-                  ? <CatIcon src={selectedGender.icon} size={14} className="shrink-0" />
-                  : <span className="text-xs leading-none text-faint w-4 text-center">?</span>
-                }
-                <span className="text-[11px] text-primary truncate">
-                  {selectedGender ? selectedGender.label : 'Geschlecht'}
-                </span>
-              </button>
-            </div>
-            {/* Bild-Platzhalter rechts */}
-            <div className="w-14 shrink-0 rounded border border-dashed border-hairline flex items-center justify-center self-stretch">
-              <span className="text-[8px] uppercase tracking-widest text-faint/40" style={{ writingMode: 'vertical-rl' }}>Bild</span>
-            </div>
-          </div>
-        </div>
-          );
-        })()}
-
-        {/* Right: Berufsklassen — 4 Spalten, füllt restliche Breite */}
-        <div className={mode === 'fix' ? 'flex-1 min-w-0 flex flex-col gap-2' : 'flex-1 min-w-0'}>
-          <div style={{ maxHeight: mode === 'edit' ? 600 : 0, opacity: mode === 'edit' ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.35s ease, opacity 0.25s ease' }}>
-            <div className="grid grid-cols-4 gap-1">
-              {PROFESSIONS.map(prof => {
-                const isActive = char.profession === prof.key;
-                const shortLabel = prof.labelSingular.replace(/ ?Beruf(e?)/, '').trim();
-                return (
-                  <button key={prof.key}
-                    onClick={() => patchCharacter(charId, c => {
-                      const oldProf = c.profession ? PROFESSION_MAP[c.profession] : null;
-                      c.profession = prof.key;
-                      for (const key of Object.keys(c.attributes) as AttributeKey[]) {
-                        const oldMin    = (oldProf?.attrMin[key] ?? 8) as number;
-                        const newMin    = (prof.attrMin[key]     ?? 8) as number;
-                        const freeSpent = Math.max(0, (c.attributes[key] ?? 8) - oldMin);
-                        c.attributes[key] = newMin + freeSpent;
-                      }
-                    })}
-                    className="flex flex-col items-start gap-1.5 p-2 rounded-lg border transition-colors hover:opacity-90"
-                    style={{
-                      borderColor:     isActive ? `${prof.color}90` : `${prof.color}28`,
-                      backgroundColor: isActive ? `${prof.color}20` : `${prof.color}08`,
-                      boxShadow:       isActive ? `inset 0 -2px 0 ${prof.color}` : 'none',
-                    }}
-                  >
-                    {/* Icon + Titel in einer Zeile */}
-                    <div className="flex items-center gap-1.5 w-full min-w-0">
-                      <CatIcon src={prof.icon} size={24} className="shrink-0" />
-                      <span
-                        className="text-[10px] font-semibold leading-tight min-w-0"
-                        style={{ color: prof.color, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                      >{shortLabel}</span>
-                    </div>
-                    {/* Attr-Min: icon + ≥N */}
-                    <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 w-full">
-                      {Object.entries(prof.attrMin).map(([k, v]) => {
-                        const attrMeta = ATTRIBUTES.find(a => a.key === k);
-                        const color = C[k as keyof typeof C] ?? '#888';
-                        return (
-                          <div key={k} className="flex items-center gap-[3px]">
-                            <img src={attrMeta?.icon ?? ''} alt={k} style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${color}55`, flexShrink: 0 }} />
-                            <span className="text-[9px] font-mono leading-none" style={{ color }}>≥{v}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* Talent-Pts: catIcon + N */}
-                    <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 w-full">
-                      {Object.entries(prof.talentPts).map(([cat, pts]) => {
-                        const catMeta = TALENT_CATEGORIES.find(c => c.key === cat);
-                        return (
-                          <div key={cat} className="flex items-center gap-[3px]">
-                            <CatIcon src={catMeta?.icon ?? ''} size={11} />
-                            <span className="text-[9px] font-mono leading-none" style={{ color: catMeta?.color ?? '#888' }}>+{pts}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{ maxHeight: mode === 'fix' ? 80 : 0, opacity: mode === 'fix' ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.35s ease, opacity 0.25s ease' }}>
-            {activeProfMeta ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                style={{ borderColor: `${activeProfMeta.color}60`, backgroundColor: `${activeProfMeta.color}12` }}>
-                <CatIcon src={activeProfMeta.icon} size={22} />
-                <span className="text-sm font-semibold" style={{ color: activeProfMeta.color }}>{activeProfMeta.labelSingular}</span>
-              </div>
-            ) : mode === 'fix' && (
-              <div className="flex items-center justify-center px-3 py-2 rounded-lg border"
-                style={{ borderColor: '#E8305060', backgroundColor: '#E8305010', boxShadow: '0 0 8px #E8305030' }}>
-                <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#E8305080' }}>Keine Berufsklasse</span>
-              </div>
-            )}
-          </div>
+        <CharacterInfoSection charId={charId} mode={mode} />
+        <ProfessionSection charId={charId} mode={mode}>
           {mode === 'fix' && attrSectionJSX}
           {mode === 'fix' && catTabsJSX}
-        </div>
-
+        </ProfessionSection>
       </div>
 
       {/* ── Attribute section: morphing header ↔ chart (edit mode only — fix mode renders inside profession column) ── */}
@@ -1367,14 +1163,6 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
         </div>
       </div>
 
-      {genderOverlay && (
-        <GenderOverlay
-          value={char.info.gender}
-          onSelect={key => patchInfo('gender', key)}
-          onClose={() => setGenderOverlay(false)}
-          anchorRect={genderAnchor}
-        />
-      )}
     </div>
   );
 }

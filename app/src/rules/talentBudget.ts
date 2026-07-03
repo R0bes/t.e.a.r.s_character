@@ -5,7 +5,7 @@ import { ABILITY_MAP } from '../data/specialAbilities';
 
 export const BASE_TALENT_PTS = 10;
 
-function getCategoryOf(character: Character, name: string): TalentCategory | undefined {
+export function getCategoryOf(character: Character, name: string): TalentCategory | undefined {
   const builtin = TALENT_CATEGORY_OF[name];
   if (builtin) return builtin;
   return character.customTalents?.find(t => t.name === name)?.category;
@@ -84,9 +84,6 @@ export function talentCanIncrease(character: Character, talentName: string): boo
 export function talentCanDecrease(character: Character, talentName: string): boolean {
   return (character.talents[talentName] ?? 0) > 0;
 }
-
-// Re-export for components that need it
-export { getCategoryOf };
 
 export function talentSpecBonusBreakdown(character: Character, cat: TalentCategory): {
   job: number; spec: number; total: number;

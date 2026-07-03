@@ -604,7 +604,7 @@ export function Tab4Talents({ charId, mode }: { charId: string; mode: 'edit' | '
   }
 
   function toggleSpec(spec: Specification) {
-    const isMalus = spec.modifier < 0;
+    const isMalus = spec.modifier > 0;
     const alreadySelected = !!selectedAsSpec(spec.name);
     patch(charId, c => {
       if (isMalus) {

@@ -190,7 +190,7 @@ export function Tab7FreeSpecs({ charId }: { charId: string }) {
   }
 
   function toggleSpec(spec: Specification) {
-    const isMalus = spec.modifier < 0;
+    const isMalus = spec.modifier > 0;
     const alreadySelected = !!selectedAs(spec.name);
     patch(charId, c => {
       if (isMalus) {

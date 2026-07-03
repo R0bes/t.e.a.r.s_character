@@ -40,6 +40,18 @@ export interface Note {
   timestamp: number;
 }
 
+export interface ProbeEntry {
+  id: string;
+  timestamp: number;
+  talentName: string;
+  effective: number;
+  attrValues: number[];
+  rolls: number[];
+  totalDiff: number;
+  success: boolean;
+  remaining: number;
+}
+
 export interface Character {
   id: string;
   createdAt: number;
@@ -72,4 +84,5 @@ export interface Character {
   currentGG: number;
   inventory: InventoryItem[];
   notes: Note[];
+  probeHistory: ProbeEntry[];
 }
