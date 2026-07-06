@@ -9,6 +9,8 @@ import { talentFixedBonus } from '../rules/talentBudget';
 import { SpiderChart } from '../components/ui/SpiderChart';
 import type { SpiderAxis } from '../components/ui/SpiderChart';
 import { CatIcon } from '../components/ui/CatIcon';
+import { TalentGrid } from '../components/ui/TalentGrid';
+import { SpecList } from '../components/ui/SpecList';
 import type { AttributeKey, ProbeEntry } from '../types/character';
 import { RADAR_AXES, COLOR_ZONES, RADAR_COLORS as C, probColor } from '../data/radarConfig';
 
@@ -111,36 +113,6 @@ function VitalBar({ label, icon, color, current, max, onAdjust, onSet }: {
         </button>
       )}
     </div>
-  );
-}
-
-// ── Compact talent tile (name + %) ───────────────────────────────────────────
-function TalentTile({ talentName, catColor, effective, pct, isCombat, onSelect }: {
-  talentName: string;
-  catColor: string;
-  effective: number;
-  pct: number | null;
-  isCombat: boolean;
-  onSelect: () => void;
-}) {
-  const vc = isCombat ? catColor : probColor(pct);
-  return (
-    <button
-      onClick={onSelect}
-      className="rounded-lg border p-2 flex flex-col gap-0.5 text-left hover:opacity-80 active:scale-95 transition-all"
-      style={{
-        borderColor: `${catColor}30`,
-        backgroundColor: `${catColor}08`,
-        opacity: effective === 0 ? 0.38 : 1,
-      }}
-    >
-      <span className="text-[10px] leading-tight line-clamp-2" style={{ color: catColor }}>
-        {talentName}
-      </span>
-      <span className="font-mono font-bold text-base leading-none" style={{ color: vc }}>
-        {pct !== null ? `${pct}%` : `TP ${effective}`}
-      </span>
-    </button>
   );
 }
 
@@ -251,6 +223,9 @@ function ProbeTab({ charId }: { charId: string }) {
           />
         </div>
 
+        {/* Spezifika */}
+        <SpecList specs={[char.specProfession, char.specHobby1, char.specFreePositive, char.specFreeNegative]} />
+
         {/* Würfelhistorie */}
         {(char.probeHistory?.length ?? 0) > 0 && (
           <div className="rounded-xl border border-hairline bg-surface p-3 space-y-2">
@@ -267,7 +242,7 @@ function ProbeTab({ charId }: { charId: string }) {
               {(char.probeHistory ?? []).map(e => {
                 const ts = new Date(e.timestamp);
                 const time = `${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}`;
-                const col = e.success ? '#4FA968' : '#C83048';
+                const col = e.success ? '#3F6B3A' : '#8B2E22';
                 return (
                   <div key={e.id} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-raised text-[11px]">
                     <span className="font-bold shrink-0 w-3" style={{ color: col }}>{e.success ? '✓' : '✗'}</span>
@@ -283,39 +258,8 @@ function ProbeTab({ charId }: { charId: string }) {
           </div>
         )}
 
-        {/* Talent tile grid per category */}
-        {TALENT_CATEGORIES.map(cat => (
-          <div key={cat.key}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <CatIcon src={cat.icon} size={13} />
-              <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
-                {cat.label}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {cat.talents.map(t => {
-                const s   = char.talents[t.name] ?? 0;
-                const b   = talentFixedBonus(char, t.name);
-                const eff = s + b;
-                const cmbt = t.costMultiplier === 2;
-                const av  = t.attrs ? (t.attrs as AttributeKey[]).map(a => char.attributes[a]) : null;
-                const p   = (!cmbt && av && av.length === 3) ? calcSuccessProb(av, eff) : null;
-                const pct = p !== null ? Math.round(p * 100) : null;
-                return (
-                  <TalentTile
-                    key={t.name}
-                    talentName={t.name}
-                    catColor={cat.color}
-                    effective={eff}
-                    pct={pct}
-                    isCombat={cmbt}
-                    onSelect={() => selectTalent(t.name)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        {/* Talent grid */}
+        <TalentGrid char={char} onSelect={selectTalent} />
       </div>
     );
   }
@@ -337,15 +281,15 @@ function ProbeTab({ charId }: { charId: string }) {
         <div
           className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border"
           style={{
-            borderColor: `${catMeta?.color ?? '#888'}40`,
-            backgroundColor: `${catMeta?.color ?? '#888'}0D`,
+            borderColor: `${catMeta?.color ?? '#9C8560'}40`,
+            backgroundColor: `${catMeta?.color ?? '#9C8560'}0D`,
           }}
         >
           {catMeta && <CatIcon src={catMeta.icon} size={16} />}
           <span className="flex-1 font-semibold text-paper truncate">{selectedTalent}</span>
           <span
             className="font-mono font-bold text-sm px-2 py-0.5 rounded"
-            style={{ color: catMeta?.color ?? '#888', backgroundColor: `${catMeta?.color ?? '#888'}18` }}
+            style={{ color: catMeta?.color ?? '#9C8560', backgroundColor: `${catMeta?.color ?? '#9C8560'}18` }}
           >
             TP {effective}
           </span>
@@ -378,16 +322,16 @@ function ProbeTab({ charId }: { charId: string }) {
               <div
                 key={i}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg border"
-                style={{ borderColor: `${meta?.color ?? '#888'}40`, backgroundColor: `${meta?.color ?? '#888'}0D` }}
+                style={{ borderColor: `${meta?.color ?? '#9C8560'}40`, backgroundColor: `${meta?.color ?? '#9C8560'}0D` }}
               >
                 <div
                   className="rounded-full overflow-hidden shrink-0"
-                  style={{ width: 24, height: 24, boxShadow: `0 0 0 1.5px ${meta?.color ?? '#888'}88` }}
+                  style={{ width: 24, height: 24, boxShadow: `0 0 0 1.5px ${meta?.color ?? '#9C8560'}88` }}
                 >
                   <img src={meta?.icon ?? ''} alt={a} className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase tracking-wider" style={{ color: meta?.color ?? '#888' }}>
+                  <div className="text-[9px] font-bold uppercase tracking-wider" style={{ color: meta?.color ?? '#9C8560' }}>
                     {a}
                   </div>
                   <div className="font-mono font-bold text-paper leading-none">{val}</div>
@@ -453,13 +397,13 @@ function ProbeTab({ charId }: { charId: string }) {
         <div
           className="rounded-xl border-2 p-5 text-center space-y-3"
           style={{
-            borderColor: result.success ? '#4FA96880' : '#C8304880',
-            backgroundColor: result.success ? '#4FA96810' : '#C8304810',
+            borderColor: result.success ? '#3F6B3A80' : '#8B2E2280',
+            backgroundColor: result.success ? '#3F6B3A10' : '#8B2E2210',
           }}
         >
           <div
             className="text-3xl font-bold tracking-widest"
-            style={{ color: result.success ? '#4FA968' : '#C83048' }}
+            style={{ color: result.success ? '#3F6B3A' : '#8B2E22' }}
           >
             {result.success ? 'ERFOLG' : 'FEHLSCHLAG'}
           </div>
@@ -478,9 +422,9 @@ function ProbeTab({ charId }: { charId: string }) {
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center font-mono text-lg font-bold border-2"
                     style={{
-                      borderColor: r.success ? '#4FA96880' : '#C8304880',
-                      backgroundColor: r.success ? '#4FA96815' : '#C8304815',
-                      color: r.success ? '#4FA968' : '#C83048',
+                      borderColor: r.success ? '#3F6B3A80' : '#8B2E2280',
+                      backgroundColor: r.success ? '#3F6B3A15' : '#8B2E2215',
+                      color: r.success ? '#3F6B3A' : '#8B2E22',
                     }}
                   >
                     {r.roll}
@@ -777,7 +721,7 @@ export function PlayScreen() {
       <div className="shrink-0 sticky top-[41px] z-20 bg-surface border-b border-hairline px-4 pt-3 pb-3 space-y-3">
         <VitalBar
           label="LE"
-          icon="/icons/attr/le.png"
+          icon="/icons/attr/le.svg"
           color={C.LE}
           current={char.currentLE}
           max={maxLE}
@@ -786,7 +730,7 @@ export function PlayScreen() {
         />
         <VitalBar
           label="GG"
-          icon="/icons/attr/gg.png"
+          icon="/icons/attr/gg.svg"
           color={C.GG}
           current={char.currentGG}
           max={maxGG}
@@ -803,8 +747,8 @@ export function PlayScreen() {
             onClick={() => setActiveTab(tab)}
             className="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
             style={{
-              borderBottomColor: activeTab === tab ? '#E8E0D0' : 'transparent',
-              color: activeTab === tab ? '#E8E0D0' : '#6B6F7C',
+              borderBottomColor: activeTab === tab ? '#2B1D10' : 'transparent',
+              color: activeTab === tab ? '#2B1D10' : '#9C8560',
             }}
           >
             {TAB_LABELS[tab]}
@@ -814,9 +758,11 @@ export function PlayScreen() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto pb-20">
-        {activeTab === 'probe'    && <ProbeTab    charId={activeId} />}
-        {activeTab === 'inventar' && <InventarTab charId={activeId} />}
-        {activeTab === 'notizen'  && <NotizenTab  charId={activeId} />}
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
+          {activeTab === 'probe'    && <ProbeTab    charId={activeId} />}
+          {activeTab === 'inventar' && <InventarTab charId={activeId} />}
+          {activeTab === 'notizen'  && <NotizenTab  charId={activeId} />}
+        </div>
       </div>
     </div>
   );

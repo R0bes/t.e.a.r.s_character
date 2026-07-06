@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { CatIcon } from '../ui/CatIcon';
+import { CharacterImagePicker } from './CharacterImageEditor';
 
 const GENDER_OPTIONS = [
-  { key: 'männlich',    label: 'Männlich',    icon: '/icons/attr/id_maennlich.png' },
-  { key: 'weiblich',   label: 'Weiblich',    icon: '/icons/attr/id_weiblich.png' },
-  { key: 'divers',     label: 'Divers',      icon: '/icons/attr/id_divers.png' },
-  { key: 'nonbinär',  label: 'Nonbinär',    icon: '/icons/attr/id_nonbinaer.png' },
-  { key: 'agender',    label: 'Agender',     icon: '/icons/attr/id_agender.png' },
-  { key: 'genderfluid',label: 'Genderfluid', icon: '/icons/attr/id_genderfluid.png' },
-  { key: 'asexuell',   label: 'Asexuell',   icon: '/icons/attr/id_asexuell.png' },
-  { key: 'unbekannt',  label: 'Unbekannt',  icon: '/icons/attr/id_unknown.png' },
+  { key: 'männlich',    label: 'Männlich',    icon: '/icons/attr/id_maennlich.svg' },
+  { key: 'weiblich',   label: 'Weiblich',    icon: '/icons/attr/id_weiblich.svg' },
+  { key: 'divers',     label: 'Divers',      icon: '/icons/attr/id_divers.svg' },
+  { key: 'nonbinär',  label: 'Nonbinär',    icon: '/icons/attr/id_nonbinaer.svg' },
+  { key: 'agender',    label: 'Agender',     icon: '/icons/attr/id_agender.svg' },
+  { key: 'genderfluid',label: 'Genderfluid', icon: '/icons/attr/id_genderfluid.svg' },
+  { key: 'asexuell',   label: 'Asexuell',   icon: '/icons/attr/id_asexuell.svg' },
+  { key: 'unbekannt',  label: 'Unbekannt',  icon: '/icons/attr/id_unknown.svg' },
 ];
 
 function GenderOverlay({ value, onSelect, onClose, anchorRect }: {
@@ -43,7 +44,7 @@ function GenderOverlay({ value, onSelect, onClose, anchorRect }: {
             return (
               <button key={g.key} onClick={() => { onSelect(g.key); handleClose(); }}
                 className="aspect-square flex items-center justify-center rounded-lg border transition-all hover:opacity-90"
-                style={{ backgroundColor: selected ? '#B8B8C028' : '#B8B8C00A', borderColor: selected ? '#B8B8C090' : '#2D303A', boxShadow: selected ? 'inset 0 0 0 1px #B8B8C040' : 'none' }}>
+                style={{ backgroundColor: selected ? '#6B523328' : '#6B52330A', borderColor: selected ? '#6B523390' : '#B4A075', boxShadow: selected ? 'inset 0 0 0 1px #6B523340' : 'none' }}>
                 <CatIcon src={g.icon} size={57} className="shrink-0" />
               </button>
             );
@@ -76,8 +77,8 @@ export function CharacterInfoSection({ charId, mode }: { charId: string; mode: '
       <div
         className="shrink-0 w-48 rounded-lg border overflow-hidden flex flex-col"
         style={{
-          borderColor: infoIncomplete ? '#E8305060' : '#FFFFFF0C',
-          boxShadow:   infoIncomplete ? '0 0 8px #E8305030' : 'none',
+          borderColor: infoIncomplete ? '#8B2E2260' : '#2B1D100C',
+          boxShadow:   infoIncomplete ? '0 0 8px #8B2E2230' : 'none',
         }}
       >
         {/* Name — full width */}
@@ -96,9 +97,9 @@ export function CharacterInfoSection({ charId, mode }: { charId: string; mode: '
         <div className="p-2 flex gap-2 flex-1">
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             {([
-              { key: 'age',    icon: '/icons/attr/info_age.png',    placeholder: 'Alter',   suffix: 'J'  },
-              { key: 'height', icon: '/icons/attr/info_height.png', placeholder: 'Größe',   suffix: 'cm' },
-              { key: 'weight', icon: '/icons/attr/info_weight.png', placeholder: 'Gewicht', suffix: 'kg' },
+              { key: 'age',    icon: '/icons/attr/info_age.svg',    placeholder: 'Alter',   suffix: 'J'  },
+              { key: 'height', icon: '/icons/attr/info_height.svg', placeholder: 'Größe',   suffix: 'cm' },
+              { key: 'weight', icon: '/icons/attr/info_weight.svg', placeholder: 'Gewicht', suffix: 'kg' },
             ] as const).map(f => {
               const val = (char.info as Record<string, string>)[f.key] ?? '';
               return (
@@ -131,10 +132,8 @@ export function CharacterInfoSection({ charId, mode }: { charId: string; mode: '
               </span>
             </button>
           </div>
-          {/* Image placeholder */}
-          <div className="w-14 shrink-0 rounded border border-dashed border-hairline flex items-center justify-center self-stretch">
-            <span className="text-[8px] uppercase tracking-widest text-faint/40" style={{ writingMode: 'vertical-rl' }}>Bild</span>
-          </div>
+          {/* Character image: upload or draw */}
+          <CharacterImagePicker value={char.info.image} onChange={v => patchInfo('image', v)} />
         </div>
       </div>
 

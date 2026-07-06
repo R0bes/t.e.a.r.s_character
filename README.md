@@ -41,7 +41,7 @@ Einfach „Code → Codespaces → New codespace" wählen — `npm install` läu
 app/
   src/
     components/
-      creation/   # Charaktererstellungs-Tabs (Tab1–Tab9)
+      creation/   # Charaktererstellung (eine konsolidierte Formularseite)
       sheet/      # Charakterbogen (Lesemodus)
       ui/         # Wiederverwendbare Komponenten (SpiderChart, PointsBar, …)
     data/         # Statische Regeldaten (Attribute, Talente, Spezifika, …)

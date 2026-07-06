@@ -4,18 +4,18 @@ import type { ColorZone } from '../components/ui/SpiderChart';
 // Even positions (0,2,4,6,8,10) = primary; odd (1,3,5,7,9,11) = combat.
 // Canonical palette for all 12 attribute/derived values — used app-wide.
 export const RADAR_COLORS = {
-  KK:  '#E03838',  // 0°   warm red    – Körperkraft (Stärke, Kraft)
-  INI: '#E06828',  // 30°  orange      – Initiative (Reaktion, Schnelligkeit)
-  GE:  '#D4A820',  // 60°  amber       – Geschicklichkeit (Präzision, Gold)
-  PA:  '#98C818',  // 90°  chartreuse  – Parade (defensiv, Alert)
-  AU:  '#28B040',  // 120° green       – Ausdauer (Vitalität, Natur)
-  LE:  '#18A868',  // 150° sea-green   – Lebensenergie (Heilung, Leben)
-  IN:  '#10A8D0',  // 180° cyan        – Intelligenz (Verstand, Klarheit)
-  GG:  '#2870D8',  // 210° blue        – Geist. Gesundheit (Psyche, Tiefe)
-  MB:  '#5040C8',  // 240° indigo      – Ment. Belastbarkeit (Willenskraft)
-  ATD: '#8828C0',  // 270° violet      – Attacke Distanz (Weite, Kraft)
-  CH:  '#C82888',  // 300° magenta     – Charme (sozial, Persönlichkeit)
-  ATN: '#B82030',  // 330° deep garnet – Attacke Nahkampf (dunkel, intensiv)
+  KK:  '#8B2E22',  // 0°   warm red    – Körperkraft (Stärke, Kraft)
+  INI: '#97501F',  // 30°  orange      – Initiative (Reaktion, Schnelligkeit)
+  GE:  '#8C6A1D',  // 60°  amber       – Geschicklichkeit (Präzision, Gold)
+  PA:  '#6B7A22',  // 90°  chartreuse  – Parade (defensiv, Alert)
+  AU:  '#3F6B3A',  // 120° green       – Ausdauer (Vitalität, Natur)
+  LE:  '#2E6B54',  // 150° sea-green   – Lebensenergie (Heilung, Leben)
+  IN:  '#29707A',  // 180° cyan        – Intelligenz (Verstand, Klarheit)
+  GG:  '#2F4F6B',  // 210° blue        – Geist. Gesundheit (Psyche, Tiefe)
+  MB:  '#3F3E7A',  // 240° indigo      – Ment. Belastbarkeit (Willenskraft)
+  ATD: '#5B3E7A',  // 270° violet      – Attacke Distanz (Weite, Kraft)
+  CH:  '#7A3560',  // 300° magenta     – Charme (sozial, Persönlichkeit)
+  ATN: '#6B1F2C',  // 330° deep garnet – Attacke Nahkampf (dunkel, intensiv)
 } as const;
 
 export const RADAR_AXES = [
@@ -34,15 +34,15 @@ export const RADAR_AXES = [
 ] as const;
 
 export const COLOR_ZONES: ColorZone[] = [
-  { from: 0,  to: 5,  color: '#5878A0', opacity: 0.07 },
-  { from: 5,  to: 14, color: '#8898A8', opacity: 0.05 },
-  { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
-  { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
+  { from: 0,  to: 5,  color: '#6B7F94', opacity: 0.10 },
+  { from: 5,  to: 14, color: '#93887A', opacity: 0.07 },
+  { from: 14, to: 18, color: '#8C6A1D', opacity: 0.13 },
+  { from: 18, to: 20, color: '#8B2E22', opacity: 0.15 },
 ];
 
 export function probColor(pct: number | null): string {
-  if (pct === null) return '#888';
-  if (pct >= 80) return '#4FA968';
-  if (pct >= 50) return '#C89020';
-  return '#C84820';
+  if (pct === null) return '#9C8560';
+  if (pct >= 80) return '#3F6B3A';
+  if (pct >= 50) return '#A6742A';
+  return '#8B2E22';
 }

@@ -8,7 +8,6 @@ import { getCategoryOf, canAddSpec, talentFixedBonus } from '../../rules/talentB
 import { calcSuccessProb } from '../../rules/checks';
 import { calcDerived } from '../../rules/derivedValues';
 import type { AttributeKey, TalentCategory, Specification } from '../../types/character';
-import { CatIcon } from '../ui/CatIcon';
 import { SpiderChart } from '../ui/SpiderChart';
 import type { SpiderAxis, ColorZone } from '../ui/SpiderChart';
 import { TalentTile, CatSummaryTile, AbilityTab, SpecialAbilitiesSection, CustomTalentForm, type TabKey } from './Tab4Talents';
@@ -82,18 +81,18 @@ type CombinedEntry =
   | { type: 'combat';  key: CombatKey;   color: string; icon: string; maxValue?: number };
 
 const COMBINED_ENTRIES: CombinedEntry[] = [
-  { type: 'primary', key: 'KK',  color: C.KK,  icon: '/icons/attr/kk.png'  },  // 0°   primär  – oben
-  { type: 'combat',  key: 'INI', color: C.INI, icon: '/icons/attr/ini.png' },  // 30°  kampf   – KK+5−GE/2 (zwischen KK & GE)
-  { type: 'primary', key: 'GE',  color: C.GE,  icon: '/icons/attr/ge.png'  },  // 60°  primär
-  { type: 'combat',  key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.png'  },  // 90°  kampf   – (KK+GE+AU)/3
-  { type: 'primary', key: 'AU',  color: C.AU,  icon: '/icons/attr/au.png'  },  // 120° primär
-  { type: 'combat',  key: 'LE',  color: C.LE,  icon: '/icons/attr/le.png',  maxValue: 180 }, // 150° kampf   – (KK×2+AU)×3
-  { type: 'primary', key: 'IN',  color: C.IN,  icon: '/icons/attr/in.png'  },  // 180° primär  – unten
-  { type: 'combat',  key: 'GG',  color: C.GG,  icon: '/icons/attr/gg.png',  maxValue: 240 }, // 210° kampf   – (AU+IN+MB×2)×3 (zwischen IN & MB)
-  { type: 'primary', key: 'MB',  color: C.MB,  icon: '/icons/attr/mb.png'  },  // 240° primär
-  { type: 'combat',  key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.png' },  // 270° kampf   – (GE×2+AU)/3
-  { type: 'primary', key: 'CH',  color: C.CH,  icon: '/icons/attr/ch.png'  },  // 300° primär
-  { type: 'combat',  key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.png' },  // 330° kampf   – (KK×2+GE)/3 (neben KK)
+  { type: 'primary', key: 'KK',  color: C.KK,  icon: '/icons/attr/kk.svg'  },  // 0°   primär  – oben
+  { type: 'combat',  key: 'INI', color: C.INI, icon: '/icons/attr/ini.svg' },  // 30°  kampf   – KK+5−GE/2 (zwischen KK & GE)
+  { type: 'primary', key: 'GE',  color: C.GE,  icon: '/icons/attr/ge.svg'  },  // 60°  primär
+  { type: 'combat',  key: 'PA',  color: C.PA,  icon: '/icons/attr/pa.svg'  },  // 90°  kampf   – (KK+GE+AU)/3
+  { type: 'primary', key: 'AU',  color: C.AU,  icon: '/icons/attr/au.svg'  },  // 120° primär
+  { type: 'combat',  key: 'LE',  color: C.LE,  icon: '/icons/attr/le.svg',  maxValue: 180 }, // 150° kampf   – (KK×2+AU)×3
+  { type: 'primary', key: 'IN',  color: C.IN,  icon: '/icons/attr/in.svg'  },  // 180° primär  – unten
+  { type: 'combat',  key: 'GG',  color: C.GG,  icon: '/icons/attr/gg.svg',  maxValue: 240 }, // 210° kampf   – (AU+IN+MB×2)×3 (zwischen IN & MB)
+  { type: 'primary', key: 'MB',  color: C.MB,  icon: '/icons/attr/mb.svg'  },  // 240° primär
+  { type: 'combat',  key: 'ATD', color: C.ATD, icon: '/icons/attr/atd.svg' },  // 270° kampf   – (GE×2+AU)/3
+  { type: 'primary', key: 'CH',  color: C.CH,  icon: '/icons/attr/ch.svg'  },  // 300° primär
+  { type: 'combat',  key: 'ATN', color: C.ATN, icon: '/icons/attr/atn.svg' },  // 330° kampf   – (KK×2+GE)/3 (neben KK)
 ];
 
 // Header display order: [6 primary] [4 combat] [LE, GG]
@@ -194,9 +193,9 @@ function AttrControl({
         left: -(half + 3), top: -(half + 3),
         width: sz + 28, height: sz + 6,
         borderRadius: 7,
-        border: (mode === 'fix' && canInc) ? '1px solid #E8305060' : `1px solid ${color}30`,
-        backgroundColor: (mode === 'fix' && canInc) ? '#E8305008' : `${color}08`,
-        boxShadow: (mode === 'fix' && canInc) ? '0 0 8px #E8305030' : 'none',
+        border: (mode === 'fix' && canInc) ? '1px solid #8B2E2260' : `1px solid ${color}30`,
+        backgroundColor: (mode === 'fix' && canInc) ? '#8B2E2208' : `${color}08`,
+        boxShadow: (mode === 'fix' && canInc) ? '0 0 8px #8B2E2230' : 'none',
         opacity: collapsed ? 1 : 0,
         transition: 'opacity 0.6s ease',
         pointerEvents: 'none',
@@ -254,7 +253,7 @@ function AttrControl({
       >
         <span
           className={`flex items-center justify-center w-full h-full font-bold ${plusSize} leading-none select-none`}
-          style={{ color: '#22c55e', opacity: canInc ? 1 : 0.2, transform: `rotate(${textRotation}deg)` }}
+          style={{ color: '#3F6B3A', opacity: canInc ? 1 : 0.2, transform: `rotate(${textRotation}deg)` }}
         >
           {plusLabel}
         </span>
@@ -269,7 +268,7 @@ function AttrControl({
       >
         <span
           className={`flex items-center justify-center w-full h-full font-bold ${minusSize} leading-none select-none`}
-          style={{ color: '#ef4444', opacity: canDec ? 0.9 : 0.15, transform: `rotate(${textRotation}deg)` }}
+          style={{ color: '#8B2E22', opacity: canDec ? 0.9 : 0.15, transform: `rotate(${textRotation}deg)` }}
         >
           {minusLabel}
         </span>
@@ -408,7 +407,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
   }
 
   const activeProfMeta  = PROFESSIONS.find(p => p.key === char.profession);
-  const profColor       = activeProfMeta?.color ?? '#8C8F99';
+  const profColor       = activeProfMeta?.color ?? '#6B5233';
 
   const isAbilities = selectedTab === 'abilities';
   const activeCat   = isAbilities ? null : TALENT_CATEGORIES.find(c => c.key === selectedTab)!;
@@ -455,7 +454,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
     const ct = char!.customTalents.find(t => t.name === name);
     if (ct) {
       const cat = TALENT_CATEGORIES.find(c => c.key === ct.category);
-      return { attrs: ct.attrs, costMul: ct.costMultiplier as 1 | 2, catColor: cat?.color ?? '#888' };
+      return { attrs: ct.attrs, costMul: ct.costMultiplier as 1 | 2, catColor: cat?.color ?? '#9C8560' };
     }
     return null;
   }
@@ -471,9 +470,9 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
       <button
         onClick={e => { e.stopPropagation(); onRemove(); }}
         className={`absolute ${pos} z-20 w-5 h-5 rounded-full flex items-center justify-center`}
-        style={{ backgroundColor: '#1A1D26CC', border: '1px solid #FFFFFF18' }}
+        style={{ backgroundColor: '#2B1D10CC', border: '1px solid #F2E7C630' }}
       >
-        <span style={{ fontSize: 12, color: '#8C8F99', lineHeight: 1 }}>×</span>
+        <span style={{ fontSize: 12, color: '#E7D8B2', lineHeight: 1 }}>×</span>
       </button>
     );
   }
@@ -491,7 +490,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
   function Chevron({ open }: { open: boolean }) {
     return (
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, transition: 'transform 0.25s ease', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-        <path d="M2 3.5l3 3 3-3" stroke="#8C8F99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 3.5l3 3 3-3" stroke="#E7D8B2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     );
   }
@@ -504,29 +503,29 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
         height: expanded === 'chart' ? Math.max(containerWidth, HEADER_H) : HEADER_H,
         overflow: 'hidden',
         transition: 'height 0.9s cubic-bezier(0.4,0,0.2,1), border-color 0.6s ease, box-shadow 0.3s ease',
-        border: expanded === 'chart' ? '1px solid #FFFFFF08' : '1px solid #FFFFFF0C',
+        border: expanded === 'chart' ? '1px solid #2B1D1008' : '1px solid #2B1D100C',
         cursor: expanded !== 'chart' ? 'pointer' : 'default',
       }}
       onClick={expanded !== 'chart' ? () => setExpanded('chart') : undefined}
     >
       <div className="absolute" style={{ left: '17%', top: '17%', width: '66%', aspectRatio: '1', opacity: expanded === 'chart' ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', pointerEvents: expanded === 'chart' ? 'auto' : 'none' }}>
         <SpiderChart axes={combinedAxes} size={140} gridValues={[5, 10, 14, 18]} showGridLabels showValueLabels chartId="combined" className="w-full h-full"
-          colorZones={[{ from: 0, to: 5, color: '#5878A0', opacity: 0.07 }, { from: 5, to: 14, color: '#8898A8', opacity: 0.05 }, { from: 14, to: 18, color: '#C89020', opacity: 0.10 }, { from: 18, to: 20, color: '#C83020', opacity: 0.13 }] as ColorZone[]} />
+          colorZones={[{ from: 0, to: 5, color: '#6B7F94', opacity: 0.07 }, { from: 5, to: 14, color: '#93887A', opacity: 0.05 }, { from: 14, to: 18, color: '#8C6A1D', opacity: 0.10 }, { from: 18, to: 20, color: '#8B2E22', opacity: 0.13 }] as ColorZone[]} />
       </div>
       <div className="absolute pointer-events-none" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)', opacity: expanded === 'chart' && mode === 'edit' ? 1 : 0, transition: 'opacity 0.25s ease' }}>
         <div className="flex flex-col items-center leading-none">
-          <span className="font-mono font-bold" style={{ fontSize: 22, color: pointsLeft > 0 ? '#7A8A9A' : '#C83030' }}>{pointsLeft}</span>
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: '#7A8A9A80' }}>AP</span>
+          <span className="font-mono font-bold" style={{ fontSize: 22, color: pointsLeft > 0 ? '#6B5233' : '#8B2E22' }}>{pointsLeft}</span>
+          <span className="text-[9px] tracking-widest uppercase" style={{ color: '#6B523380' }}>AP</span>
         </div>
       </div>
       {pointsLeft > 0 && (
         <div className="absolute pointer-events-none flex items-baseline gap-1 leading-none" style={{ right: 8, top: '50%', transform: 'translateY(-50%)', opacity: expanded !== 'chart' ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-          <span className="font-mono font-bold" style={{ fontSize: mode === 'fix' ? 15 : 11, color: mode === 'fix' ? '#E83050' : '#7A8A9A' }}>{pointsLeft}</span>
-          <span style={{ fontSize: mode === 'fix' ? 8 : 7, color: mode === 'fix' ? '#E8305080' : '#7A8A9A60', letterSpacing: '0.08em', textTransform: 'uppercase' }}>AP</span>
+          <span className="font-mono font-bold" style={{ fontSize: mode === 'fix' ? 15 : 11, color: mode === 'fix' ? '#8B2E22' : '#6B5233' }}>{pointsLeft}</span>
+          <span style={{ fontSize: mode === 'fix' ? 8 : 7, color: mode === 'fix' ? '#8B2E2280' : '#6B523360', letterSpacing: '0.08em', textTransform: 'uppercase' }}>AP</span>
         </div>
       )}
       {HEADER_DIVIDER_PCTS.map(pct => (
-        <div key={pct} style={{ position: 'absolute', left: `${pct}%`, top: '15%', bottom: '15%', width: 1, background: 'linear-gradient(to bottom, transparent, #FFFFFF18 30%, #FFFFFF18 70%, transparent)', opacity: expanded !== 'chart' ? 1 : 0, transition: 'opacity 0.4s ease', pointerEvents: 'none' }} />
+        <div key={pct} style={{ position: 'absolute', left: `${pct}%`, top: '15%', bottom: '15%', width: 1, background: 'linear-gradient(to bottom, transparent, #2B1D1018 30%, #2B1D1018 70%, transparent)', opacity: expanded !== 'chart' ? 1 : 0, transition: 'opacity 0.4s ease', pointerEvents: 'none' }} />
       ))}
       {HEADER_ORDER.map((entryIdx, headerSlot) => {
         const entry = COMBINED_ENTRIES[entryIdx];
@@ -555,7 +554,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
         );
       })}
       <button onClick={e => { e.stopPropagation(); setExpanded('slots'); }}
-        style={{ position: 'absolute', top: 6, right: 6, zIndex: 20, opacity: expanded === 'chart' ? 1 : 0, pointerEvents: expanded === 'chart' ? 'auto' : 'none', transition: 'opacity 0.2s ease 0.1s', padding: 4, backgroundColor: '#1A1D2680', border: '1px solid #FFFFFF10', borderRadius: 6 }}>
+        style={{ position: 'absolute', top: 6, right: 6, zIndex: 20, opacity: expanded === 'chart' ? 1 : 0, pointerEvents: expanded === 'chart' ? 'auto' : 'none', transition: 'opacity 0.2s ease 0.1s', padding: 4, backgroundColor: '#2B1D1080', border: '1px solid #F2E7C630', borderRadius: 6 }}>
         <Chevron open={true} />
       </button>
     </div>
@@ -594,7 +593,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
           height: expanded === 'chart' ? Math.max(containerWidth, HEADER_H) : HEADER_H,
           overflow: 'hidden',
           transition: 'height 0.9s cubic-bezier(0.4,0,0.2,1), border-color 0.6s ease, box-shadow 0.3s ease',
-          border: expanded === 'chart' ? '1px solid #FFFFFF08' : '1px solid #FFFFFF0C',
+          border: expanded === 'chart' ? '1px solid #2B1D1008' : '1px solid #2B1D100C',
           cursor: expanded !== 'chart' ? 'pointer' : 'default',
         }}
         onClick={expanded !== 'chart' ? () => setExpanded('chart') : undefined}
@@ -615,10 +614,10 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
             chartId="combined"
             className="w-full h-full"
             colorZones={[
-              { from:  0, to:  5, color: '#5878A0', opacity: 0.07 },
-              { from:  5, to: 14, color: '#8898A8', opacity: 0.05 },
-              { from: 14, to: 18, color: '#C89020', opacity: 0.10 },
-              { from: 18, to: 20, color: '#C83020', opacity: 0.13 },
+              { from:  0, to:  5, color: '#6B7F94', opacity: 0.07 },
+              { from:  5, to: 14, color: '#93887A', opacity: 0.05 },
+              { from: 14, to: 18, color: '#8C6A1D', opacity: 0.10 },
+              { from: 18, to: 20, color: '#8B2E22', opacity: 0.13 },
             ] as ColorZone[]}
           />
         </div>
@@ -630,10 +629,10 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
           transition: 'opacity 0.25s ease',
         }}>
           <div className="flex flex-col items-center leading-none">
-            <span className="font-mono font-bold" style={{ fontSize: 22, color: pointsLeft > 0 ? '#7A8A9A' : '#C83030' }}>
+            <span className="font-mono font-bold" style={{ fontSize: 22, color: pointsLeft > 0 ? '#6B5233' : '#8B2E22' }}>
               {pointsLeft}
             </span>
-            <span className="text-[9px] tracking-widest uppercase" style={{ color: '#7A8A9A80' }}>AP</span>
+            <span className="text-[9px] tracking-widest uppercase" style={{ color: '#6B523380' }}>AP</span>
           </div>
         </div>
 
@@ -644,8 +643,8 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
             opacity: expanded !== 'chart' ? 1 : 0,
             transition: 'opacity 0.4s ease',
           }}>
-            <span className="font-mono font-bold" style={{ fontSize: 11, color: '#7A8A9A' }}>{pointsLeft}</span>
-            <span style={{ fontSize: 7, color: '#7A8A9A60', letterSpacing: '0.08em', textTransform: 'uppercase' }}>AP</span>
+            <span className="font-mono font-bold" style={{ fontSize: 11, color: '#6B5233' }}>{pointsLeft}</span>
+            <span style={{ fontSize: 7, color: '#6B523360', letterSpacing: '0.08em', textTransform: 'uppercase' }}>AP</span>
           </div>
         )}
 
@@ -653,7 +652,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
         {HEADER_DIVIDER_PCTS.map(pct => (
           <div key={pct} style={{
             position: 'absolute', left: `${pct}%`, top: '15%', bottom: '15%', width: 1,
-            background: 'linear-gradient(to bottom, transparent, #FFFFFF18 30%, #FFFFFF18 70%, transparent)',
+            background: 'linear-gradient(to bottom, transparent, #2B1D1018 30%, #2B1D1018 70%, transparent)',
             opacity: expanded !== 'chart' ? 1 : 0,
             transition: 'opacity 0.4s ease',
             pointerEvents: 'none',
@@ -718,8 +717,8 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
             pointerEvents: expanded === 'chart' ? 'auto' : 'none',
             transition: 'opacity 0.2s ease 0.1s',
             padding: 4,
-            backgroundColor: '#1A1D2680',
-            border: '1px solid #FFFFFF10',
+            backgroundColor: '#2B1D1080',
+            border: '1px solid #F2E7C630',
             borderRadius: 6,
           }}
         >
@@ -748,8 +747,8 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
             const talentMeta = hasTalent ? findTalentMeta(char.hobby1Talent!) : null;
             const specCat    = hasSpec ? TALENT_CATEGORIES.find(c => c.key === char.specHobby1!.category) : null;
             const hobbyColor = hasAnything
-              ? (hasTalent ? (talentMeta?.catColor ?? '#8C8F99') : (specCat?.color ?? '#8C8F99'))
-              : '#8C8F99';
+              ? (hasTalent ? (talentMeta?.catColor ?? '#6B5233') : (specCat?.color ?? '#6B5233'))
+              : '#6B5233';
             const hobby2Meta = hasHobby2 ? findTalentMeta(char.hobby2Talent!) : null;
 
             return (
@@ -763,8 +762,8 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                   {mode !== 'fix' && (
                   <div className="relative rounded-lg border transition-colors overflow-hidden"
                     style={{
-                      borderColor:     talentDragOver ? `${profColor}90` : char.professionTalent ? 'transparent' : '#4A4D5830',
-                      backgroundColor: char.professionTalent ? 'transparent' : '#4A4D5806',
+                      borderColor:     talentDragOver ? `${profColor}90` : char.professionTalent ? 'transparent' : '#9C856030',
+                      backgroundColor: char.professionTalent ? 'transparent' : '#9C856006',
                       outline:         talentDragOver ? `1.5px dashed ${profColor}` : 'none',
                       minHeight:       char.professionTalent ? 0 : 40,
                     }}
@@ -841,9 +840,9 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                   ) : (
                     <div className="relative rounded-lg border transition-colors overflow-hidden"
                       style={{
-                        borderColor:     hobby2DragOver ? '#8C8F9990' : '#4A4D5830',
-                        backgroundColor: '#4A4D5806',
-                        outline:         hobby2DragOver ? '1.5px dashed #8C8F99' : 'none',
+                        borderColor:     hobby2DragOver ? '#6B523390' : '#9C856030',
+                        backgroundColor: '#9C856006',
+                        outline:         hobby2DragOver ? '1.5px dashed #6B5233' : 'none',
                         minHeight: 40,
                       }}
                       onDragOver={e => {
@@ -858,13 +857,13 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                       }}
                     >
                       <div className="flex items-center justify-center h-full py-2.5">
-                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#8C8F9950' }}>2. Hobby +3TP</span>
+                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#6B523350' }}>2. Hobby +3TP</span>
                       </div>
                     </div>
                   ))}
 
                   {/* Separator */}
-                  {mode === 'edit' && <div style={{ height: 1, background: 'linear-gradient(to right, #FFFFFF22, #FFFFFF10)', borderRadius: 1, margin: '2px 0' }} />}
+                  {mode === 'edit' && <div style={{ height: 1, background: 'linear-gradient(to right, #2B1D1022, #2B1D1010)', borderRadius: 1, margin: '2px 0' }} />}
 
                   {/* Kategorie-Talente */}
                   {(() => {
@@ -875,7 +874,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                               .map(t => ({ name: t.name, attrs: t.attrs, costMul: t.costMultiplier, isCustom: false, catColor: cat.color }))
                           ),
                           ...char.customTalents.filter(ct => !assignedTalentNames.has(ct.name))
-                            .map(ct => ({ name: ct.name, attrs: ct.attrs, costMul: ct.costMultiplier, isCustom: true, catColor: (TALENT_CAT_MAP as Record<string, { color: string }>)[ct.category]?.color ?? '#8C8F99' })),
+                            .map(ct => ({ name: ct.name, attrs: ct.attrs, costMul: ct.costMultiplier, isCustom: true, catColor: (TALENT_CAT_MAP as Record<string, { color: string }>)[ct.category]?.color ?? '#6B5233' })),
                         ]
                       : [
                           ...activeCat.talents.filter(t => !assignedTalentNames.has(t.name))
@@ -905,7 +904,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                     const profMeta = char.professionTalent ? findTalentMeta(char.professionTalent) : null;
                     const emptySlot = (label: string, color: string) => (
                       <div className="relative rounded-lg border flex items-center justify-center"
-                        style={{ borderColor: '#E8305060', boxShadow: '0 0 8px #E8305030', backgroundColor: `${color}08`, minHeight: 40 }}>
+                        style={{ borderColor: '#8B2E2260', boxShadow: '0 0 8px #8B2E2230', backgroundColor: `${color}08`, minHeight: 40 }}>
                         <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: `${color}60` }}>{label}</span>
                       </div>
                     );
@@ -927,10 +926,10 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                           : emptySlot('Hobby Spezifikum', hobbyColor)}
                         {char.specFreePositive
                           ? <SpecTile key="slot-spec-pos" spec={char.specFreePositive} selectedAs={null} reservedAs={null} onToggle={() => {}} showIcon={false} mode={mode} />
-                          : emptySlot('frei +', '#4FA968')}
+                          : emptySlot('frei +', '#3F6B3A')}
                         {char.specFreeNegative
                           ? <SpecTile key="slot-spec-neg" spec={char.specFreeNegative} selectedAs={null} reservedAs={null} onToggle={() => {}} showIcon={false} mode={mode} />
-                          : emptySlot('frei −', '#E83050')}
+                          : emptySlot('frei −', '#8B2E22')}
                         {/* Linke 3 Spalten: Talent-Slots + normale Talente */}
                         <div className="col-span-3 grid grid-cols-3 gap-1 content-start">
                           {profMeta
@@ -941,7 +940,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                             : emptySlot('Hobby +5TP', hobbyColor)}
                           {hasAnything && (hasHobby2 && hobby2Meta
                             ? <TalentTile key="slot-hobby2" charId={charId} talentName={char.hobby2Talent!} attrs={hobby2Meta.attrs} costMul={hobby2Meta.costMul} isCustom={false} catColor={hobby2Meta.catColor} mode={mode} />
-                            : emptySlot('2. Hobby +3TP', '#8C8F99'))}
+                            : emptySlot('2. Hobby +3TP', '#6B5233'))}
                           {nonCombatTiles}
                         </div>
                         {/* 4. Spalte: Kampftalente */}
@@ -971,8 +970,8 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                   {/* Beruf Spezifikum */}
                   <div className="relative rounded-lg border transition-colors overflow-hidden"
                     style={{
-                      borderColor:     specDragOver ? `${profColor}90` : char.specProfession ? 'transparent' : '#4A4D5830',
-                      backgroundColor: char.specProfession ? 'transparent' : '#4A4D5806',
+                      borderColor:     specDragOver ? `${profColor}90` : char.specProfession ? 'transparent' : '#9C856030',
+                      backgroundColor: char.specProfession ? 'transparent' : '#9C856006',
                       outline:         specDragOver ? `1.5px dashed ${profColor}` : 'none',
                       minHeight:       char.specProfession ? 0 : 40,
                     }}
@@ -1043,9 +1042,9 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                   {/* frei + */}
                   <div className="relative rounded-lg border transition-colors overflow-hidden"
                     style={{
-                      borderColor:     specPosDragOver ? '#4FA96890' : char.specFreePositive ? 'transparent' : '#4A4D5830',
-                      backgroundColor: char.specFreePositive ? 'transparent' : '#4A4D5806',
-                      outline:         specPosDragOver ? '1.5px dashed #4FA968' : 'none',
+                      borderColor:     specPosDragOver ? '#3F6B3A90' : char.specFreePositive ? 'transparent' : '#9C856030',
+                      backgroundColor: char.specFreePositive ? 'transparent' : '#9C856006',
+                      outline:         specPosDragOver ? '1.5px dashed #3F6B3A' : 'none',
                       minHeight:       char.specFreePositive ? 0 : 40,
                     }}
                     onDragOver={e => {
@@ -1068,7 +1067,7 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-full py-2.5">
-                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#4FA96850' }}>frei +</span>
+                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#3F6B3A50' }}>frei +</span>
                       </div>
                     )}
                   </div>
@@ -1076,9 +1075,9 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                   {/* frei − */}
                   <div className="relative rounded-lg border transition-colors overflow-hidden"
                     style={{
-                      borderColor:     specNegDragOver ? '#E8305090' : char.specFreeNegative ? 'transparent' : '#4A4D5830',
-                      backgroundColor: char.specFreeNegative ? 'transparent' : '#4A4D5806',
-                      outline:         specNegDragOver ? '1.5px dashed #E83050' : 'none',
+                      borderColor:     specNegDragOver ? '#8B2E2290' : char.specFreeNegative ? 'transparent' : '#9C856030',
+                      backgroundColor: char.specFreeNegative ? 'transparent' : '#9C856006',
+                      outline:         specNegDragOver ? '1.5px dashed #8B2E22' : 'none',
                       minHeight:       char.specFreeNegative ? 0 : 40,
                     }}
                     onDragOver={e => {
@@ -1106,13 +1105,13 @@ export function Tab3Attributes({ charId, mode = 'edit' }: { charId: string; mode
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-full py-2.5">
-                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#E8305050' }}>frei −</span>
+                        <span className="text-[8px] font-bold tracking-widest uppercase" style={{ color: '#8B2E2250' }}>frei −</span>
                       </div>
                     )}
                   </div>
 
                   {/* Separator */}
-                  <div style={{ height: 1, background: 'linear-gradient(to right, #FFFFFF22, #FFFFFF10)', borderRadius: 1, margin: '2px 0' }} />
+                  <div style={{ height: 1, background: 'linear-gradient(to right, #2B1D1022, #2B1D1010)', borderRadius: 1, margin: '2px 0' }} />
 
                   {/* Kategorie-Spezifika */}
                   {visibleSpecs.map(spec => (

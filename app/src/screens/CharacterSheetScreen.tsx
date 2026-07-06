@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { PROFESSION_MAP } from '../data/professions';
-import { TALENT_CATEGORIES } from '../data/talents';
 import { ABILITY_MAP } from '../data/specialAbilities';
 import { calcDerived, calcATN, calcPA, calcATD, calcINI, calcLE, calcGG } from '../rules/derivedValues';
-import { calcSuccessProb } from '../rules/checks';
-import { talentFixedBonus } from '../rules/talentBudget';
 import { SpiderChart } from '../components/ui/SpiderChart';
 import type { SpiderAxis } from '../components/ui/SpiderChart';
-import { CatIcon } from '../components/ui/CatIcon';
-import type { AttributeKey } from '../types/character';
-import { RADAR_AXES, COLOR_ZONES, RADAR_COLORS as C, probColor } from '../data/radarConfig';
+import { TalentGrid } from '../components/ui/TalentGrid';
+import { SpecList } from '../components/ui/SpecList';
+import { RADAR_AXES, COLOR_ZONES, RADAR_COLORS as C } from '../data/radarConfig';
 
 function ResourceBar({ label, icon, color, current, max }: {
   label: string; icon: string; color: string; current: number; max: number;
@@ -95,7 +92,7 @@ export function CharacterSheetScreen() {
   const initials  = char.info.name
     ? char.info.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : '??';
-  const profColor = prof?.color ?? '#8C8F99';
+  const profColor = prof?.color ?? '#6B5233';
 
   const allSpecs = [
     char.specProfession, char.specHobby1,
@@ -134,14 +131,16 @@ export function CharacterSheetScreen() {
 
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto pb-10">
-        <div className="max-w-2xl mx-auto p-4 flex flex-col gap-4">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto p-4 flex flex-col gap-4">
 
           {/* Identity */}
           <div className="flex items-center gap-3 rounded-xl border p-3"
             style={{ borderColor: `${profColor}40`, backgroundColor: `${profColor}0D` }}>
-            <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm text-paper"
+            <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm text-paper overflow-hidden"
               style={{ backgroundColor: profColor, boxShadow: `0 3px 10px ${profColor}55` }}>
-              {initials}
+              {char.info.image
+                ? <img src={char.info.image} alt="" className="w-full h-full object-cover" />
+                : initials}
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-paper text-sm truncate">{char.info.name || 'Unbenannt'}</div>
@@ -153,9 +152,9 @@ export function CharacterSheetScreen() {
 
           {/* LE / GG */}
           <div className="rounded-xl border border-hairline bg-surface p-3 space-y-3">
-            <ResourceBar label="LE" icon="/icons/attr/le.png" color={C.LE} current={curLE} max={maxLE} />
+            <ResourceBar label="LE" icon="/icons/attr/le.svg" color={C.LE} current={curLE} max={maxLE} />
             <div className="h-px bg-hairline" />
-            <ResourceBar label="GG" icon="/icons/attr/gg.png" color={C.GG} current={curGG} max={maxGG} />
+            <ResourceBar label="GG" icon="/icons/attr/gg.svg" color={C.GG} current={curGG} max={maxGG} />
           </div>
 
           {/* Spider chart */}
@@ -175,87 +174,20 @@ export function CharacterSheetScreen() {
           {/* Combat stats */}
           <div className="flex flex-wrap gap-2">
             {([
-              { key: 'ATN', label: 'Nahkampf',  icon: '/icons/attr/atn.png', color: C.ATN, value: calcATN(char) },
-              { key: 'PA',  label: 'Parade',     icon: '/icons/attr/pa.png',  color: C.PA,  value: calcPA(char)  },
-              { key: 'ATD', label: 'Distanz',    icon: '/icons/attr/atd.png', color: C.ATD, value: calcATD(char) },
-              { key: 'INI', label: 'Initiative', icon: '/icons/attr/ini.png', color: C.INI, value: calcINI(char) },
+              { key: 'ATN', label: 'Nahkampf',  icon: '/icons/attr/atn.svg', color: C.ATN, value: calcATN(char) },
+              { key: 'PA',  label: 'Parade',     icon: '/icons/attr/pa.svg',  color: C.PA,  value: calcPA(char)  },
+              { key: 'ATD', label: 'Distanz',    icon: '/icons/attr/atd.svg', color: C.ATD, value: calcATD(char) },
+              { key: 'INI', label: 'Initiative', icon: '/icons/attr/ini.svg', color: C.INI, value: calcINI(char) },
             ] as const).map(s => (
               <CombatChip key={s.key} label={s.label} icon={s.icon} color={s.color} value={s.value} />
             ))}
           </div>
 
           {/* Talent tiles */}
-          {TALENT_CATEGORIES.map(cat => (
-            <div key={cat.key}>
-              <div className="flex items-center gap-1.5 mb-2">
-                <CatIcon src={cat.icon} size={13} />
-                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>
-                  {cat.label}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {cat.talents.map(t => {
-                  const stored    = char.talents[t.name] ?? 0;
-                  const bonus     = talentFixedBonus(char, t.name);
-                  const effective = stored + bonus;
-                  const isEmpty   = effective === 0;
-                  const isCombat  = t.costMultiplier === 2;
-                  const attrVals  = t.attrs
-                    ? (t.attrs as readonly AttributeKey[]).map(a => char.attributes[a])
-                    : null;
-                  const prob    = (!isCombat && attrVals && attrVals.length === 3)
-                    ? calcSuccessProb(attrVals, effective) : null;
-                  const pct     = prob !== null ? Math.round(prob * 100) : null;
-                  const valColor = isCombat ? cat.color : probColor(pct);
-
-                  return (
-                    <div
-                      key={t.name}
-                      className="rounded-lg border p-2 flex flex-col gap-0.5"
-                      style={{
-                        borderColor: `${cat.color}30`,
-                        backgroundColor: `${cat.color}08`,
-                        opacity: isEmpty ? 0.38 : 1,
-                      }}
-                    >
-                      <span className="text-[10px] leading-tight line-clamp-2" style={{ color: cat.color }}>
-                        {t.name}
-                      </span>
-                      <span className="font-mono font-bold text-base leading-none" style={{ color: valColor }}>
-                        {pct !== null ? `${pct}%` : `TP ${effective}`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          <TalentGrid char={char} />
 
           {/* Specs */}
-          {allSpecs.length > 0 && (
-            <div className="rounded-xl border border-hairline bg-surface p-3">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-muted">Spezifika</span>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {allSpecs.map(spec => {
-                  if (!spec) return null;
-                  const isBonus = spec.modifier < 0;
-                  return (
-                    <span
-                      key={spec.name}
-                      className="text-[10px] font-mono px-2 py-1 rounded-lg border"
-                      style={{
-                        color: isBonus ? '#4FA968' : '#C83050',
-                        borderColor: isBonus ? '#4FA96840' : '#C8305040',
-                        backgroundColor: isBonus ? '#4FA96808' : '#C8305008',
-                      }}
-                    >
-                      {spec.name} <span className="opacity-60">{spec.modifier > 0 ? '+' : ''}{spec.modifier}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <SpecList specs={allSpecs} />
 
           {/* Special abilities */}
           {char.specialAbilities.length > 0 && (

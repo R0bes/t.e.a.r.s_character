@@ -8,7 +8,7 @@ interface PointsBarProps {
   blockSize?: number;
 }
 
-export function PointsBar({ total, used, color = '#E8E1CF', className = '', blockSize }: PointsBarProps) {
+export function PointsBar({ total, used, color = '#2B1D10', className = '', blockSize }: PointsBarProps) {
   const remaining = Math.max(0, used);
   const over      = used < 0;
 
@@ -34,7 +34,7 @@ export function PointsBar({ total, used, color = '#E8E1CF', className = '', bloc
                 <div
                   key={si}
                   className={`h-2 rounded-sm transition-colors ${isBlockBoundary ? 'ml-0.5' : ''}`}
-                  style={{ flex: 1, minWidth: 4, backgroundColor: filled ? color : '#2D303A' }}
+                  style={{ flex: 1, minWidth: 4, backgroundColor: filled ? color : '#B4A075' }}
                 />
               );
             })}
@@ -54,7 +54,7 @@ export function PointsBar({ total, used, color = '#E8E1CF', className = '', bloc
         <div
           key={i}
           className="h-2 rounded-sm flex-1 min-w-[6px] transition-colors"
-          style={{ backgroundColor: i < remaining ? color : '#2D303A' }}
+          style={{ backgroundColor: i < remaining ? color : '#B4A075' }}
         />
       ))}
       {over && (

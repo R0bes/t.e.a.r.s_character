@@ -45,7 +45,7 @@ export function CustomSpecForm({ charId, onClose }: { charId: string; onClose: (
             onClick={() => setCat(cat.key)}
             className="p-1.5 rounded border transition-colors"
             style={{
-              borderColor:     category === cat.key ? cat.color + 'AA' : '#2D303A',
+              borderColor:     category === cat.key ? cat.color + 'AA' : '#B4A075',
               backgroundColor: category === cat.key ? cat.color + '20' : 'transparent',
             }}
           >
@@ -96,7 +96,7 @@ export function SpecTile({ spec, selectedAs, reservedAs, onToggle, showIcon = tr
   const catColor = catMeta.color;
 
   // modifier < 0 = good for character (green), modifier > 0 = bad (red)
-  const tileColor = spec.modifier < 0 ? '#4FA968' : '#E83050';
+  const tileColor = spec.modifier < 0 ? '#3F6B3A' : '#8B2E22';
 
   const isActive = !!selectedAs || !!reservedAs;
   const isHobby    = reservedAs === 'hobby';
@@ -131,8 +131,8 @@ export function SpecTile({ spec, selectedAs, reservedAs, onToggle, showIcon = tr
           {spec.modifier > 0 ? '+' : ''}{spec.modifier}
           {modIgnored && (
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="50" r="44" stroke="#E83050" strokeWidth="10"/>
-              <line x1="18" y1="82" x2="82" y2="18" stroke="#E83050" strokeWidth="10" strokeLinecap="round"/>
+              <circle cx="50" cy="50" r="44" stroke="#8B2E22" strokeWidth="10"/>
+              <line x1="18" y1="82" x2="82" y2="18" stroke="#8B2E22" strokeWidth="10" strokeLinecap="round"/>
             </svg>
           )}
         </span>

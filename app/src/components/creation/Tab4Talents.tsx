@@ -64,7 +64,7 @@ export function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
               onClick={() => setCatKey(cat.key)}
               className="flex-1 flex items-center justify-center py-1 rounded border transition-colors"
               style={{
-                borderColor: catKey === cat.key ? `${cat.color}80` : '#2D303A',
+                borderColor: catKey === cat.key ? `${cat.color}80` : '#B4A075',
                 backgroundColor: catKey === cat.key ? `${cat.color}20` : 'transparent',
               }}
             >
@@ -116,10 +116,10 @@ export function CustomTalentForm({ catKey: initialCatKey, charId, onClose }: {
 }
 
 export const QUALITY_TIERS = [
-  { min: 10, label: 'Q3', color: '#D4A830' }, // Gold
-  { min:  5, label: 'Q2', color: '#A8A9AD' }, // Silber
-  { min:  1, label: 'Q1', color: '#B87040' }, // Bronze
-  { min:  0, label: 'Q0', color: '#4A4D58' }, // Ungelernt
+  { min: 10, label: 'Q3', color: '#8C6A1D' }, // Gold
+  { min:  5, label: 'Q2', color: '#7A7568' }, // Silber
+  { min:  1, label: 'Q1', color: '#8B4123' }, // Bronze
+  { min:  0, label: 'Q0', color: '#9C8560' }, // Ungelernt
 ] as const;
 
 function qualityLevel(effective: number): { label: string; color: string } {
@@ -258,7 +258,7 @@ export function TalentTile({ charId, talentName, attrs, costMul, isCustom, catCo
             flexShrink: 0,
           }}>
             <div className="flex items-center justify-center px-2 py-1 rounded-full whitespace-nowrap"
-              style={{ backgroundColor: qual.color, boxShadow: `0 1px 4px rgba(0,0,0,0.4)` }}>
+              style={{ backgroundColor: qual.color, boxShadow: `0 1px 4px rgba(43,29,16,0.35)` }}>
               <span className="text-[10px] font-mono font-bold leading-none" style={{ color: '#fff' }}>
                 {prob !== null
                   ? `${Math.round(prob * 100)}%`
@@ -345,7 +345,7 @@ export function TalentTile({ charId, talentName, attrs, costMul, isCustom, catCo
             <div className="w-4 h-4 rounded-full flex items-center justify-center"
               style={{
                 backgroundColor: qual.color,
-                boxShadow: `0 1px 4px rgba(0,0,0,0.5), 0 0 0 1.5px ${qual.color}88`,
+                boxShadow: `0 1px 4px rgba(43,29,16,0.4), 0 0 0 1.5px ${qual.color}88`,
               }}>
               <span className="text-[6px] font-mono font-bold leading-none" style={{ color: '#fff' }}>
                 {effective}
@@ -362,7 +362,7 @@ export function TalentTile({ charId, talentName, attrs, costMul, isCustom, catCo
 
 
 // ── Special abilities section ─────────────────────────────────────────────────
-const ABILITY_COLOR = '#C8A020';
+const ABILITY_COLOR = '#8C6A1D';
 
 export function SpecialAbilitiesSection({ charId }: { charId: string }) {
   const char  = useStore(s => s.characters.find(c => c.id === charId));
@@ -436,7 +436,7 @@ export function AbilityTab({ charId, isActive, onClick }: {
       onMouseLeave={() => setOpen(false)}
     >
       <span className="text-base leading-none">✨</span>
-      <span className="text-[10px] font-mono font-bold leading-none" style={{ color: over ? '#C83030' : ABILITY_COLOR }}>
+      <span className="text-[10px] font-mono font-bold leading-none" style={{ color: over ? '#8B2E22' : ABILITY_COLOR }}>
         {spent}/{VARIABLE_PTS}
       </span>
 
@@ -450,10 +450,10 @@ export function AbilityTab({ charId, isActive, onClick }: {
             <div className="flex justify-between font-bold text-paper">
               <span>Gesamt</span><span>{VARIABLE_PTS}</span>
             </div>
-            <div className="flex justify-between" style={{ color: over ? '#C83030' : '#4FA968' }}>
+            <div className="flex justify-between" style={{ color: over ? '#8B2E22' : '#3F6B3A' }}>
               <span>Verbraucht</span><span>{spent}</span>
             </div>
-            <div className="flex justify-between font-bold" style={{ color: over ? '#C83030' : ABILITY_COLOR }}>
+            <div className="flex justify-between font-bold" style={{ color: over ? '#8B2E22' : ABILITY_COLOR }}>
               <span>Verbleibend</span><span>{left}</span>
             </div>
           </div>
@@ -490,9 +490,9 @@ export function CatSummaryTile({ charId, cat, index, total, isActive, onClick, m
       style={(() => {
         const hasTP = mode === 'fix' && available - spent > 0;
         return {
-          borderColor:     hasTP ? '#E8305060' : isActive ? `${cat.color}90` : `${cat.color}30`,
+          borderColor:     hasTP ? '#8B2E2260' : isActive ? `${cat.color}90` : `${cat.color}30`,
           backgroundColor: isActive ? `${cat.color}20` : `${cat.color}08`,
-          boxShadow:       hasTP ? '0 0 8px #E8305030' : isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
+          boxShadow:       hasTP ? '0 0 8px #8B2E2230' : isActive ? `inset 0 -2px 0 ${cat.color}` : 'none',
         };
       })()}
       onMouseEnter={() => setOpen(true)}
@@ -508,7 +508,7 @@ export function CatSummaryTile({ charId, cat, index, total, isActive, onClick, m
       ) : (
         <span
           className="text-[10px] font-mono font-bold leading-none"
-          style={{ color: over ? '#C83030' : cat.color }}
+          style={{ color: over ? '#8B2E22' : cat.color }}
         >
           {spent}/{available}
         </span>
@@ -532,13 +532,13 @@ export function CatSummaryTile({ charId, cat, index, total, isActive, onClick, m
               <span>{BASE_TALENT_PTS}</span>
             </div>
             {job !== 0 && (
-              <div className="flex justify-between" style={{ color: job > 0 ? '#4FA968' : '#C83030' }}>
+              <div className="flex justify-between" style={{ color: job > 0 ? '#3F6B3A' : '#8B2E22' }}>
                 <span>Beruf</span>
                 <span>{job > 0 ? '+' : ''}{job}</span>
               </div>
             )}
             {spec !== 0 && (
-              <div className="flex justify-between" style={{ color: spec > 0 ? '#4FA968' : '#C83030' }}>
+              <div className="flex justify-between" style={{ color: spec > 0 ? '#3F6B3A' : '#8B2E22' }}>
                 <span>Spezifikum</span>
                 <span>{spec > 0 ? '+' : ''}{spec}</span>
               </div>
@@ -547,11 +547,11 @@ export function CatSummaryTile({ charId, cat, index, total, isActive, onClick, m
               <span>Gesamt</span>
               <span>{available}</span>
             </div>
-            <div className="flex justify-between" style={{ color: over ? '#C83030' : '#4FA968' }}>
+            <div className="flex justify-between" style={{ color: over ? '#8B2E22' : '#3F6B3A' }}>
               <span>Verbraucht</span>
               <span>{spent}</span>
             </div>
-            <div className="flex justify-between font-bold" style={{ color: over ? '#C83030' : cat.color }}>
+            <div className="flex justify-between font-bold" style={{ color: over ? '#8B2E22' : cat.color }}>
               <span>Verbleibend</span>
               <span>{available - spent}</span>
             </div>

@@ -31,7 +31,7 @@ function VitalMini({ label, current, max, color, showNumbers = true }: {
 function CharacterCard({ char, index }: { char: Character; index: number }) {
   const { setActiveId, setScreen, deleteCharacter, duplicateCharacter, exportCharacter } = useStore();
   const prof = char.profession ? PROFESSION_MAP[char.profession] : null;
-  const catColor = char.profession ? getCategoryColor(char.profession) : '#5A5D66';
+  const catColor = char.profession ? getCategoryColor(char.profession) : '#9C8560';
 
   const maxLE = calcLE(char);
   const maxGG = calcGG(char);
@@ -154,11 +154,11 @@ function CharacterCard({ char, index }: { char: Character; index: number }) {
 
 function getCategoryColor(prof: string): string {
   const map: Record<string, string> = {
-    koerperlich: '#D05020', handwerklich: '#C89A10', kundenkontakt: '#189898',
-    kreativ: '#CC2888', denkend: '#1E58C8', militaerisch: '#608030',
-    medizinisch: '#208838', arbeitslos: '#7030B0',
+    koerperlich: '#8B4123', handwerklich: '#8C6A1D', kundenkontakt: '#29707A',
+    kreativ: '#7A3560', denkend: '#2F4F6B', militaerisch: '#5C6B22',
+    medizinisch: '#2E6B54', arbeitslos: '#5B3E7A',
   };
-  return map[prof] ?? '#5A5D66';
+  return map[prof] ?? '#9C8560';
 }
 
 export function CharacterListScreen() {

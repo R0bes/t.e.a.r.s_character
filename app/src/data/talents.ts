@@ -17,11 +17,11 @@ export interface TalentCategoryMeta {
 }
 
 export const CAT_ICONS: Record<TalentCategory, string> = {
-  koerperlich: '/icons/attr/kat_koerperlich.png',
-  motorisch:   '/icons/attr/kat_motorisch.png',
-  geistig:     '/icons/attr/kat_geistig.png',
-  sozial:      '/icons/attr/kat_sozial.png',
-  kampf:       '/icons/attr/kat_kampf.png',
+  koerperlich: '/icons/attr/kat_koerperlich.svg',
+  motorisch:   '/icons/attr/kat_motorisch.svg',
+  geistig:     '/icons/attr/kat_geistig.svg',
+  sozial:      '/icons/attr/kat_sozial.svg',
+  kampf:       '/icons/attr/kat_kampf.svg',
 };
 
 function t(
@@ -41,9 +41,9 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'koerperlich',
     label: 'Körperliche Talente',
-    color: '#C84820',
+    color: '#8B4123',
     tailwindColor: 'cat-physical',
-    icon: '/icons/attr/kat_koerperlich.png',
+    icon: '/icons/attr/kat_koerperlich.svg',
     talents: [
       t('Ringen / Faustkampf',  'koerperlich', ''),
       t('Nahkampfwaffen stumpf', 'koerperlich', ''),
@@ -60,9 +60,9 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'motorisch',
     label: 'Motorische Talente',
-    color: '#C89010',
+    color: '#8C6A1D',
     tailwindColor: 'cat-motoric',
-    icon: '/icons/attr/kat_motorisch.png',
+    icon: '/icons/attr/kat_motorisch.svg',
     talents: [
       t('Mechanik / Basteln',  'motorisch', 'KK/GE/GE'),
       t('Feuer machen',        'motorisch', 'GE/GE/IN'),
@@ -79,9 +79,9 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'geistig',
     label: 'Geistige Talente',
-    color: '#2050B0',
+    color: '#2F4F6B',
     tailwindColor: 'cat-mental',
-    icon: '/icons/attr/kat_geistig.png',
+    icon: '/icons/attr/kat_geistig.svg',
     talents: [
       t('Lesen / Schreiben',   'geistig', 'IN/IN/MB'),
       t('Mathematik',          'geistig', 'IN/IN/MB'),
@@ -98,9 +98,9 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'sozial',
     label: 'Soziale Talente',
-    color: '#189898',
+    color: '#29707A',
     tailwindColor: 'cat-social',
-    icon: '/icons/attr/kat_sozial.png',
+    icon: '/icons/attr/kat_sozial.svg',
     talents: [
       t('Überreden',              'sozial', 'IN/CH/CH'),
       t('Menschenkenntnis',       'sozial', 'IN/CH/CH'),
@@ -117,9 +117,9 @@ export const TALENT_CATEGORIES: TalentCategoryMeta[] = [
   {
     key: 'kampf',
     label: 'Kampf & Waffen',
-    color: '#B81818',
+    color: '#6B1F2C',
     tailwindColor: 'cat-combat',
-    icon: '/icons/attr/kat_kampf.png',
+    icon: '/icons/attr/kat_kampf.svg',
     talents: [
       t('Wurfwaffen',              'kampf', ''),
       t('Klingenwaffen',           'kampf', ''),

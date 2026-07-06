@@ -30,7 +30,7 @@ Separater Workflow ohne Bottom-Nav:
 
 | Bereich | Inhalt |
 |---|---|
-| Charaktererstellung | 9 frei navigierbare Tabs, inhaltlich abhängig gesperrt |
+| Charaktererstellung | Eine durchgängig scrollbare Seite (Identität, Beruf, Attribute, Talente, Spezifika, Hobbys, Fähigkeiten), sticky Kopfleiste |
 
 Übergänge:
 
@@ -39,7 +39,8 @@ Separater Workflow ohne Bottom-Nav:
 | Charaktere | Charaktererstellung | „Neue Akte" |
 | Charaktere | Charakterbogen | Akte antippen |
 | Charakterbogen | Charaktererstellung | „Bearbeiten" |
-| Charaktererstellung | Charakterbogen | „Abschließen" |
+| Charaktererstellung | Charakterbogen | „Fertig →" (Kopfleiste) |
+| Charaktererstellung | Charaktere | „← Liste" (Kopfleiste) |
 | Charakterbogen | Spielmodus | „Los geht's" |
 
 ---
@@ -233,31 +234,16 @@ Bezahlt mit freien Talentpunkten:
 - Kurzübersicht Spezifika, Hobbys, Fähigkeiten
 - Aktionen: „Bearbeiten", „Los geht's", Export
 
-### Charaktererstellung (9 Tabs, frei wählbar)
+### Charaktererstellung (eine Seite)
 
-| # | Tab | Abhängigkeit |
-|---|---|---|
-| 1 | Charakterinformationen | — |
-| 2 | Berufskategorie | — |
-| 3 | Attribute | Tab 2 |
-| 4 | Talente | Tab 3 |
-| 5 | Pflicht-Spezifikation | Tab 4 |
-| 6 | Hobbys | Tab 4 (optional) |
-| 7 | Freie Spezifikationen | optional |
-| 8 | Besondere Fähigkeiten | optional |
-| 9 | Übersicht / Abschluss | — |
+Sticky Kopfleiste („← Liste", Charaktername, „Fertig →") über einem durchgehend scrollbaren Formular. Kein Tab-Wizard, keine gesperrten Abschnitte — alles ist jederzeit sichtbar und editierbar:
 
-Gesperrte Tabs zeigen Lock-Icon + Kurzgrund. Tab-Status: ✓ erledigt / aktiv / gesperrt / optional.
+- Identität (Name, Geschlecht, Alter/Größe/Gewicht, Charakterbild) + Berufskategorie nebeneinander
+- Attribute: 14-Segment-Restpunktebalken, Attributstepper mit Farbcodierung der Kostenstufen, Spider-Chart mit Live-Vorschau der abgeleiteten Werte
+- Talente: Akkordeon je Kategorie, Kopfzeile zeigt Restkategoriebudget, Kampfkategorie mit ×2-Badge
+- Spezifika (Pflicht-Spezifikation, Hobbys, freie Spezifikationen) und besondere Fähigkeiten in derselben Ansicht
 
-**Tab Attribute:**
-- 14-Segment-Restpunktebalken
-- Attributstepper mit Farbcodierung der Kostenstufen
-- Live-Vorschau der abgeleiteten Werte
-
-**Tab Talente:**
-- Akkordeon je Kategorie, Kopfzeile zeigt Restkategoriebudget
-- Talentzeile: Name, farbige Attribut-Chips, Stepper
-- Kampfkategorie mit ×2-Badge
+Ein „Edit/Fix"-Modus-Umschalter (schwebender Button) wechselt zwischen der Ansicht für die Ersterstellung und einer kompakteren Ansicht zum nachträglichen Korrigieren einzelner Werte.
 
 ### Spielmodus
 - Persistenter Kopfbereich: LE-Balken, GG-Balken

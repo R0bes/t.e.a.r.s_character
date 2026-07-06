@@ -9,8 +9,8 @@ interface HexagonRadarProps {
 
 const ORDER: AttributeKey[] = ['KK', 'GE', 'AU', 'CH', 'IN', 'MB'];
 const COLORS: Record<AttributeKey, string> = {
-  KK: '#CC2828', GE: '#C89A10', AU: '#D05020',
-  CH: '#CC2888', IN: '#1E58C8', MB: '#7030B0',
+  KK: '#8B2E22', GE: '#8C6A1D', AU: '#3F6B3A',
+  CH: '#7A3560', IN: '#29707A', MB: '#3F3E7A',
 };
 
 function hexPoint(cx: number, cy: number, r: number, i: number): [number, number] {
@@ -47,20 +47,20 @@ export function HexagonRadar({ values, size = 200, showLabels = true }: HexagonR
           key={frac}
           points={gridHex(frac)}
           fill="none"
-          stroke="#2D303A"
+          stroke="#B4A075"
           strokeWidth="1"
         />
       ))}
       {/* Axis lines */}
       {ORDER.map((_, i) => {
         const [x, y] = hexPoint(cx, cy, maxR, i);
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#2D303A" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#B4A075" strokeWidth="1" />;
       })}
       {/* Value area */}
       <polygon
         points={valuePath}
-        fill="rgba(232,225,207,0.12)"
-        stroke="#E8E1CF"
+        fill="rgba(43,29,16,0.10)"
+        stroke="#2B1D10"
         strokeWidth="1.5"
       />
       {/* Value dots */}
@@ -78,7 +78,7 @@ export function HexagonRadar({ values, size = 200, showLabels = true }: HexagonR
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize="10"
-            fontFamily="IBM Plex Mono"
+            fontFamily="Kalam"
             fontWeight="500"
             fill={COLORS[key]}
           >

@@ -40,7 +40,7 @@ function freshCharacter(id: string): Character {
     id,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    info: { name: '', gender: '', age: '', height: '', weight: '', professionName: '' },
+    info: { name: '', gender: '', age: '', height: '', weight: '', professionName: '', image: '' },
     profession: null,
     attributes: attrs,
     talents: {},
@@ -84,7 +84,7 @@ export const useStore = create<AppState & AppActions>()(
         return id;
       },
 
-      patchCharacter: (id, updater, _opts) => {
+      patchCharacter: (id, updater) => {
         set(s => ({
           characters: s.characters.map(c => {
             if (c.id !== id) return c;
@@ -165,6 +165,7 @@ export const useStore = create<AppState & AppActions>()(
             id: crypto.randomUUID(),
             createdAt: Date.now(),
             updatedAt: Date.now(),
+            info:               { ...raw.info, image: raw.info?.image ?? '' },
             inventory:          raw.inventory          ?? [],
             notes:              raw.notes              ?? [],
             customTalents:      raw.customTalents      ?? [],

@@ -59,7 +59,7 @@ export function ProfessionSection({ charId, mode, children }: {
                 <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 w-full">
                   {Object.entries(prof.attrMin).map(([k, v]) => {
                     const attrMeta = ATTRIBUTES.find(a => a.key === k);
-                    const color = attrMeta?.color ?? '#888';
+                    const color = attrMeta?.color ?? '#9C8560';
                     return (
                       <div key={k} className="flex items-center gap-[3px]">
                         <img src={attrMeta?.icon ?? ''} alt={k} style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${color}55`, flexShrink: 0 }} />
@@ -75,7 +75,7 @@ export function ProfessionSection({ charId, mode, children }: {
                     return (
                       <div key={cat} className="flex items-center gap-[3px]">
                         <CatIcon src={catMeta?.icon ?? ''} size={11} />
-                        <span className="text-[9px] font-mono leading-none" style={{ color: catMeta?.color ?? '#888' }}>+{pts}</span>
+                        <span className="text-[9px] font-mono leading-none" style={{ color: catMeta?.color ?? '#9C8560' }}>+{pts}</span>
                       </div>
                     );
                   })}
@@ -101,9 +101,9 @@ export function ProfessionSection({ charId, mode, children }: {
         ) : mode === 'fix' && (
           <div
             className="flex items-center justify-center px-3 py-2 rounded-lg border"
-            style={{ borderColor: '#E8305060', backgroundColor: '#E8305010', boxShadow: '0 0 8px #E8305030' }}
+            style={{ borderColor: '#8B2E2260', backgroundColor: '#8B2E2210', boxShadow: '0 0 8px #8B2E2230' }}
           >
-            <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#E8305080' }}>
+            <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#8B2E2280' }}>
               Keine Berufsklasse
             </span>
           </div>

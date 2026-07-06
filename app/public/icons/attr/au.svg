@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path d="M51,6 C71,6 90,20 91,37 C92,54 87,74 71,85 C55,96 33,91 20,78 C7,65 8,45 16,29 C25,14 33,6 51,6 Z" fill="#3F6B3A12" stroke="#3F6B3A" stroke-width="2" opacity="0.5"/>
+  <path d="M51,4 C73,4 92,19 93,37 C94,55 88,76 71,87 C55,98 31,93 17,79 C4,66 6,44 15,28 C24,12 32,4 51,4 Z" fill="none" stroke="#3F6B3A" stroke-width="2.4"/>
+  <g stroke="#3F6B3A" stroke-width="1.1" opacity="0.35" stroke-linecap="round">
+    <line x1="63" y1="70" x2="70" y2="63"/>
+    <line x1="68" y1="76" x2="76" y2="68"/>
+    <line x1="73" y1="81" x2="81" y2="73"/>
+  </g>
+  <path d="M50,28 L50,46" stroke="#3F6B3A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M49,38 C44,32 36,32 32,38 C26,46 26,60 32,68 C36,73 42,73 45,68 C47,64 47,44 46,40" fill="#3F6B3A14" stroke="#3F6B3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M51,38 C56,32 64,32 68,38 C74,46 74,60 68,68 C64,73 58,73 55,68 C53,64 53,44 54,40" fill="#3F6B3A14" stroke="#3F6B3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32,50 C29,52 27,56 28,60 M68,50 C71,52 73,56 72,60" stroke="#3F6B3A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>

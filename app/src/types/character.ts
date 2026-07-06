@@ -63,6 +63,7 @@ export interface Character {
     height: string;
     weight: string;
     professionName: string;
+    image: string;
   };
   profession: ProfessionKey | null;
   attributes: Record<AttributeKey, number>;

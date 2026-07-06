@@ -146,7 +146,7 @@ export function SpiderChart({
             key={gi}
             points={pts}
             fill="none"
-            stroke="#2D303A"
+            stroke="#B4A075"
             strokeWidth={frac === 1 ? 1.2 : 0.7}
             strokeDasharray={frac < 1 ? '2,3' : undefined}
           />
@@ -187,7 +187,7 @@ export function SpiderChart({
 
       {/* Axis lines */}
       {outerPts.map(([x, y], i) => (
-        <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#2D303A" strokeWidth="0.8" />
+        <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#B4A075" strokeWidth="0.8" />
       ))}
 
       {/* Sector fills — one triangle per sector, edge-color gradient + center fade */}
@@ -210,13 +210,13 @@ export function SpiderChart({
       </g>
 
       {/* Outer boundary */}
-      <polygon points={outerPoly} fill="none" stroke="#2D303A" strokeWidth="1" />
+      <polygon points={outerPoly} fill="none" stroke="#B4A075" strokeWidth="1" />
 
       {/* Value polygon outline */}
       <polygon
         points={valuePoly}
         fill="none"
-        stroke="rgba(255,255,255,0.25)"
+        stroke="rgba(43,29,16,0.35)"
         strokeWidth="1.2"
       />
 
@@ -228,9 +228,9 @@ export function SpiderChart({
             <text
               x={x} y={y}
               fontSize={dotRadius * (8.5 / 6)}
-              fontFamily="IBM Plex Mono"
+              fontFamily="Kalam"
               fontWeight="700"
-              fill="#1B1D23"
+              fill="#F2E7C6"
               textAnchor="middle"
               dy="0.35em"
             >
@@ -245,7 +245,7 @@ export function SpiderChart({
         const frac = gridFracs[gi];
         const [lx, ly] = point(cx, cy, maxR * frac, 0, n);
         return (
-          <text key={gi} x={lx + 4} y={ly + 1} fontSize="7" fontFamily="IBM Plex Mono" fill="#5A5D66">
+          <text key={gi} x={lx + 4} y={ly + 1} fontSize="7" fontFamily="Kalam" fill="#9C8560">
             {v}
           </text>
         );
@@ -263,7 +263,7 @@ export function SpiderChart({
             key={ax.key}
             x={lx} y={ly}
             fontSize="8.5"
-            fontFamily="IBM Plex Mono"
+            fontFamily="Kalam"
             fontWeight="600"
             fill={ax.color}
             textAnchor={anchor}
