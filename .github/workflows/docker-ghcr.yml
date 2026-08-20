@@ -1,0 +1,17 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    uses: R0bes/devops/.github/workflows/docker-ghcr.yml@main
+    with:
+      docker_context: app
+      dockerfile: app/Dockerfile
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit

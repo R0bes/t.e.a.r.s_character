@@ -20,6 +20,15 @@ npm run dev       # Vite Dev-Server auf http://localhost:5173
 npm run build     # Produktionsbuild nach app/dist/
 ```
 
+## Docker
+
+```bash
+docker build -t tears_character -f app/Dockerfile app
+docker run --rm -p 8080:80 tears_character
+```
+
+CI pushes **`ghcr.io/r0bes/t.e.a.r.s_character`** on push to `main` (reusable workflow in `R0bes/devops`).
+
 ## GitHub Codespaces
 
 Das Repository enthält eine Codespaces-Konfiguration (`.devcontainer/devcontainer.json`).  
